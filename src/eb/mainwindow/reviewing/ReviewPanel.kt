@@ -31,12 +31,6 @@ class ReviewPanel : JPanel() {
     private val m_situationalButtonPanel: JPanel
     private val m_fixedButtonPanel: JPanel
 
-    private fun currentCard() =
-            if (ReviewManager.instance.currentFront() != EMPTY_FRONT)
-                DeckManager.currentDeck!!.cards.getCardWithFront(Hint(ReviewManager.instance.currentFront()))
-            else null
-
-
     init {
         this.isFocusable = true
         addComponentListener(EventHandler.create(ComponentListener::class.java, this,
@@ -160,28 +154,25 @@ class ReviewPanel : JPanel() {
         add(sidePanel, sidePanelConstraints)
     }
 
-    private fun editCard() {
-        val currentCard = currentCard()
-        CardEditingManager(currentCard)
-    }
+    private fun editCard() = CardEditingManager(ReviewManager.currentCard())
 
     private fun deleteCard() {
         val choice = JOptionPane.showConfirmDialog(m_backOfCardPanel,
                 "Delete this card?", "Delete this card?", JOptionPane.OK_CANCEL_OPTION)
         if (choice == JOptionPane.OK_OPTION) {
-            DeckManager.currentDeck!!.cards.removeCard(currentCard()!!)
+            DeckManager.currentDeck!!.cards.removeCard(ReviewManager.currentCard()!!)
         }
     }
 
     private fun remembered(wasRemembered: Boolean) {
         showPanel(HIDDEN_ANSWER)
-        ReviewManager.instance.wasRemembered(wasRemembered)
+        ReviewManager.wasRemembered(wasRemembered)
         repaint()
     }
 
     private fun showAnswer() {
         showPanel(SHOWN_ANSWER)
-        ReviewManager.instance.showAnswer()
+        ReviewManager.showAnswer()
         repaint()
     }
 
@@ -192,7 +183,7 @@ class ReviewPanel : JPanel() {
 
     public override fun paintComponent(g: Graphics) {
         super.paintComponent(g)
-        m_frontOfCardPanel.setText(ReviewManager.instance.currentFront())
+        m_frontOfCardPanel.setText(ReviewManager.currentFront())
     }
 
     fun refresh() {
@@ -208,10 +199,8 @@ class ReviewPanel : JPanel() {
     }
 
     companion object {
-
         private const val HIDDEN_ANSWER = "HIDDEN_ANSWER"
         private const val SHOWN_ANSWER = "SHOWN_ANSWER"
-        private const val EMPTY_FRONT = ""
     }
 
 }

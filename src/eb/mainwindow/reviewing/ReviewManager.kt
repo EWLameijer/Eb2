@@ -15,7 +15,7 @@ import eb.eventhandling.Update
 import eb.eventhandling.UpdateType
 import eb.mainwindow.MainWindowState
 import eb.utilities.Hint
-import eb.utilities.Utilities
+import eb.utilities.EMPTY_STRING
 
 
 /**
@@ -24,11 +24,7 @@ import eb.utilities.Utilities
  *
  * @author Eric-Wubbo Lameijer
  */
-class ReviewManager
-/**
- * To disable implicit public constructor
- */
-private constructor() : Listener {
+object ReviewManager : Listener {
 
     private var m_reviewPanel: ReviewPanel? = null
     private var m_currentDeck: Deck? = null
@@ -52,7 +48,7 @@ private constructor() : Listener {
         return m_cardsToBeReviewed.map{ it.lastReview()}
     }
 
-    private fun currentCard(): Card? =
+    fun currentCard(): Card? =
             if (m_cardsToBeReviewed.isEmpty() || m_counter >= m_cardsToBeReviewed.size) null
             else m_cardsToBeReviewed[m_counter]
 
@@ -201,18 +197,12 @@ private constructor() : Listener {
      * that the card also disappears from the list of cards to be reviewed
      */
     private fun updateCollection() {
-        var deletingCurrentCard = false
+        var deletingCurrentCard = !deckContainsCardWithThisFront(m_cardsToBeReviewed[m_counter].front)
+        val deletedIndices = m_cardsToBeReviewed.withIndex().
+                filter{ !deckContainsCardWithThisFront(m_cardsToBeReviewed[it.index].front)}.map { it.index }
+        m_cardsToBeReviewed = m_cardsToBeReviewed.filter { deckContainsCardWithThisFront(it.front)}.toMutableList()
+        deletedIndices.forEach{ if (it <= m_counter) m_counter-- }
 
-        for (cardIndex in m_cardsToBeReviewed.indices) {
-            val currentCard = m_cardsToBeReviewed[cardIndex]
-            if (!deckContainsCardWithThisFront(currentCard.front)) {
-                m_cardsToBeReviewed.removeAt(cardIndex)
-                deletingCurrentCard = cardIndex == m_counter
-                if (cardIndex <= m_counter) {
-                    m_counter--
-                }
-            }
-        }
         if (deletingCurrentCard) {
             moveToNextReviewOrEnd()
         } else {
@@ -242,20 +232,4 @@ private constructor() : Listener {
     fun setPanel(reviewPanel: ReviewPanel) {
         m_reviewPanel = reviewPanel
     }
-
-    companion object {
-
-        // the instance needed for the Singleton pattern
-        private var m_instance: ReviewManager? = null
-
-        /**
-         * getInstance is the method to call the lone object stored in the ReviewManager Singleton -
-         * see the documentation on design patterns.
-         *
-         * @return the only instance of the ReviewManager class that this program should have.
-         */
-        val instance: ReviewManager = ReviewManager()
-        const val EMPTY_STRING = ""
-    }
-
 }

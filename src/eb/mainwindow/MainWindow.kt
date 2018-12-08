@@ -162,7 +162,7 @@ internal constructor() : JFrame(PROGRAM_NAME), Listener {
                 + " to be reviewed in total")
         if (m_state == MainWindowState.REVIEWING) {
             title += (", " + Utilities
-                    .pluralText(ReviewManager.instance.cardsToGoYet(), "card")
+                    .pluralText(ReviewManager.cardsToGoYet(), "card")
                     + " yet to be reviewed in the current session")
         }
         val numCards = currentDeck.cards.getTotal()
@@ -299,7 +299,7 @@ internal constructor() : JFrame(PROGRAM_NAME), Listener {
         val informationPanel = createInformationPanel()
         m_modesContainer.add(informationPanel, INFORMATION_PANEL_ID)
         m_modesContainer.add(m_reviewPanel, REVIEW_PANEL_ID)
-        ReviewManager.instance.setPanel(m_reviewPanel)
+        ReviewManager.setPanel(m_reviewPanel)
         val summarizingPanel = SummarizingPanel()
         m_modesContainer.add(summarizingPanel, SUMMARIZING_PANEL_ID)
         val timedReviewStartPanel = TimedReviewStartPanel()
@@ -423,6 +423,7 @@ internal constructor() : JFrame(PROGRAM_NAME), Listener {
         saveEbStatus()
         DeckManager.save()
         dispose()
+        System.exit(0)
     }
 
     private fun saveEbStatus() {
@@ -452,7 +453,7 @@ internal constructor() : JFrame(PROGRAM_NAME), Listener {
      */
     private fun showReviewingPanel() {
         if (m_state != MainWindowState.REVIEWING) {
-            ReviewManager.instance.start(m_reviewPanel)
+            ReviewManager.start(m_reviewPanel)
             m_state = MainWindowState.REVIEWING
         }
         switchToPanel(REVIEW_PANEL_ID)

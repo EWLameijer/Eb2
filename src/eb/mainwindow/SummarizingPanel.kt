@@ -101,7 +101,7 @@ class SummarizingPanel internal constructor() : JPanel() {
 
     public override fun paintComponent(g: Graphics) {
         super.paintComponent(g)
-        val allReviews = ReviewManager.instance.reviewResults()
+        val allReviews = ReviewManager.reviewResults()
         val completedReviews = allReviews.filterNotNull()
         val text = StringBuilder()
         text.append("<html>")

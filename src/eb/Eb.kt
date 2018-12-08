@@ -43,10 +43,9 @@ object Eb {
             // Otherwise starts application.
 
             /* getMonitoredVMs(runtimePid) */
-            val reviewManager = ReviewManager.instance
-            BlackBoard.register(reviewManager, UpdateType.DECK_SWAPPED)
-            BlackBoard.register(reviewManager, UpdateType.CARD_CHANGED)
-            BlackBoard.register(reviewManager, UpdateType.DECK_CHANGED)
+            BlackBoard.register(ReviewManager, UpdateType.DECK_SWAPPED)
+            BlackBoard.register(ReviewManager, UpdateType.CARD_CHANGED)
+            BlackBoard.register(ReviewManager, UpdateType.DECK_CHANGED)
             MainWindow.display()
         } catch (exc: IOException) {
             JOptionPane.showMessageDialog(null, error, errortype, JOptionPane.ERROR_MESSAGE)
