@@ -16,12 +16,6 @@ class LabelledTextField(labelText: String, textFieldContents: String, size: Int,
     private val label = JLabel(labelText)
     private val textField = JTextField()
 
-    var contents: String
-        get() = textField.text
-        set(text) {
-            textField.text = text
-        }
-
     init {
         textField.preferredSize = Dimension(40, 20)
         textField.document = FixedSizeNumberDocument(textField, size, precision)
@@ -32,11 +26,13 @@ class LabelledTextField(labelText: String, textFieldContents: String, size: Int,
         add(textField)
     }
 
+    fun contents() : String = textField.text
+
     fun setContents(i: Int?) {
-        contents = i?.toString() ?: "none"
+        textField.text = i?.toString() ?: "none"
     }
 
     fun setContents(d: Double) {
-        contents = d.toString()
+        textField.text = d.toString()
     }
 }

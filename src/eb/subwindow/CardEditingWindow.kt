@@ -22,35 +22,32 @@ import javax.swing.*
  *
  * @author Eric-Wubbo Lameijer
  */
-open class CardEditingWindow(frontText: String, backText: String, private val m_manager: CardEditingManager) : JFrame() {
+open class CardEditingWindow(frontText: String, backText: String, private val manager: CardEditingManager) : JFrame() {
 
     // Allows the creation/editing of the content on the front of the card.
-    private val cardFrontPane: JTextPane
+    private val cardFrontPane = JTextPane()
 
     // Allows the creation/editing of the contents of the back of the card.
-    private val cardBackPane: JTextPane
+    private val cardBackPane = JTextPane()
 
     // The button to cancel creating this card, and return to the calling window.
-    private val cancelButton: JButton
+    private val cancelButton = JButton("Cancel")
 
     // The button to press that requests the current deck to check whether this
     // card is a valid/usable card (so no duplicate of an existing card, for
     // example) and if so, to add it.
-    private val okButton: JButton
+    private val okButton = JButton("Ok")
 
     init {
         // preconditions: none (we can assume the user clicked the appropriate
         // button, and even otherwise there is not a big problem)
-        val operation = if (m_manager.inCardCreatingMode()) "add" else "edit"
+        val operation = if (manager.inCardCreatingMode()) "add" else "edit"
         this.title = "${DeckManager.currentDeck().name}: $operation card"
-        cancelButton = JButton("Cancel")
-        okButton = JButton("Ok")
 
         // Create the panel to edit the front of the card, and make enter
         // and tab transfer focus to the panel for editing the back of the card.
         // Escape should cancel the card-creating process and close the
         // NewCardWindow
-        cardFrontPane = JTextPane()
         cardFrontPane.text = frontText
         Utilities.makeTabAndEnterTransferFocus(cardFrontPane)
         val escapeKeyListener = SpecificKeyListener(KeyEvent.VK_ESCAPE) { cancelButton.doClick() }
@@ -64,9 +61,7 @@ open class CardEditingWindow(frontText: String, backText: String, private val m_
         // for the front panel) again cancel editing and close the NewCardWindow.
         // Pressing the Enter key, however, should try save the card instead of
         // transferring the focus back to the front-TextArea.
-        cardBackPane = JTextPane()
         cardBackPane.text = backText
-
         Utilities.makeTabTransferFocus(cardBackPane)
         cardBackPane.addKeyListener(enterKeyListener)
         cardBackPane.addKeyListener(escapeKeyListener)
@@ -83,12 +78,6 @@ open class CardEditingWindow(frontText: String, backText: String, private val m_
 
     //Listens for a specific key and consumes it (and performs the appropriate action) when it is pressed
     internal inner class SpecificKeyListener(private val keyCode: Int, val action: () -> Unit) : KeyListener {
-
-        /**
-         * If the user presses the escape key, dispose of the candidate card and
-         * close the 'New Card' window (same as if the user clicks the Cancel
-         * button).
-         */
         override fun keyPressed(e: KeyEvent) {
             if (e.keyCode == keyCode) {
                 e.consume()
@@ -111,8 +100,8 @@ open class CardEditingWindow(frontText: String, backText: String, private val m_
     }
 
     fun trimFields() {
-        cardFrontPane.text = cardFrontPane.text.trim { it <= ' ' }
-        cardBackPane.text = cardBackPane.text.trim { it <= ' ' }
+        cardFrontPane.text = cardFrontPane.text.trim()
+        cardBackPane.text = cardBackPane.text.trim()
     }
 
     /**
@@ -131,7 +120,7 @@ open class CardEditingWindow(frontText: String, backText: String, private val m_
         val frontText = cardFrontPane.text
         val backText = cardBackPane.text
 
-        m_manager.processProposedContents(frontText, backText)
+        manager.processProposedContents(frontText, backText)
 
         // postconditions: If adding succeeded, the front and back should
         // be blank again, if it didn't, they should be the same as they were
@@ -140,11 +129,8 @@ open class CardEditingWindow(frontText: String, backText: String, private val m_
         // of double and I skip it here.
     }
 
-    /**
-     * Initializes the components of the NewCardWindow.
-     */
     internal open fun init() {
-        cancelButton.addActionListener { m_manager.endEditing() }
+        cancelButton.addActionListener { manager.endEditing() }
         okButton.addActionListener { submitCandidateCardToDeck() }
 
         // now add the buttons to the window
@@ -153,8 +139,7 @@ open class CardEditingWindow(frontText: String, backText: String, private val m_
         buttonPane.add(okButton)
 
         // Now create a nice (or at least acceptable-looking) layout.
-        val upperPanel = JSplitPane(JSplitPane.VERTICAL_SPLIT,
-                JScrollPane(cardFrontPane), JScrollPane(cardBackPane))
+        val upperPanel = JSplitPane(JSplitPane.VERTICAL_SPLIT, JScrollPane(cardFrontPane), JScrollPane(cardBackPane))
         upperPanel.resizeWeight = 0.5
         layout = GridBagLayout()
         val frontConstraints = GridBagConstraints()
@@ -188,19 +173,14 @@ open class CardEditingWindow(frontText: String, backText: String, private val m_
     fun focusFront() = cardFrontPane.requestFocusInWindow()
 
     companion object {
-        // Default serialization ID (not used).
-        private const val serialVersionUID = 3419171802910744055L
-
         /**
          * Shows the NewCardWindow. Is necessary to accommodate the nullness checker,
          * which requires separation of the constructor and setting/manipulating its
          * fields (of course, warnings could be suppressed, but programming around it
          * seemed more elegant).
          */
-        internal fun display(frontText: String, backText: String,
-                             manager: CardEditingManager): CardEditingWindow {
-            val newCardWindow = CardEditingWindow(frontText,
-                    backText, manager)
+        internal fun display(frontText: String, backText: String, manager: CardEditingManager): CardEditingWindow {
+            val newCardWindow = CardEditingWindow(frontText, backText, manager)
             newCardWindow.init()
             return newCardWindow
         }

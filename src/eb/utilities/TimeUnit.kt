@@ -34,11 +34,10 @@ enum class TimeUnit ( val userInterfaceName: String, val duration: Duration)
             return unitNames
         }
 
-        // Converts the given string into the appropriate TimeUnit.
+        // Converts the given string into the appropriate TimeUnit?.
         //
-        //@param unitAsString : the unit as a string (like "second(s)") that needs to be converted
-        //to the proper unit, SECOND
-        fun parseUnit(unitAsString: String): TimeUnit? =
-                TimeUnit.values().find{ it.userInterfaceName == unitAsString }
+        // @param unitAsString : the unit as a string (like "second(s)") that needs to be converted
+        // to the proper unit, SECOND
+        fun parseUnit(unitAsString: String) = TimeUnit.values().find{ it.userInterfaceName == unitAsString }
     }
 }

@@ -34,23 +34,25 @@ Next: finish own fast review, then print, re-review and book-comment
 ? TimeInputElememt : remove companion object
 ? retest everything?
 ? invest time in automatic testing?
+? You can have multiple study-options windows open?
 
 After: self-check (redundancies, comments)
 
 Kotlin-check
 
-    Utilities => OK
-    TimeUnit => OK
-    TimeInterval => OK
-    ProgrammableAction => OK
-    FixedSizeNumberDocument => OK
-        TimeInputField => OK
-        LabelledTextField => OK
+Eb => OK / EWTEKST OK
+    Utilities => OK"/ EWTEKST OK
+    TimeUnit => OK / EWTEKST OK
+    TimeInterval => OK / EWTEKST OK
+    ProgrammableAction => OK / EWTEKST OK
+    FixedSizeNumberDocument => OK / EWTEKST OK
+        TimeInputField => OK / EWTEKST OK
+        LabelledTextField => OK / EWTEKST OK
     ui-elements
 utilities
-    StudyOptionsWindow => OK
-    StudyOptions => OK
-    CardEditingWindow => OK
+    StudyOptionsWindow => OK / EWTEKST OK
+    StudyOptions => OK / EWTEKST OK
+    CardEditingWindow => OK / EWTEKST OK
     CardEditingManager => OK / EWTEKST OK
     ArchivingSettingsWindow => OK / EWTEKST OK
     ArchivingSettings => OK / EWTEKST OK

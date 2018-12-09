@@ -18,7 +18,7 @@ class TimeInterval(var scalar: Double = 0.0, var unit: TimeUnit) : Serializable 
     }
 
     override fun equals(other: Any?) = when {
-        this === other ->true
+        this === other -> true
         other == null -> false
         javaClass != other.javaClass ->false
         else -> {

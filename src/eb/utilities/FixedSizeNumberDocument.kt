@@ -8,26 +8,17 @@ import javax.swing.text.JTextComponent
 import javax.swing.text.PlainDocument
 
 /**
- * Helps create text fields that only accept numbers and have a certain maximum
- * size.
+ * Helps create text fields that only accept numbers and have a certain maximum size.
  *
- * from:
- * http://stackoverflow.com/questions/1313390/is-there-any-way-to-accept-only-
- * numeric-values-in-a-jtextfield
+ * from: http://stackoverflow.com/questions/1313390/is-there-any-way-to-accept-only-numeric-values-in-a-jtextfield
  *
  * @author Terraego
  * @author Eric-Wubbo Lameijer
- */
-/**
- * Constructor.
  *
- * @param owner
- * the JTextComponent that owns this instance.
- * @param fixedSize
- * the maximum length of the resulting string.
- * @param sizeOfFractionalPart
- * the maximum length of the fractional part (for example, 2.45 has a
- * fractional part of length 2)
+ * @param owner  the JTextComponent that owns this instance.
+ * @param fixedSize   the maximum length of the resulting string.
+ * @param sizeOfFractionalPart the maximum length of the fractional part
+ *                             (for example, 2.45 has a fractional part of length 2)
  */
 class FixedSizeNumberDocument (
         private val owner: JTextComponent,
@@ -39,7 +30,7 @@ class FixedSizeNumberDocument (
         require(fixedSize > 0) {
             "FixedSizeNumberDocument constructor error: the number of characters allowed must be greater than zero."}
         require(sizeOfFractionalPart >= 0) {
-                "FixedSizeNumberDocument constructor error: the number of digits in the fractional part cannot be negative."}
+            "FixedSizeNumberDocument constructor error: the number of digits in the fractional part cannot be negative."}
         if (sizeOfFractionalPart > 0) {
             require(fixedSize >= sizeOfFractionalPart + 2) {
                     """FixedSizeNumberDocument constructor error: the size allotted to a real
@@ -47,13 +38,10 @@ class FixedSizeNumberDocument (
         }
     }
 
+
+    //Inserts a new string into this document, unless the string is invalid or would give other problems.
     @Throws(BadLocationException::class)
-    override
-            /**
-             * Inserts a new string into this document -unless the string is, for some
-             * reason, invalid or would give other problems.
-             */
-    fun insertString(offs: Int, str: String?, a: AttributeSet?) {
+    override fun insertString(offs: Int, str: String?, a: AttributeSet?) {
 
         val originalText = owner.text
 
@@ -64,10 +52,8 @@ class FixedSizeNumberDocument (
         }
 
         // what would the new text look like?
-        // Note that (to my knowledge) we need to work with the
-        // PlainDocument.insertString() function. This means that extra characters
-        // must be removed from the inserted string itself, not from the end of the
-        // original.
+        // Note that (to my knowledge) we need to work with the PlainDocument.insertString() function. This means that
+        // extra characters must be removed from the inserted string itself, not from the end of the original.
         val textToBeInserted = StringBuilder(str!!)
         val candidateLength = originalText.length + textToBeInserted.length
         if (candidateLength > fixedSize) {
@@ -87,38 +73,15 @@ class FixedSizeNumberDocument (
         }
     }
 
-    /**
-     * Returns whether the contents of this FixedSizeNumberDocument should
-     * represent an integer, as opposed to a fractional number.
-     *
-     * @return whether the contents of this FixedSizeNumberDocument should
-     * represent an integer.
-     */
-    private fun contentsShouldRepresentInteger(): Boolean {
-        // preconditions: none. Should work when the object exists.
-        return sizeOfFractionalPart == 0
-        // postconditions: none. Simple return of boolean.
-    }
+    // Returns whether the contents of this FixedSizeNumberDocument should
+    // represent an integer, as opposed to a fractional number.
+    private fun contentsShouldRepresentInteger() =  sizeOfFractionalPart == 0
 
-    /**
-     * Returns whether this string would return valid text box contents, so either
-     * the empty string (users must be able to clear the text box), or an integer
-     * or fractional number.
-     *
-     * @param candidateText
-     * the string to be checked for being a valid state of the text box.
-     *
-     * @return whether the candidate text would be valid contents for this text
-     * box
-     */
+    // Returns whether this string would return valid text box contents, so either the empty string
+    // (users must be able to clear the text box), or an integer or fractional number.
     private fun representsValidContents(candidateText: String) =  when {
-        // preconditions: candidateText should not be null
         candidateText === EMPTY_STRING ->  true // after all, "" is a valid state for a text box.
         contentsShouldRepresentInteger() -> Utilities.representsInteger(candidateText, fixedSize)
         else -> Utilities.representsPositiveFractionalNumber(candidateText, sizeOfFractionalPart)
-    }
-
-    companion object {
-        private const val serialVersionUID = 7355097701705745079L
     }
 }

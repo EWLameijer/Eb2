@@ -30,9 +30,7 @@ class Hint(rawContents: String) : Comparable<Hint>, Serializable {
         throw IllegalArgumentException("A Hint object needs to contain visible data")
         else rawContents.trim()
 
-    override fun compareTo(other: Hint): Int {
-        return contents.compareTo(other.contents)
-    }
+    override fun compareTo(other: Hint) = contents.compareTo(other.contents)
 
     override fun toString() = contents
 
@@ -50,23 +48,11 @@ val String.isValidIdentifier
 
 fun log(text: String) = Logger.getGlobal().info(text)
 
-
 object Utilities {
-    // Line separator that, unlike \n, consistently works when displaying
-    // output
+    // Line separator that, unlike '\n', consistently works when producing output
     val EOL : String = System.getProperty("line.separator")
 
 
-    /**
-     * Parses a string to a double. Returns Optional.empty() if the number cannot
-     * be parsed.
-     *
-     * @param string
-     * the string to be parsed to a double.
-     *
-     * @return an Optional<Double> that contains a double value, if the string
-     * could be parsed to one.
-    </Double> */
     fun stringToDouble(string: String): Double? {
         // Get a numberFormat object. Note that the number it returns will be Long
         // if possible, otherwise a Double.
@@ -75,6 +61,7 @@ object Utilities {
         val number = numberFormat.parse(string, parsePosition)
         return if (parsePosition.index == 0) null else number.toDouble()
     }
+
     /**
      * Transfer focus when the user presses the tab key, overriding default
      * behavior in components where tab adds a tab to the contents. After applying
@@ -85,16 +72,10 @@ object Utilities {
      * the component to be patched
      */
     fun makeTabTransferFocus(component: Component) {
-        // preconditions: none
-        var strokes: Set<KeyStroke> = HashSet(
-                Arrays.asList(KeyStroke.getKeyStroke("pressed TAB")))
-        component.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS,
-                strokes)
-        strokes = HashSet(
-                Arrays.asList(KeyStroke.getKeyStroke("shift pressed TAB")))
-        component.setFocusTraversalKeys(
-                KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, strokes)
-        // postconditions: none
+        var strokes: Set<KeyStroke> = HashSet(Arrays.asList(KeyStroke.getKeyStroke("pressed TAB")))
+        component.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, strokes)
+        strokes = HashSet( Arrays.asList(KeyStroke.getKeyStroke("shift pressed TAB")))
+        component.setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, strokes)
     }
 
     /**
@@ -106,17 +87,11 @@ object Utilities {
      * the component to be patched.
      */
     fun makeTabAndEnterTransferFocus(component: Component) {
-        // preconditions: none
-        var strokes: MutableSet<KeyStroke> = HashSet(
-                Arrays.asList(KeyStroke.getKeyStroke("pressed TAB")))
+        var strokes: MutableSet<KeyStroke> = HashSet(Arrays.asList(KeyStroke.getKeyStroke("pressed TAB")))
         strokes.addAll(Arrays.asList(KeyStroke.getKeyStroke("pressed ENTER")))
-        component.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS,
-                strokes)
-        strokes = HashSet(
-                Arrays.asList(KeyStroke.getKeyStroke("shift pressed TAB")))
-        component.setFocusTraversalKeys(
-                KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, strokes)
-        // postconditions: none
+        component.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, strokes)
+        strokes = HashSet(Arrays.asList(KeyStroke.getKeyStroke("shift pressed TAB")))
+        component.setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, strokes)
     }
 
     /**
@@ -129,64 +104,30 @@ object Utilities {
      * @param maxPrecision
      * the maximum number of digits after the period, fewer may be
      * displayed if the last digits would be 0.
-     *
-     * @return the number, with given maximum precision, in String format.
      */
-    fun doubleToMaxPrecisionString(number: Double,
-                                   maxPrecision: Int): String {
+    fun doubleToMaxPrecisionString(number: Double, maxPrecision: Int): String {
         // preconditions: maxPrecision should be 0 or greater
         require(maxPrecision >= 0) {
                 "Utilities.doubleToMaxPrecisionString error: the given precision should be 0 or positive."}
 
-        // 1. Build the format String
         val numberFormatter = DecimalFormat()
         numberFormatter.isGroupingUsed = false
         numberFormatter.maximumFractionDigits = maxPrecision
         numberFormatter.roundingMode = RoundingMode.HALF_UP
         return numberFormatter.format(number)
-        // postconditions: none. Should simply return the String, and I trust that
-        // that works.
     }
 
-    /**
-     * Returns the decimal separator of this locale.
-     *
-     * @return this locale's decimal separator.
-     */
+    // returns this locale's decimal separator.
     private val decimalSeparator = DecimalFormat().decimalFormatSymbols.decimalSeparator
 
-    /**
-     * Whether the given string is fully filled with a valid integer
-     * (...-2,-1,0,1,2,...). Note that this method does not accept leading or
-     * trailing whitespace, nor a '+' sign.
-     *
-     * @param string
-     * the string to be tested
-     * @return whether the string is a string representation of an integer.
-     */
-    private fun representsInteger(string: String) =  Pattern.matches("-?\\d+", string)
+    // returns whether the given string is fully filled with a valid integer (...-2,-1,0,1,2,...).
+    // Note that this method does not accept leading or trailing whitespace, nor a '+' sign.
+    fun representsInteger(string: String, maxSize: Int? = null) =
+            if (maxSize != null && string.length > maxSize ) false
+            else Pattern.matches("-?\\d+", string)
 
     /**
-     * Whether the given string is fully filled with a valid integer
-     * (...-2,-1,0,1,2,...). Note that this method does not accept leading or
-     * trailing whitespace, nor a '+' sign.
-     *
-     * @param string
-     * the string to be tested
-     * @return whether the string is a string representation of an integer.
-     */
-    fun representsInteger(string: String, maxSize: Int): Boolean {
-        // preconditions: string should not be null or empty.
-        return if (string.length > maxSize) {
-            false
-        } else {
-            representsInteger(string)
-        }
-        // postconditions: none: simple return of boolean.
-    }
-
-    /**
-     * @@@CPPRC Whether the given string is fully filled with a valid fractional
+     * Whether the given string is fully filled with a valid fractional
      * number of a given maximum precision (like -2.1, or 5.17 or 10, or
      * .12). Note that this method does not accept leading or trailing
      * whitespace, nor a '+' sign.
@@ -194,23 +135,15 @@ object Utilities {
      * @param string
      * the string to be tested
      * @param maxPrecision
-     * the maximum precision (maximum number of digits) in the fractional
-     * part.
-     *
-     * @return whether the string is a string representation of a fractional
-     * number.
+     * the maximum precision (maximum number of digits) in the fractional part.
      */
-    private fun representsFractionalNumber(string: String,
-                                   maxPrecision: Int): Boolean {
-        // preconditions: string should not be null or empty, and maxPrecision
-        // should be positive
+    private fun representsFractionalNumber(string: String, maxPrecision: Int): Boolean {
         require(maxPrecision >= 0) {
             "Utilities.representsFractionalNumber() error: the maximum precision should be a positive number."}
         if (!string.isValidIdentifier) {
             return false
         }
         val decimalSeparatorAsRegex = if (decimalSeparator == '.') "\\." else decimalSeparator.toString()
-
         val fractionalNumberRegex = ("-?\\d*$decimalSeparatorAsRegex?\\d{0,$maxPrecision}")
         return Pattern.matches(fractionalNumberRegex, string)
     }
@@ -225,26 +158,11 @@ object Utilities {
      * @return whether this is a positive fractional/rational number (or a
      * positive integer, that is also formally a rational number)
      */
-    fun representsPositiveFractionalNumber(string: String,
-                                           maxPrecision: Int): Boolean {
-        // preconditions handled by wrapped representsFractionalNumber
-        return if (string.startsWith("-")) {
-            false
-        } else representsFractionalNumber(string, maxPrecision)
-// postconditions: none; simple return of boolean
-    }
+    fun representsPositiveFractionalNumber(string: String, maxPrecision: Int) =
+        if (string.startsWith("-")) false
+        else representsFractionalNumber(string, maxPrecision)
 
 
-    /**
-     * Parses a string to a double. Returns Optional.empty() if the number cannot
-     * be parsed.
-     *
-     * @param string
-     * the string to be parsed to a double.
-     *
-     * @return an Optional<Double> that contains a double value, if the string
-     * could be parsed to one.
-    </Double> */
     fun stringToInt(string: String): Int? {
         // Get a numberFormat object. Note that the number it returns will be Long
         // if possible, otherwise a Double.
@@ -252,9 +170,6 @@ object Utilities {
         val parsePosition = ParsePosition(0)
         val number = numberFormat.parse(string, parsePosition)
         return if (parsePosition.index == 0) null else  number.toInt()
-
-        // postconditions: none. All possible cases should have been handled by the
-        // Optional.
     }
 
     fun durationToString(duration: Duration): String {
@@ -291,8 +206,7 @@ object Utilities {
         return secondsPart + nanoPart
     }
 
-    fun multiplyDurationBy(baseDuration: Duration,
-                           multiplicationFactor: Double): Duration {
+    fun multiplyDurationBy(baseDuration: Duration, multiplicationFactor: Double): Duration {
         // we work with things like 0.01 s. So two decimal places. Unfortunately,
         // we can only multiply by longs, not doubles.
         val hundredthBaseDuration = baseDuration.dividedBy(100)
@@ -339,23 +253,9 @@ object Utilities {
         }
     }
 
-    /**
-     * Utility function: gives the right version (singular or plural) for a noun
-     * given the number, so 0 cards, 1 card, 2 cards etc.
-     *
-     * @param word
-     * the word that may need to be pluralized.
-     * @param number
-     * the number of items.
-     * @return the word in singular or plural form, whatever is appropriate.
-     */
-    fun pluralize(word: String, number: Int): String {
-        return if (number == 1) {
-            word
-        } else {
-            word + "s"
-        }
-    }
+    // Utility function: gives the right version (singular or plural) for a noun given the number,
+    // so 0 cards, 1 card, 2 cards etc.
+    fun pluralize(word: String, number: Int) = word + if (number == 1) EMPTY_STRING else "s"
 }
 
 fun String.pluralize(number: Int) = number.toString() + " " + Utilities.pluralize(this, number)

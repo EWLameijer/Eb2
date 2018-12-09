@@ -12,6 +12,7 @@ import eb.eventhandling.UpdateType
 import eb.mainwindow.MainWindowState
 import eb.utilities.ProgrammableAction
 import eb.utilities.Utilities
+import eb.utilities.doNothing
 import eb.utilities.uiElements.LabelledTextField
 import eb.utilities.uiElements.TimeInputElement
 import javax.swing.*
@@ -23,28 +24,21 @@ import javax.swing.*
  *
  * @author Eric-Wubbo Lameijer
  */
-/**
- * @author Eric-Wubbo Lameijer
- */
-class StudyOptionsWindow
-/**
- * Creates a new Study Options window.
- */
-private constructor() : JFrame(), Listener {
+class StudyOptionsWindow : JFrame(), Listener {
 
     // Button that closes this window, not saving any changes made.
-    private val cancelButton: JButton
+    private val cancelButton = JButton("Discard unsaved changes and close")
 
     // Button that restores the defaults to those of Eb.
-    private val loadEbDefaultsButton: JButton
+    private val loadEbDefaultsButton = JButton("Load Eb's default values")
 
     // Button that reloads the current settings of the deck (undoing non-saved
     // changes).
-    private val loadCurrentDeckSettingsButton: JButton
+    private val loadCurrentDeckSettingsButton = JButton("Load settings of current deck")
 
     // Button that sets the study settings of the deck to the values currently
     // displayed in this window.
-    private val setToTheseValuesButton: JButton
+    private val setToTheseValuesButton = JButton("Set study parameters of this deck to these values")
 
     // Input element that allows users to view and set the interval between the
     // creation of the card and the first time it is put up for review.
@@ -58,7 +52,6 @@ private constructor() : JFrame(), Listener {
 
     private val timeToWaitAfterIncorrectReview: TimeInputElement
 
-
     init {
         val studyOptions = DeckManager.currentDeck().studyOptions
         initialIntervalBox = TimeInputElement("Initial review after", studyOptions.initialInterval)
@@ -71,21 +64,10 @@ private constructor() : JFrame(), Listener {
                 studyOptions.lengtheningFactor.toString(), 5, 2)
         timeToWaitAfterIncorrectReview = TimeInputElement(
                 "Time to wait for re-reviewing forgotten card:", studyOptions.forgottenInterval)
+    }
 
-        cancelButton = JButton("Discard unsaved changes and close")
-        loadEbDefaultsButton = JButton("Load Eb's default values")
-        loadCurrentDeckSettingsButton = JButton("Load settings of current deck")
-        setToTheseValuesButton = JButton("Set study parameters of this deck to these values")
-
-    }// preconditions: none (default constructor...)
-
-    /**
-     * Updates the title of the frame in response to changes to indicate to the
-     * user whether there are unsaved changes.
-     */
+    // Updates the title of the frame in response to changes to indicate to the user whether there are unsaved changes.
     private fun updateFrame() {
-        // preconditions: none. Is by definition only called when the object
-        // has been constructed already.
         val guiStudyOptions = gatherUIDataIntoStudyOptionsObject()
         var title = "Study Options"
         val deckStudyOptions = DeckManager.currentDeck().studyOptions
@@ -94,14 +76,7 @@ private constructor() : JFrame(), Listener {
                 else " - UNSAVED CHANGES"
 
         setTitle(title)
-        // postconditions: none. Simply changes the frame's title.
     }
-
-    /**
-     * Closes the frame, removing all its contents. NOTE: EVIL DUPLICATION. CAN I
-     * AVOID THAT?
-     */
-    private fun close() = this.dispose()
 
     private fun loadSettings(settings: StudyOptions) {
         initialIntervalBox.interval = settings.initialInterval
@@ -115,49 +90,32 @@ private constructor() : JFrame(), Listener {
 
     private fun loadCurrentDeckSettings() = loadSettings(DeckManager.currentDeck().studyOptions)
 
-
-    /**
-     * Collects the data from the GUI, and packages it nicely into a StudyOptions
-     * object.
-     *
-     * @return a StudyOptions object reflecting the settings created in this
-     * window's GUI.
-     */
+    //  Collects the data from the GUI, and packages it nicely into a StudyOptions object.
     private fun gatherUIDataIntoStudyOptionsObject(): StudyOptions {
-        return StudyOptions(initialIntervalBox.interval!!,
-                Utilities.stringToInt(sizeOfReview.contents),
-                timeToWaitAfterCorrectReview.interval!!,
-                timeToWaitAfterIncorrectReview.interval!!,
-                Utilities.stringToDouble(lengtheningFactor.contents)!!)
+        return StudyOptions(initialIntervalBox.interval,
+                Utilities.stringToInt(sizeOfReview.contents()),
+                timeToWaitAfterCorrectReview.interval,
+                timeToWaitAfterIncorrectReview.interval,
+                Utilities.stringToDouble(lengtheningFactor.contents())!!)
     }
 
-    /**
-     * Saves the settings to the deck.
-     */
     private fun saveSettingsToDeck() {
-        val guiStudyOptions = gatherUIDataIntoStudyOptionsObject()
-        DeckManager.setStudyOptions(guiStudyOptions)
-        BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED,
-                MainWindowState.REACTIVE.name))
+        DeckManager.setStudyOptions(gatherUIDataIntoStudyOptionsObject())
+        BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, MainWindowState.REACTIVE.name))
         updateFrame() // Should be set to 'no unsaved changes' again.
     }
 
-    /**
-     * Initializes the study options window, performing those actions which are
-     * only permissible (for a nullness checker) after the window has been
-     * created.
-     */
+    // Initializes the study options window, performing those actions which are only permissible (for a
+    // nullness checker) after the window has been created.
     internal fun init() {
-
         layout = BorderLayout()
 
         // first: make the buttons do something
-        cancelButton.addActionListener { close() }
+        cancelButton.addActionListener { dispose() }
         getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
                 .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "Cancel") //$NON-NLS-1$
-        getRootPane().actionMap.put("Cancel", ProgrammableAction { close() })
-        loadCurrentDeckSettingsButton
-                .addActionListener { loadCurrentDeckSettings() }
+        getRootPane().actionMap.put("Cancel", ProgrammableAction { dispose() })
+        loadCurrentDeckSettingsButton.addActionListener { loadCurrentDeckSettings() }
         loadEbDefaultsButton.addActionListener { loadEbDefaults() }
         setToTheseValuesButton.addActionListener { saveSettingsToDeck() }
         BlackBoard.register(this, UpdateType.INPUTFIELD_CHANGED)
@@ -195,25 +153,13 @@ private constructor() : JFrame(), Listener {
         isVisible = true
     }
 
-    override fun respondToUpdate(update: Update) {
-        if (update.type == UpdateType.INPUTFIELD_CHANGED) {
-            updateFrame()
-        }
-    }
+    override fun respondToUpdate(update: Update) =
+        if (update.type == UpdateType.INPUTFIELD_CHANGED) updateFrame()
+        else doNothing
 
     companion object {
-
-        // Automatically generated serialVersionUID.
-        private const val serialVersionUID = -907266672997684012L
-
-        /**
-         * Displays the study options window. In order to pacify the nullness checker,
-         * separates creation and display of the window.
-         */
-        fun display() {
-            val studyOptionsWindow = StudyOptionsWindow()
-            studyOptionsWindow.init()
-            // postconditions: none
-        }
+        // Displays the study options window. In order to pacify the nullness checker,
+        // separates creation and display of the window.
+        fun display() = StudyOptionsWindow().init()
     }
 }
