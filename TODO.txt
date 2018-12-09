@@ -28,6 +28,7 @@ What works:
     Go to next round
 
 TODO
+Next: finish own fast review, then print, re-review and book-comment
 ? In summary screen: Review now add R mnemonic?
 ?         for (i in spans.indices)  textBlockHeight = spans[i] can be simpler?
 ? TimeInputElememt : remove companion object
@@ -50,7 +51,7 @@ utilities
     StudyOptionsWindow => OK
     StudyOptions => OK
     CardEditingWindow => OK
-    CardEditingManager => OK
+    CardEditingManager => OK / EWTEKST OK
     ArchivingSettingsWindow => OK / EWTEKST OK
     ArchivingSettings => OK / EWTEKST OK
 subwindow

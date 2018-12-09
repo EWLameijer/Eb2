@@ -19,39 +19,21 @@ import eb.utilities.Hint
  *
  * @author Eric-Wubbo Lameijer
  */
-class CardEditingManager (private var cardToBeModified : Card? = null) {
-    init {
-        if (cardToBeModified == null) activateCardCreationWindow()
-        else activateCardEditingWindow(cardToBeModified!!)
+class CardEditingManager (private var card: Card? = null) {
+
+    private val cardEditingWindow: CardEditingWindow? = when (card) {
+        null -> CardEditingWindow.display("", "", this)
+        !in c_cardsBeingEdited -> CardEditingWindow.display(card!!.front.contents, card!!.back, this)
+        else -> null
     }
 
-    private var cardEditingWindow: CardEditingWindow? = null
-
     private fun currentFront() =
-            if (cardToBeModified == null) EMPTY_STRING
-            else cardToBeModified!!.front.contents
+            if (card == null) EMPTY_STRING
+            else card!!.front.contents
 
     private fun closeOptionPane() = JOptionPane.getRootFrame().dispose()
 
-    fun inCardCreatingMode() = cardToBeModified == null
-
-    /**
-     * Shows the card editing window; however, has a guard that prevents the same
-     * card from being edited in two different windows.
-     *
-     * @param card
-     * the card to be edited.
-     */
-    private fun activateCardEditingWindow(card: Card) {
-        if (card !in c_cardsBeingEdited) {
-            cardEditingWindow = CardEditingWindow.display(card.front.contents, card.back, this)
-            c_cardsBeingEdited.add(card)
-        }
-    }
-
-    private fun activateCardCreationWindow() {
-        cardEditingWindow = CardEditingWindow.display("", "", this)
-    }
+    fun inCardCreatingMode() = card == null
 
     fun processProposedContents(frontText: String, backText: String) {
         // Case 1 of 3: there are empty fields. Or at least: the front is empty.
@@ -70,24 +52,20 @@ class CardEditingManager (private var cardToBeModified : Card? = null) {
         } else {
             // front text is not empty. Now, this can either be problematic or not.
 
-            // Case 2 of 3: the front of the card is new or the front is the same
-            // as the old front (when editing). Add the card and be done with it.
-            // (well, when adding cards one should not close the new card window)
+            // Case 2 of 3: the front of the card is new or the front is the same as the old front (when editing).
+            //  Add the card and be done with it (well, when adding cards one should not close the new card window).
             val frontHint = Hint(frontText)
             val currentCardWithThisFront = DeckManager.currentDeck().cardCollection.getCardWithFront(frontHint)
             if (frontText == currentFront() || currentCardWithThisFront == null) {
                 submitCardContents(frontHint, backText)
             } else {
-
-                // Case 3 of 3: there is a current (but different) card with this exact
-                // same front. Resolve this conflict.
+                // Case 3 of 3: there is a current (but different) card with the same front. Resolve this conflict.
                 handleCardBeingDuplicate(frontHint, backText, currentCardWithThisFront)
             }
         }
     }
 
     private fun handleCardBeingDuplicate(frontText: Hint, backText: String, duplicate: Card) {
-
         val reeditButton = JButton("Re-edit card")
         reeditButton.addActionListener { closeOptionPane() }
 
@@ -105,7 +83,7 @@ class CardEditingManager (private var cardToBeModified : Card? = null) {
             if (inCardCreatingMode()) {
                 cardEditingWindow!!.updateContents("", "")
             } else {
-                DeckManager.currentDeck().cardCollection.removeCard(cardToBeModified!!)
+                DeckManager.currentDeck().cardCollection.removeCard(card!!)
                 endEditing()
             }
         }
@@ -115,31 +93,24 @@ class CardEditingManager (private var cardToBeModified : Card? = null) {
             closeOptionPane()
             submitCardContents(frontText, backText)
         }
-        val buttons = arrayOf<Any>(reeditButton, mergeButton, deleteThisButton, deleteOtherButton)
+        val buttons = arrayOf(reeditButton, mergeButton, deleteThisButton, deleteOtherButton)
         JOptionPane.showOptionDialog(null,
-                "A card with this front already exists; on the back is the text '"
-                        + duplicate.back + "'",
+                "A card with this front already exists; on the back is the text '${duplicate.back}'",
                 "A card with this front already exists. What do you want to do?", 0,
                 JOptionPane.QUESTION_MESSAGE, null, buttons, null)
     }
 
-    /**
-     * Submits these contents to the deck, and closes the editing window if
-     * appropriate.
-     *
-     * @param frontText
-     * @param backText
-     */
+    // Submits these contents to the deck, and closes the editing window if appropriate.
     private fun submitCardContents(frontText: Hint, backText: String) {
         if (inCardCreatingMode()) {
             val candidateCard = Card(frontText, backText)
             DeckManager.currentDeck().cardCollection.addCard(candidateCard)
             cardEditingWindow!!.updateContents("", "")
-            cardEditingWindow!!.focusFront()
+            cardEditingWindow.focusFront()
         } else {
             // in editing mode
-            cardToBeModified!!.front = frontText
-            cardToBeModified!!.back = backText
+            card!!.front = frontText
+            card!!.back = backText
             endEditing()
         }
         BlackBoard.post(Update(UpdateType.CARD_CHANGED))
@@ -147,13 +118,12 @@ class CardEditingManager (private var cardToBeModified : Card? = null) {
 
     fun endEditing() {
         if (!inCardCreatingMode()) {
-            c_cardsBeingEdited.remove(cardToBeModified)
+            c_cardsBeingEdited.remove(card)
         }
         cardEditingWindow!!.dispose()
     }
 
     companion object {
-
         // prevent a card from being edited in two windows at the same time.
         private val c_cardsBeingEdited = HashSet<Card>()
     }

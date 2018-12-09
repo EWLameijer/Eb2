@@ -23,7 +23,6 @@ class Card(var front: Hint, var back: String) : Serializable {
 
     fun hasBeenReviewed() = reviews.size > 0
 
-
     // Debugging function, helps check that the reviews have proceeded correctly.
     // Reports all reviews of this card performed so far.
     private fun reportReviews() = reviews.forEach { log("${it.thinkingTime} ${it.wasSuccess}") }
