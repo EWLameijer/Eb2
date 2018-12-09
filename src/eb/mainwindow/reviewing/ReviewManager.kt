@@ -2,8 +2,6 @@ package eb.mainwindow.reviewing
 
 import java.time.Duration
 import java.util.ArrayList
-import java.util.Collections
-import java.util.logging.Logger
 
 import eb.data.Card
 import eb.data.Deck
@@ -16,41 +14,41 @@ import eb.eventhandling.UpdateType
 import eb.mainwindow.MainWindowState
 import eb.utilities.Hint
 import eb.utilities.EMPTY_STRING
-
+import eb.utilities.doNothing
+import eb.utilities.log
 
 /**
- * Manages the review session much like Deck manages the LogicalDeck: there can
- * only be one review at a time
+ * Manages the review session much like Deck manages the LogicalDeck: there can only be one review at a time
  *
  * @author Eric-Wubbo Lameijer
  */
 object ReviewManager : Listener {
 
-    private var m_reviewPanel: ReviewPanel? = null
-    private var m_currentDeck: Deck? = null
-    private var m_cardsToBeReviewed = mutableListOf<Card>()
+    private var reviewPanel: ReviewPanel? = null
+    private var currentDeck: Deck? = null
+    private var cardsToBeReviewed = mutableListOf<Card>()
 
-    // m_counter stores the index of the card in the m_cardsToBeReviewed list that should be reviewed next.
-    private var m_counter: Int = 0
+    // counter stores the index of the card in the cardsToBeReviewed list that should be reviewed next.
+    private var counter: Int = 0
 
-    // m_startTimer is activated when the card is shown
-    private val m_startTimer = FirstTimer()
+    // startTimer is activated when the card is shown
+    private val startTimer = FirstTimer()
 
-    // m_stopTimer is activated when the user presses the button to show the answer.
-    private val m_stopTimer = FirstTimer()
+    // stopTimer is activated when the user presses the button to show the answer.
+    private val stopTimer = FirstTimer()
 
     // Should the answer (back of the card) be shown to the user? 'No'/false when the user is trying to recall the answer,
     // 'Yes'/true when the user needs to check the answer.
-    private var m_showAnswer: Boolean = false
+    private var showAnswer: Boolean = false
 
     fun reviewResults(): List<Review?> {
         ensureReviewSessionIsValid()
-        return m_cardsToBeReviewed.map{ it.lastReview()}
+        return cardsToBeReviewed.map{ it.lastReview()}
     }
 
     fun currentCard(): Card? =
-            if (m_cardsToBeReviewed.isEmpty() || m_counter >= m_cardsToBeReviewed.size) null
-            else m_cardsToBeReviewed[m_counter]
+            if (cardsToBeReviewed.isEmpty() || counter >= cardsToBeReviewed.size) null
+            else cardsToBeReviewed[counter]
 
     fun currentFront(): String {
         ensureReviewSessionIsValid()
@@ -59,75 +57,58 @@ object ReviewManager : Listener {
 
     private fun currentBack() = currentCard()?.back ?: EMPTY_STRING
 
-    /**
-     * start starts the reviewing process,
-     *
-     * @param reviewPanel
-     */
-    // TODO:
-    fun start(reviewPanel: ReviewPanel?) {
-        if (reviewPanel != null) {
-            m_reviewPanel = reviewPanel
-            m_currentDeck = DeckManager.contents
+    // start the reviewing process,
+    fun start(inputReviewPanel: ReviewPanel?) {
+        if (inputReviewPanel != null) {
+            reviewPanel = inputReviewPanel
+            currentDeck = DeckManager.currentDeck()
         }
         initializeReviewSession()
     }
 
     private fun ensureReviewSessionIsValid() {
-        if (m_currentDeck !== DeckManager.contents) {
-            m_currentDeck = DeckManager.contents
+        if (currentDeck !== DeckManager.currentDeck()) {
+            currentDeck = DeckManager.currentDeck()
             initializeReviewSession()
         }
     }
 
     fun wasRemembered(wasRemembered: Boolean) {
         ensureReviewSessionIsValid()
-        val duration = Duration.between(m_startTimer.instant!!,
-                m_stopTimer.instant)
-        val duration_in_s = duration.nano / 1000_000_000.0 + duration.seconds
-        Logger.getGlobal().info(m_counter.toString() + " " + duration_in_s)
-        val review = Review(duration, wasRemembered)
-        currentCard()!!.addReview(review)
+        val duration = Duration.between(startTimer.instant(), stopTimer.instant())
+        val durationInSeconds = duration.nano / 1000_000_000.0 + duration.seconds
+        log("$counter $durationInSeconds")
+        currentCard()!!.addReview(Review(duration, wasRemembered))
         moveToNextReviewOrEnd()
     }
 
-    override fun respondToUpdate(update: Update) {
-        if (update.type == UpdateType.CARD_CHANGED) {
-            updatePanels()
-        } else if (update.type == UpdateType.DECK_CHANGED) {
-            // It can be that the current card has been deleted, OR another card has
-            // been deleted.
-            // initializeReviewSession();
-            updateCollection()
-        } else if (update.type == UpdateType.DECK_SWAPPED) {
-            initializeReviewSession()
-            // cleanUp();
-        }
+    override fun respondToUpdate(update: Update) = when (update.type) {
+        UpdateType.CARD_CHANGED -> updatePanels()
+        UpdateType.DECK_CHANGED -> updateCollection() // It can be that the current card (or another) has been deleted
+        UpdateType.DECK_SWAPPED -> initializeReviewSession()
+        else -> doNothing
     }
 
     fun showAnswer() {
         ensureReviewSessionIsValid()
-        m_stopTimer.press()
-        m_showAnswer = true
+        stopTimer.press()
+        showAnswer = true
         updatePanels()
     }
 
-    /**
-     * Updates the panels
-     */
-    fun updatePanels() {
+    private fun updatePanels() {
         if (activeCardExists()) {
-            val currentBack = if (m_showAnswer) currentBack() else ""
-            m_reviewPanel!!.updatePanels(currentFront(), currentBack, m_showAnswer)
+            val currentBack = if (showAnswer) currentBack() else EMPTY_STRING
+            reviewPanel!!.updatePanels(currentFront(), currentBack, showAnswer)
         }
     }
 
     private fun initializeReviewSession() {
-        val currentDeck = DeckManager.currentDeck!!
+        val currentDeck = DeckManager.currentDeck()
         val maxNumReviews = currentDeck.studyOptions.reviewSessionSize
         val reviewableCards = currentDeck.reviewableCardList().toMutableList()
         val totalNumberOfReviewableCards = reviewableCards.size
-        Logger.getGlobal().info("Number of reviewable cards is $totalNumberOfReviewableCards")
+        log("Number of reviewable cards is $totalNumberOfReviewableCards")
         val numCardsToBeReviewed =
                 if (maxNumReviews == null) totalNumberOfReviewableCards
                 else Math.min(maxNumReviews, totalNumberOfReviewableCards)
@@ -136,72 +117,53 @@ object ReviewManager : Listener {
         // and we should try to contain the damage.
         reviewableCards.sortBy { currentDeck.getTimeUntilNextReview(it) }
         // get the first n for the review
-        m_cardsToBeReviewed = ArrayList( reviewableCards.subList(0, numCardsToBeReviewed))
-        m_cardsToBeReviewed.shuffle()
+        cardsToBeReviewed = ArrayList( reviewableCards.subList(0, numCardsToBeReviewed))
+        cardsToBeReviewed.shuffle()
 
-        m_counter = 0
+        counter = 0
         startCardReview()
     }
 
     private fun startCardReview() {
-        m_showAnswer = false
-        m_startTimer.reset()
-        m_stopTimer.reset()
-        m_startTimer.press()
+        showAnswer = false
+        startTimer.reset()
+        stopTimer.reset()
+        startTimer.press()
         updatePanels()
     }
 
-    private fun activeCardExists(): Boolean {
-        return m_counter < m_cardsToBeReviewed.size
-    }
+    private fun activeCardExists() = counter < cardsToBeReviewed.size
 
     private fun moveToNextReviewOrEnd() {
         if (hasNextCard()) {
-            m_counter++
+            counter++
             startCardReview()
         } else {
             BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, MainWindowState.SUMMARIZING.name))
         }
     }
 
-    /**
-     * Returns the index of the last card in the session.
-     *
-     * @return the index of the last card in the session.
-     */
-    private fun indexOfLastCard(): Int {
-        return m_cardsToBeReviewed.size - 1
-    }
+    // is there a next card to study?
+    private fun hasNextCard() = counter < cardsToBeReviewed.lastIndex
 
-    /**
-     * Returns whether there is a next card to study
-     *
-     * @return whether there is a next card to study.
-     */
-    private fun hasNextCard(): Boolean {
-        return m_counter + 1 <= indexOfLastCard()
-    }
-
-    /**
-     * Returns the number of cards that still need to be reviewed in this session
-     *
-     * @return the number of cards that still must be reviewed in this session.
-     */
+    // The number of cards that still need to be reviewed in this session
     fun cardsToGoYet(): Int {
         ensureReviewSessionIsValid()
-        return m_cardsToBeReviewed.size - m_counter
+        return cardsToBeReviewed.size - counter
     }
 
-    /**
-     * If cards are added to (or, more importantly, removed from) the deck, ensure
-     * that the card also disappears from the list of cards to be reviewed
-     */
+    // If cards are added to (or, more importantly, removed from) the deck, ensure
+    // that the card also disappears from the list of cards to be reviewed
     private fun updateCollection() {
-        var deletingCurrentCard = !deckContainsCardWithThisFront(m_cardsToBeReviewed[m_counter].front)
-        val deletedIndices = m_cardsToBeReviewed.withIndex().
-                filter{ !deckContainsCardWithThisFront(m_cardsToBeReviewed[it.index].front)}.map { it.index }
-        m_cardsToBeReviewed = m_cardsToBeReviewed.filter { deckContainsCardWithThisFront(it.front)}.toMutableList()
-        deletedIndices.forEach{ if (it <= m_counter) m_counter-- }
+        if (cardsToBeReviewed.isEmpty()) {
+            updatePanels()
+            return
+        }
+        val deletingCurrentCard = !deckContainsCardWithThisFront(cardsToBeReviewed[counter].front)
+        val deletedIndices = cardsToBeReviewed.withIndex().
+                filter{ !deckContainsCardWithThisFront(cardsToBeReviewed[it.index].front) }.map { it.index }
+        cardsToBeReviewed = cardsToBeReviewed.filter { deckContainsCardWithThisFront(it.front)}.toMutableList()
+        deletedIndices.forEach{ if (it <= counter) counter-- }
 
         if (deletingCurrentCard) {
             moveToNextReviewOrEnd()
@@ -210,26 +172,14 @@ object ReviewManager : Listener {
         }
     }
 
-    /**
-     * Returns whether this deck contains a card with this front. This sounds a
-     * lot like whether the deck contains a card, but since by definition each
-     * card in a deck has a unique front, just checking fronts simplifies things.
-     *
-     *
-     * @param front
-     * the front which may or may not be present on a card in the deck.
-     * @return whether the deck contains a card with the given front.
-     */
+    // Returns whether this deck contains a card with this front. This sounds a lot like asking whether the deck
+    // contains a card, but since by definition each card in a deck has a unique front,
+    // just checking fronts simplifies things.
     private fun deckContainsCardWithThisFront(front: Hint) =
-            DeckManager.currentDeck!!.cards.getCardWithFront(front) != null
+            DeckManager.currentDeck().cardCollection.getCardWithFront(front) != null
 
-    /**
-     * Allows the GUI to initialize the panel that displays the reviews
-     *
-     * @param reviewPanel
-     * the name of the panel in which the reviews are performed.
-     */
-    fun setPanel(reviewPanel: ReviewPanel) {
-        m_reviewPanel = reviewPanel
+    // Allows the GUI to initialize the panel that displays the reviews
+    fun setPanel(inputReviewPanel: ReviewPanel) {
+        reviewPanel = inputReviewPanel
     }
 }

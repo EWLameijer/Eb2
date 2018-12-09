@@ -20,9 +20,9 @@ class SummarizingPanel internal constructor() : JPanel() {
     private var backToInformationModeButton = JButton("Back to information screen")
     private var backToReactiveModeButton = JButton("Back to information screen")
     private var backToReviewing = JButton("Go to next round of reviews")
-    private var buttonPanel: JPanel
-    private var reviewsCompletedBPanel: JPanel
-    private var stillReviewsToDoBPanel: JPanel
+    private var buttonPanel = JPanel()
+    private var reviewsCompletedPanel = JPanel()
+    private var stillReviewsToDoPanel = JPanel()
 
     private fun makeKeystrokeActivateRunnable(
             button: JButton, keyStroke: KeyStroke, actionName: String, runnable: () -> Unit) {
@@ -44,59 +44,49 @@ class SummarizingPanel internal constructor() : JPanel() {
         // REACTIVE ensures that a new review session is created.
         BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, MainWindowState.REACTIVE.name))
 
-
     init {
         this.addComponentListener(EventHandler.create(ComponentListener::class.java, this,
                 "requestFocusInWindow", null, "componentShown"))
-        reviewsCompletedBPanel = JPanel()
-        reviewsCompletedBPanel.addComponentListener(EventHandler.create(ComponentListener::class.java, this,
+
+        reviewsCompletedPanel.addComponentListener(EventHandler.create(ComponentListener::class.java, this,
                         "requestFocusInWindow", null, "componentShown"))
         makeButtonAndKeystrokeActivateRunnable(backToReactiveModeButton,
                 KeyStroke.getKeyStroke("pressed ENTER"), "back to reactive mode"){ toReactiveMode() }
-        reviewsCompletedBPanel.add(backToReactiveModeButton)
-
-        stillReviewsToDoBPanel = JPanel()
-        stillReviewsToDoBPanel.addComponentListener(EventHandler.create(ComponentListener::class.java, this,
-                        "requestFocusInWindow", null, "componentShown"))
+        reviewsCompletedPanel.add(backToReactiveModeButton)
 
         backToReviewing.mnemonic = KeyEvent.VK_G
         backToReviewing.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
                 .put(KeyStroke.getKeyStroke('g'), "goToNextReview")
         backToReviewing.actionMap.put("goToNextReview", ProgrammableAction { backToReviewingMode() })
         backToReviewing.addActionListener { backToReviewingMode() }
-
+        stillReviewsToDoPanel.addComponentListener(EventHandler.create(ComponentListener::class.java, this,
+                "requestFocusInWindow", null, "componentShown"))
         makeButtonAndKeystrokeActivateRunnable(backToReviewing,
                 KeyStroke.getKeyStroke('G'), "back to reviewing") { backToReviewingMode() }
-        stillReviewsToDoBPanel.add(backToReviewing)
+        stillReviewsToDoPanel.add(backToReviewing)
 
         backToInformationModeButton.mnemonic = KeyEvent.VK_B
         makeButtonAndKeystrokeActivateRunnable(backToInformationModeButton,
-                KeyStroke.getKeyStroke('B'), "back to information mode")
+                KeyStroke.getKeyStroke('b'), "back to information mode")
                 { backToInformationMode() }
-        stillReviewsToDoBPanel.add(backToInformationModeButton)
+        stillReviewsToDoPanel.add(backToInformationModeButton)
 
-        buttonPanel = JPanel()
         buttonPanel.layout = CardLayout()
-        buttonPanel.add(reviewsCompletedBPanel, REVIEWS_COMPLETED_MODE)
-        buttonPanel.add(stillReviewsToDoBPanel, STILL_REVIEWS_TODO_MODE)
+        buttonPanel.add(reviewsCompletedPanel, REVIEWS_COMPLETED_MODE)
+        buttonPanel.add(stillReviewsToDoPanel, STILL_REVIEWS_TODO_MODE)
         add(report)
         add(buttonPanel)
-
     }
 
     private fun toReactiveMode() =
             BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, MainWindowState.REACTIVE.name))
 
-    private fun optionalDoubleToString(d: Double?): String {
-        return if (d is Double) {
-            String.format("%.2f", d)
-        } else {
-            "not applicable"
-        }
-    }
+    private fun optionalDoubleToString(d: Double?) =
+        if (d is Double) String.format("%.2f", d)
+        else "not applicable"
 
     private fun List<Double>.averageOrNull() =
-            if (this.isEmpty())  null
+            if (this.isEmpty()) null
             else this.average()
 
     public override fun paintComponent(g: Graphics) {
@@ -108,7 +98,7 @@ class SummarizingPanel internal constructor() : JPanel() {
         text.append("<b>Summary</b><br><br>")
         text.append("Cards reviewed<br>")
         val totalNumberOfReviews = completedReviews.size.toLong()
-        val (correctReviews, incorrectReviews ) = completedReviews.partition { it.wasSuccess() }
+        val (correctReviews, incorrectReviews ) = completedReviews.partition { it.wasSuccess }
         text.append("total: $totalNumberOfReviews <br>")
         text.append("correctly answered: ${correctReviews.size}<br>")
         text.append("incorrectly answered: ${incorrectReviews.size}<br>")
@@ -124,7 +114,7 @@ class SummarizingPanel internal constructor() : JPanel() {
         text.append("</html>")
         report.text = text.toString()
         val cardLayout = buttonPanel.layout as CardLayout
-        if (DeckManager.currentDeck!!.reviewableCardList().isEmpty()) {
+        if (DeckManager.currentDeck().reviewableCardList().isEmpty()) {
             cardLayout.show(buttonPanel, REVIEWS_COMPLETED_MODE)
         } else {
             cardLayout.show(buttonPanel, STILL_REVIEWS_TODO_MODE)
@@ -132,7 +122,6 @@ class SummarizingPanel internal constructor() : JPanel() {
     }
 
     companion object {
-
         private const val REVIEWS_COMPLETED_MODE = "reviews completed"
         private const val STILL_REVIEWS_TODO_MODE = "still reviews to do"
     }

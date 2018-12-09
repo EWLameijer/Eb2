@@ -1,7 +1,6 @@
 package eb.subwindow
 
 import java.util.HashSet
-import java.util.Optional
 
 import javax.swing.JButton
 import javax.swing.JOptionPane
@@ -11,47 +10,30 @@ import eb.data.DeckManager
 import eb.eventhandling.BlackBoard
 import eb.eventhandling.Update
 import eb.eventhandling.UpdateType
+import eb.utilities.EMPTY_STRING
 import eb.utilities.Hint
-import eb.utilities.Utilities
 
 /**
- * CardEditingManager coordinates the flow of information from the window that
- * requests a card to be created/edited to the UI-element that actually does the
- * editing.
+ * CardEditingManager coordinates the flow of information from the window that requests a card to be created/edited
+ * to the UI-element that actually does the editing.
  *
  * @author Eric-Wubbo Lameijer
  */
-class CardEditingManager (private var m_cardToBeModified : Card? = null) {
+class CardEditingManager (private var cardToBeModified : Card? = null) {
     init {
-        if (m_cardToBeModified == null) activateCardCreationWindow()
-        else activateCardEditingWindow(m_cardToBeModified)
+        if (cardToBeModified == null) activateCardCreationWindow()
+        else activateCardEditingWindow(cardToBeModified!!)
     }
 
-    private var m_cardEditingWindow: CardEditingWindow? = null
+    private var cardEditingWindow: CardEditingWindow? = null
 
-    private val currentFront: String
-        get() = if (m_cardToBeModified == null) {
-            ""
-        } else {
-            m_cardToBeModified!!.front.contents
-        }
+    private fun currentFront() =
+            if (cardToBeModified == null) EMPTY_STRING
+            else cardToBeModified!!.front.contents
 
-    /**
-     * Stores which card is to me modified.
-     *
-     * @param card
-     * the card to be edited
-     */
+    private fun closeOptionPane() = JOptionPane.getRootFrame().dispose()
 
-
-    private fun closeOptionPane() {
-        JOptionPane.getRootFrame().dispose()
-    }
-
-    fun inCardCreatingMode(): Boolean {
-        return m_cardToBeModified == null
-
-    }
+    fun inCardCreatingMode() = cardToBeModified == null
 
     /**
      * Shows the card editing window; however, has a guard that prevents the same
@@ -60,14 +42,15 @@ class CardEditingManager (private var m_cardToBeModified : Card? = null) {
      * @param card
      * the card to be edited.
      */
-    private fun activateCardEditingWindow(card: Card?) {
-        if (!c_cardsBeingEdited.contains(card)) {
-            m_cardEditingWindow = CardEditingWindow.display(card!!.front.contents, card.back, this)
+    private fun activateCardEditingWindow(card: Card) {
+        if (card !in c_cardsBeingEdited) {
+            cardEditingWindow = CardEditingWindow.display(card.front.contents, card.back, this)
+            c_cardsBeingEdited.add(card)
         }
     }
 
     private fun activateCardCreationWindow() {
-        m_cardEditingWindow = CardEditingWindow.display("", "", this)
+        cardEditingWindow = CardEditingWindow.display("", "", this)
     }
 
     fun processProposedContents(frontText: String, backText: String) {
@@ -91,8 +74,8 @@ class CardEditingManager (private var m_cardToBeModified : Card? = null) {
             // as the old front (when editing). Add the card and be done with it.
             // (well, when adding cards one should not close the new card window)
             val frontHint = Hint(frontText)
-            val currentCardWithThisFront = DeckManager.currentDeck!!.cards.getCardWithFront(frontHint)
-            if (frontText == currentFront || currentCardWithThisFront == null) {
+            val currentCardWithThisFront = DeckManager.currentDeck().cardCollection.getCardWithFront(frontHint)
+            if (frontText == currentFront() || currentCardWithThisFront == null) {
                 submitCardContents(frontHint, backText)
             } else {
 
@@ -103,35 +86,32 @@ class CardEditingManager (private var m_cardToBeModified : Card? = null) {
         }
     }
 
-    private fun handleCardBeingDuplicate(frontText: Hint, backText: String,
-                                         duplicate: Card) {
+    private fun handleCardBeingDuplicate(frontText: Hint, backText: String, duplicate: Card) {
 
         val reeditButton = JButton("Re-edit card")
         reeditButton.addActionListener { closeOptionPane() }
 
         val mergeButton = JButton("Merge backs of cards")
         mergeButton.addActionListener {
-            val currentBack = backText
             val otherBack = duplicate.back
-            val newBack = "$currentBack; $otherBack"
+            val newBack = "$otherBack; $backText"
             closeOptionPane()
-            m_cardEditingWindow!!.updateContents(frontText.contents, newBack)
-            DeckManager.currentDeck!!.cards.removeCard(duplicate)
-
+            cardEditingWindow!!.updateContents(frontText.contents, newBack)
+            DeckManager.currentDeck().cardCollection.removeCard(duplicate)
         }
         val deleteThisButton = JButton("Delete this card")
         deleteThisButton.addActionListener {
             closeOptionPane()
             if (inCardCreatingMode()) {
-                m_cardEditingWindow!!.updateContents("", "")
+                cardEditingWindow!!.updateContents("", "")
             } else {
-                DeckManager.currentDeck!!.cards.removeCard(m_cardToBeModified!!)
+                DeckManager.currentDeck().cardCollection.removeCard(cardToBeModified!!)
                 endEditing()
             }
         }
         val deleteOtherButton = JButton("Delete the other card")
         deleteOtherButton.addActionListener {
-            DeckManager.currentDeck!!.cards.removeCard(duplicate)
+            DeckManager.currentDeck().cardCollection.removeCard(duplicate)
             closeOptionPane()
             submitCardContents(frontText, backText)
         }
@@ -153,24 +133,23 @@ class CardEditingManager (private var m_cardToBeModified : Card? = null) {
     private fun submitCardContents(frontText: Hint, backText: String) {
         if (inCardCreatingMode()) {
             val candidateCard = Card(frontText, backText)
-            DeckManager.currentDeck!!.cards.addCard(candidateCard)
-            m_cardEditingWindow!!.updateContents("", "")
-            m_cardEditingWindow!!.focusFront()
+            DeckManager.currentDeck().cardCollection.addCard(candidateCard)
+            cardEditingWindow!!.updateContents("", "")
+            cardEditingWindow!!.focusFront()
         } else {
             // in editing mode
-            m_cardToBeModified!!.front = frontText
-            m_cardToBeModified!!.back = backText
-            c_cardsBeingEdited.remove(m_cardToBeModified!!)
-            m_cardEditingWindow!!.dispose()
+            cardToBeModified!!.front = frontText
+            cardToBeModified!!.back = backText
+            endEditing()
         }
         BlackBoard.post(Update(UpdateType.CARD_CHANGED))
     }
 
     fun endEditing() {
         if (!inCardCreatingMode()) {
-            c_cardsBeingEdited.remove(m_cardToBeModified)
+            c_cardsBeingEdited.remove(cardToBeModified)
         }
-        m_cardEditingWindow!!.dispose()
+        cardEditingWindow!!.dispose()
     }
 
     companion object {
@@ -178,5 +157,4 @@ class CardEditingManager (private var m_cardToBeModified : Card? = null) {
         // prevent a card from being edited in two windows at the same time.
         private val c_cardsBeingEdited = HashSet<Card>()
     }
-
 }

@@ -3,7 +3,7 @@ package eb.data
 import java.io.Serializable
 import java.io.Writer
 
-import eb.disk_io.CardConverter
+import eb.writer.CardConverter
 import eb.eventhandling.BlackBoard
 import eb.eventhandling.Update
 import eb.eventhandling.UpdateType
@@ -25,7 +25,9 @@ import java.lang.RuntimeException
  */
 class CardCollection : Serializable {
 
-    private val cards = arrayListOf<Card>()
+    private var cards = arrayListOf<Card>()
+
+    fun getCards() = cards.toList()
 
     fun getTotal() = cards.size
 
@@ -39,44 +41,21 @@ class CardCollection : Serializable {
     fun getReviewingPoints() = cards.map { it.streakSize() }.sum()
 
     /**
-     * Returns an iterator to the collection, so for example the Deck can loop
-     * over the individual cards.
-     * NOTE: if this were a val instead of fun, it messes up the serialization of this class and therefore the saving
-     * of the deck!
-     */
-    fun getIterator() = cards.iterator()
-
-    /**
      * Write the cards of this collection, in alphabetical order (well, the order
      * imposed by the default character encoding) to a given writer.
      *
      * @param writer the writer to which the cards have to be written.
      * @param formatting how the card is transformed to text
      */
-    fun writeCards(writer: Writer, formatting: (Card) -> String) {
-        cards.sortedBy { it.front.contents }.forEach { CardConverter.writeLine(writer, formatting(it)) }
-    }
+    fun writeCards(writer: Writer, formatting: (Card) -> String) =
+        cards.sortedBy { it.front }.forEach { CardConverter.writeLine(writer, formatting(it)) }
 
-    /**
-     * Checks if a certain card can be added to the deck. In practice, this means
-     * that the front is a valid identifier that is not already present in the
-     * deck, and the back is not a null pointer.
-     *
-     * @param card
-     * the candidate card to be added.
-     *
-     * @return whether the card can legally be added to the deck.
-     */
+    // Checks whether a certain card can be added to the deck. In practice, this means that the front is not already
+    // present in the deck.
     private fun canAddCard(card: Card) = getCardWithFront(card.front) == null
 
-    /**
-     * Adds a card to the deck. Note that one has to call canAddCard() beforehand.
-     *
-     * @param card
-     * the card to add to the deck.
-     */
     fun addCard(card: Card) {
-        // preconditions: card must be 'addable'
+        // preconditions: card must be 'addable' (cannot be a duplicate of a card already present)
         require(canAddCard(card)){
                 """LogicalDeck.addCard() error: the card that is intended to be added is invalid. The 'canAddCard'
 method has to be invoked first to check the possibility of the current method."""}
@@ -85,31 +64,15 @@ method has to be invoked first to check the possibility of the current method.""
         BlackBoard.post(Update(UpdateType.DECK_CHANGED))
     }
 
-    /**
-     * Returns an optional that contains the card with the given front text - if
-     * such a card exists in the collection, or an empty optional if no card with
-     * such front is present.
-     *
-     * @param frontText
-     * the text on the front of the card that is sought
-     * @return an optional that is empty if there is no card with the given front
-     * in the current collection; and which is 'present' when such a card
-     * actually exists.
-     */
+    // Returns the card with the given front text - if such a card exists in the collection, otherwise returns null.
     fun getCardWithFront(frontText: Hint): Card? = cards.find { it.front == frontText }
 
-    /**
-     * Removes a given card from the collection.
-     *
-     * @param card
-     * the card to be removed from the collection
-     */
     fun removeCard(card: Card) {
         val collectionContainedCard = cards.remove(card)
-        if (collectionContainedCard) {
+        if (collectionContainedCard)
             BlackBoard.post(Update(UpdateType.DECK_CHANGED))
-        } else throw RuntimeException(
-            "CardCollection.removeCard() error: the card cannot be removed, as it is not in the deck!")
+        else
+            throw RuntimeException("CardCollection.removeCard() error: the card cannot be removed, as it is not in the deck!")
     }
 
     companion object {

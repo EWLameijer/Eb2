@@ -35,7 +35,7 @@ object Eb {
 
         try {
             //creating object of server socket and bind to some port number
-            val serverSocket = ServerSocket(14356)
+            ServerSocket(14356)
             ////do not put common port number like 80 etc.
             ////Because they are already used by system
             // If exists another instance, show message and terminates the current
@@ -46,7 +46,7 @@ object Eb {
             BlackBoard.register(ReviewManager, UpdateType.DECK_SWAPPED)
             BlackBoard.register(ReviewManager, UpdateType.CARD_CHANGED)
             BlackBoard.register(ReviewManager, UpdateType.DECK_CHANGED)
-            MainWindow.display()
+            MainWindow
         } catch (exc: IOException) {
             JOptionPane.showMessageDialog(null, error, errortype, JOptionPane.ERROR_MESSAGE)
             System.exit(0)

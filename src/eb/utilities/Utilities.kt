@@ -11,7 +11,6 @@ import java.text.ParsePosition
 import java.time.Duration
 import java.util.Arrays
 import java.util.HashSet
-import java.util.Optional
 import java.util.logging.Logger
 import java.util.regex.Pattern
 
@@ -42,10 +41,12 @@ class Hint(rawContents: String) : Comparable<Hint>, Serializable {
     }
 }
 
+val doNothing = Unit
+
 const val EMPTY_STRING = ""
 
 val String.isValidIdentifier
-    get() = !this.isNullOrBlank()
+    get() = !this.isBlank()
 
 fun log(text: String) = Logger.getGlobal().info(text)
 
@@ -53,7 +54,7 @@ fun log(text: String) = Logger.getGlobal().info(text)
 object Utilities {
     // Line separator that, unlike \n, consistently works when displaying
     // output
-    val EOL = System.getProperty("line.separator")
+    val EOL : String = System.getProperty("line.separator")
 
 
     /**
@@ -74,19 +75,6 @@ object Utilities {
         val number = numberFormat.parse(string, parsePosition)
         return if (parsePosition.index == 0) null else number.toDouble()
     }
-    /**
-     * If condition is false, exit the program while writing the specified error
-     * message to standard error output.
-     *
-     * @param condition
-     * the condition which needs to be true if the program is to be
-     * allowed to continue.
-     * @param errorMessage
-     * the error message being sent to the standard error output if the
-     * condition is false
-     */
-
-
     /**
      * Transfer focus when the user presses the tab key, overriding default
      * behavior in components where tab adds a tab to the contents. After applying
@@ -155,27 +143,9 @@ object Utilities {
         numberFormatter.isGroupingUsed = false
         numberFormatter.maximumFractionDigits = maxPrecision
         numberFormatter.roundingMode = RoundingMode.HALF_UP
-        val result = numberFormatter.format(number)
-
-        return result
-
+        return numberFormatter.format(number)
         // postconditions: none. Should simply return the String, and I trust that
         // that works.
-    }
-
-    /**
-     * CPPRCC Is this character the decimal separator of the current locale?
-     *
-     * @param ch
-     * the character to be tested as being this locale's decimal
-     * separator
-     *
-     * @return whether the character is this locale's decimal separator
-     */
-    fun isDecimalSeparator(ch: Char): Boolean {
-        // preconditions: none. the character cannot be null, for example.
-        return ch == decimalSeparator
-        // postconditions: none. Simple return of boolean.
     }
 
     /**
@@ -183,7 +153,7 @@ object Utilities {
      *
      * @return this locale's decimal separator.
      */
-    val decimalSeparator = DecimalFormat().decimalFormatSymbols.decimalSeparator
+    private val decimalSeparator = DecimalFormat().decimalFormatSymbols.decimalSeparator
 
     /**
      * Whether the given string is fully filled with a valid integer
@@ -194,11 +164,7 @@ object Utilities {
      * the string to be tested
      * @return whether the string is a string representation of an integer.
      */
-    fun representsInteger(string: String): Boolean {
-        // preconditions: string should not be null or empty.
-        return Pattern.matches("-?\\d+", string)
-        // postconditions: none: simple return of boolean.
-    }
+    private fun representsInteger(string: String) =  Pattern.matches("-?\\d+", string)
 
     /**
      * Whether the given string is fully filled with a valid integer
@@ -234,7 +200,7 @@ object Utilities {
      * @return whether the string is a string representation of a fractional
      * number.
      */
-    fun representsFractionalNumber(string: String,
+    private fun representsFractionalNumber(string: String,
                                    maxPrecision: Int): Boolean {
         // preconditions: string should not be null or empty, and maxPrecision
         // should be positive
@@ -350,29 +316,26 @@ object Utilities {
      */
     fun doublesEqualWithinThousands(d1: Double, d2: Double): Boolean {
         val smallestAllowedDifference = 0.001
-        if (java.lang.Double.doubleToLongBits(d1 - d2) == 0L) {
-            return true
-        }
 
-        if (java.lang.Double.doubleToLongBits(d1) == 0L) {
+        return when {
+            java.lang.Double.doubleToLongBits(d1 - d2) == 0L -> true
             // Note that d2 cannot be 0.0 because otherwise the first if-statement
             // would already have returned.
-            return Math.abs(d2) < smallestAllowedDifference
-        } else if (java.lang.Double.doubleToLongBits(d2) == 0L) {
-            return Math.abs(d1) < smallestAllowedDifference
-        } else {
-            val largerAbsoluteNumber: Double
-            val smallerAbsoluteNumber: Double
-            if (Math.abs(d1) > Math.abs(d2)) {
-                largerAbsoluteNumber = d1
-                smallerAbsoluteNumber = d2
-            } else {
-                largerAbsoluteNumber = d2
-                smallerAbsoluteNumber = d1
+            java.lang.Double.doubleToLongBits(d1) == 0L -> Math.abs(d2) < smallestAllowedDifference
+            java.lang.Double.doubleToLongBits(d2) == 0L -> Math.abs(d1) < smallestAllowedDifference
+            else -> {
+                val largerAbsoluteNumber: Double
+                val smallerAbsoluteNumber: Double
+                if (Math.abs(d1) > Math.abs(d2)) {
+                    largerAbsoluteNumber = d1
+                    smallerAbsoluteNumber = d2
+                } else {
+                    largerAbsoluteNumber = d2
+                    smallerAbsoluteNumber = d1
+                }
+                val ratio = (largerAbsoluteNumber - smallerAbsoluteNumber) / smallerAbsoluteNumber
+                Math.abs(ratio) < smallestAllowedDifference
             }
-            val ratio = (largerAbsoluteNumber - smallerAbsoluteNumber) / smallerAbsoluteNumber
-
-            return Math.abs(ratio) < smallestAllowedDifference
         }
     }
 
@@ -393,19 +356,6 @@ object Utilities {
             word + "s"
         }
     }
-
-    /**
-     * Produces a nicely formatted count of the number, for example (3, "point")
-     * is converted into "3 points".
-     *
-     * @param number
-     * the number to be formatted.
-     * @param word
-     * the "unit" in which the number is expressed (like point)
-     * @return a nicely formatted string like "1 dog" or "2 cats"
-     */
-    fun pluralText(number: Int, word: String): String {
-        return number.toString() + " " + pluralize(word, number)
-    }
 }
 
+fun String.pluralize(number: Int) = number.toString() + " " + Utilities.pluralize(this, number)

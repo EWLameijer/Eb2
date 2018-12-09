@@ -1,0 +1,115 @@
+GENERAL:
+ONLY 10 min on working days, until time paid back (8u+12 min!) Niet tot ik die 1659 min heb ingehaald :!
+
+
+What works:
+[MENU]
+    File =>
+        Create Deck
+        Load Deck
+        Restore from Archive
+        Quit. SHORTCUT DOESN'T WORK, CTRL-Q DOES
+
+    Manage Deck =>
+        Add Card
+        Study Options
+        Deck Archiving Options
+
+
+[REVIEWING MODE]
+    Remembered
+    Forgotten
+    Show Answer
+    Edit Card
+    Delete Card
+
+[Review Summary]
+    Back to information screen
+    Go to next round
+
+TODO
+? In summary screen: Review now add R mnemonic?
+?         for (i in spans.indices)  textBlockHeight = spans[i] can be simpler?
+? TimeInputElememt : remove companion object
+? retest everything?
+? invest time in automatic testing?
+
+After: self-check (redundancies, comments)
+
+Kotlin-check
+
+    Utilities => OK
+    TimeUnit => OK
+    TimeInterval => OK
+    ProgrammableAction => OK
+    FixedSizeNumberDocument => OK
+        TimeInputField => OK
+        LabelledTextField => OK
+    ui-elements
+utilities
+    StudyOptionsWindow => OK
+    StudyOptions => OK
+    CardEditingWindow => OK
+    CardEditingManager => OK
+    ArchivingSettingsWindow => OK / EWTEKST OK
+    ArchivingSettings => OK / EWTEKST OK
+subwindow
+    SummarizingPanel => OK / EWTEKST OK
+    MainWindowState => OK / EWTEKST OK
+    MainWindow => OK / EWTEKST OK
+        ReviewPanel => OK / EWTEKST OK
+        ReviewManager => OK / EWTEKST OK
+        FirstTimer => OK / EWTEKST OK
+        CardPanel => OK / EWTEKST OK
+    reviewing
+mainwindow
+    UpdateType => OK / EWTEKST OK
+    Update => OK / EWTEKST OK
+    Listener => OK / EWTEKST OK
+    DelegatingDocumentListener => OK / EWTEKST OK
+    BlackBoard => OK / EWTEKST => OK
+eventhandling
+    CardConverter => OK / EWTEKST => OK
+writer
+    Review => OK / EWTEKST => OK
+    DeckManager => OK / EWTEKST => OK
+    Deck => OK / EWTEKST => OK
+    CardCollection => OK / EWTEKST => OK
+    Card => OK / EWTEKST => OK
+data
+
+
+
+
+
+
+BUGS:
+8/12/18 Back to information screen: button works, mnemonic doesn't. Accidentally uppercase mnemonic...
+8/12/18 Delete Card: does not work properly. Fixed, indices-loop 'improvements' kind of sucked...
+8/12/18 Quit. SHORTCUT DOESN'T WORK, clicking the window DOES. Added a "System.exit() to the called function"
+8/12/18 Edit Card: shows add card, with empty contents. Made simpler 'source of truth' by delegating the getting of the card
+    to ReviewManager
+
+
+
+
+
+
+!!! When this works again, commit on Github, then at every 15 mins work (okay, 2x10) commit until entire codebase
+!!! sufficiently cleaned
+
+STYLE
+IF same over lifetime object, can be read but not written to: val
+IF can change and straightforward to write to (writing is never illegal if type is correct) var
+ELSE function
+
+INFO: Number of reviewable cards is 0
+Exception in thread "main" java.lang.IllegalArgumentException: LogicalDeck.getCardWithFront() error: the text on the front of the
+                   card needs to be a valid identifier, not null or a string with
+                   only whitespace characters.
+	at eb.data.CardCollection.getCardWithFront(CardCollection.kt:98)
+	at eb.mainwindow.reviewing.ReviewPanel.<init>(ReviewPanel.kt:34)
+	at eb.mainwindow.MainWindow.<init>(MainWindow.kt:77)
+	at eb.mainwindow.MainWindow$Companion.display(MainWindow.kt:533)
+	at eb.Eb.main(Eb.kt:50)
+

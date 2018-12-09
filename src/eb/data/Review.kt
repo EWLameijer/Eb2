@@ -13,46 +13,12 @@ import eb.utilities.Utilities
  *
  * @author Eric-Wubbo Lameijer
  */
-class Review
-/**
- * Constructor for Review objects.
- *
- * @param thinkingTime
- * the time the user needed to come up with his or her answer
- *
- * @param wasSuccess
- * whether the user knew the answer (true) or didn't (false)
- */
-(private val m_thinkingTime: Duration, private val m_success: Boolean) : Serializable {
-    /**
-     * Returns the instant of the review
-     *
-     * @return the instant (the point in time) that the review was performed.
-     */
-    // preconditions: none. Instant exists if review exists
-    // postconditions: none. Simple return of Instant
-    val instant: Instant
+class Review(thinkingTime: Duration, val wasSuccess: Boolean) : Serializable {
+    val instant : Instant = Instant.now()
 
-    val thinkingTime = Utilities.durationToSeconds(m_thinkingTime)
+    val thinkingTime = Utilities.durationToSeconds(thinkingTime)
 
-    init {
-        instant = Instant.now()
-    }
-
-    /**
-     * Returns whether the review was a success.
-     *
-     * @return true if the review was a success, false if it wasn't.
-     */
-    fun wasSuccess(): Boolean {
-        // preconditions: none. Review exists
-        return m_success
-        // postconditions: none. Simple return of boolean
-    }
-
-    override fun toString(): String {
-        return "($instant,$m_success)"
-    }
+    override fun toString() = "($instant, $wasSuccess)"
 
     companion object {
         private const val serialVersionUID = -3475131013697503513L

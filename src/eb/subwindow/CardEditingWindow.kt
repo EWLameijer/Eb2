@@ -10,6 +10,7 @@ import java.awt.event.KeyListener
 
 import eb.data.DeckManager
 import eb.utilities.Utilities
+import eb.utilities.doNothing
 import javax.swing.*
 
 /**
@@ -21,117 +22,67 @@ import javax.swing.*
  *
  * @author Eric-Wubbo Lameijer
  */
-open class CardEditingWindow
-// the pane that houses the buttons (and more, in the case of a
-// CardCreatingWindow)
-
-/**
- * Creates a `CardEditingWindow` to add cards to the current deck.
- */
-internal constructor(frontText: String, backText: String,
-        // the managing object to send the resulting texts to.
-                     private val m_manager: CardEditingManager) : JFrame() {
+open class CardEditingWindow(frontText: String, backText: String, private val m_manager: CardEditingManager) : JFrame() {
 
     // Allows the creation/editing of the content on the front of the card.
-    private val m_frontOfCard: JTextPane
+    private val cardFrontPane: JTextPane
 
     // Allows the creation/editing of the contents of the back of the card.
-    private val m_backOfCard: JTextPane
+    private val cardBackPane: JTextPane
 
     // The button to cancel creating this card, and return to the calling window.
-    private val m_cancelButton: JButton
+    private val cancelButton: JButton
 
     // The button to press that requests the current deck to check whether this
     // card is a valid/usable card (so no duplicate of an existing card, for
     // example) and if so, to add it.
-    private val m_okButton: JButton
+    private val okButton: JButton
 
     init {
         // preconditions: none (we can assume the user clicked the appropriate
         // button, and even otherwise there is not a big problem)
         val operation = if (m_manager.inCardCreatingMode()) "add" else "edit"
-        this.title = "${DeckManager.currentDeck!!.name}: $operation card"
+        this.title = "${DeckManager.currentDeck().name}: $operation card"
+        cancelButton = JButton("Cancel")
+        okButton = JButton("Ok")
 
         // Create the panel to edit the front of the card, and make enter
         // and tab transfer focus to the panel for editing the back of the card.
         // Escape should cancel the card-creating process and close the
         // NewCardWindow
-        m_frontOfCard = JTextPane()
-        m_frontOfCard.text = frontText
-        Utilities.makeTabAndEnterTransferFocus(m_frontOfCard)
-        m_frontOfCard.addKeyListener(EscapeKeyListener())
-        m_frontOfCard.addFocusListener(CleaningFocusListener())
+        cardFrontPane = JTextPane()
+        cardFrontPane.text = frontText
+        Utilities.makeTabAndEnterTransferFocus(cardFrontPane)
+        val escapeKeyListener = SpecificKeyListener(KeyEvent.VK_ESCAPE) { cancelButton.doClick() }
+        val enterKeyListener = SpecificKeyListener(KeyEvent.VK_ENTER) { okButton.doClick() }
+
+        cardFrontPane.addKeyListener(escapeKeyListener)
+        cardFrontPane.addFocusListener(CleaningFocusListener())
 
         // Now create the panel to edit the back of the card; make tab transfer
         // focus to the front (for editing the front again), escape should (like
         // for the front panel) again cancel editing and close the NewCardWindow.
         // Pressing the Enter key, however, should try save the card instead of
         // transferring the focus back to the front-TextArea.
-        m_backOfCard = JTextPane()
-        m_backOfCard.text = backText
-        Utilities.makeTabTransferFocus(m_backOfCard)
-        m_backOfCard.addKeyListener(EnterKeyListener())
-        m_backOfCard.addKeyListener(EscapeKeyListener())
-        m_backOfCard.addFocusListener(CleaningFocusListener())
+        cardBackPane = JTextPane()
+        cardBackPane.text = backText
 
-        // Also add the two buttons (Cancel and OK).
-        m_cancelButton = JButton("Cancel")
-        m_okButton = JButton("Ok")
+        Utilities.makeTabTransferFocus(cardBackPane)
+        cardBackPane.addKeyListener(enterKeyListener)
+        cardBackPane.addKeyListener(escapeKeyListener)
+        cardBackPane.addFocusListener(CleaningFocusListener())
 
         // we just want tab to cycle from the front to the back of the card,
         // and vice versa, and not hit the buttons
-        m_cancelButton.isFocusable = false
-        m_okButton.isFocusable = false
+        cancelButton.isFocusable = false
+        okButton.isFocusable = false
 
         // postconditions: none. The window exists and should henceforth handle
         // its own business using the appropriate GUI elements.
     }
 
-    /**
-     * The `EnterKeyListener` object enables a text field to listen for
-     * the enter key, in this case initializing the card storage procedure when it
-     * is pressed.
-     *
-     * @author Eric-Wubbo Lameijer
-     */
-    internal inner class EnterKeyListener : KeyListener {
-
-        /**
-         * If the user presses the enter key, save the card (same as if the user
-         * clicks the OK button).
-         */
-        override fun keyPressed(e: KeyEvent) {
-            // preconditions: none
-            if (e.keyCode == KeyEvent.VK_ENTER) {
-                e.consume()
-                m_okButton.doClick()
-            }
-            // postconditions: none
-        }
-
-        /**
-         * Special handling of key being released (dummy method: does nothing).
-         */
-        override fun keyReleased(arg0: KeyEvent) {
-            // Do nothing: only needs to respond to the pressing of the key, not to
-            // the release.
-        }
-
-        /**
-         * Special handling of key being typed (dummy method, does nothing).
-         */
-        override fun keyTyped(arg0: KeyEvent) {
-            // Do nothing: only needs to respond to the pressing of the key, not to
-            // typing it (or such)
-        }
-    }
-
-    /**
-     * Listens for the escape key, closes the screen if it is pressed.
-     *
-     * @author Eric-Wubbo Lameijer
-     */
-    internal inner class EscapeKeyListener : KeyListener {
+    //Listens for a specific key and consumes it (and performs the appropriate action) when it is pressed
+    internal inner class SpecificKeyListener(private val keyCode: Int, val action: () -> Unit) : KeyListener {
 
         /**
          * If the user presses the escape key, dispose of the candidate card and
@@ -139,46 +90,29 @@ internal constructor(frontText: String, backText: String,
          * button).
          */
         override fun keyPressed(e: KeyEvent) {
-            // preconditions: none
-            if (e.keyCode == KeyEvent.VK_ESCAPE) {
+            if (e.keyCode == keyCode) {
                 e.consume()
-                m_cancelButton.doClick()
+                action()
             }
-            // postconditions: none
         }
 
-        /**
-         * Special handling of key being released (dummy method: does nothing).
-         */
-        override fun keyReleased(arg0: KeyEvent) {
-            // Do nothing: only needs to respond to the pressing of the key, not to
-            // the release.
-        }
+        // dummy method: we only need to respond to the pressing of the key, not to the release.
+        override fun keyReleased(arg0: KeyEvent) = doNothing
 
-        /**
-         * Special handling of key being typed (dummy method, does nothing).
-         */
-        override fun keyTyped(arg0: KeyEvent) {
-            // Do nothing: only needs to respond to the pressing of the key, not to
-            // typing it (or such)
-        }
+        // dummy method: we only need to respond to the pressing of the key, not to it being typed
+        override fun keyTyped(arg0: KeyEvent) = doNothing
     }
 
     internal inner class CleaningFocusListener : FocusListener {
 
-        override fun focusGained(arg0: FocusEvent) {
-            // noop
-        }
+        override fun focusGained(arg0: FocusEvent) = doNothing
 
-        override fun focusLost(arg0: FocusEvent) {
-            trimFields()
-        }
-
+        override fun focusLost(arg0: FocusEvent) =  trimFields()
     }
 
     fun trimFields() {
-        m_frontOfCard.text = m_frontOfCard.text.trim { it <= ' ' }
-        m_backOfCard.text = m_backOfCard.text.trim { it <= ' ' }
+        cardFrontPane.text = cardFrontPane.text.trim { it <= ' ' }
+        cardBackPane.text = cardBackPane.text.trim { it <= ' ' }
     }
 
     /**
@@ -194,11 +128,10 @@ internal constructor(frontText: String, backText: String,
         // (in this case the OK button) is pressed.
 
         trimFields()
-        val frontText = m_frontOfCard.text
-        val backText = m_backOfCard.text
+        val frontText = cardFrontPane.text
+        val backText = cardBackPane.text
 
         m_manager.processProposedContents(frontText, backText)
-        //
 
         // postconditions: If adding succeeded, the front and back should
         // be blank again, if it didn't, they should be the same as they were
@@ -211,17 +144,17 @@ internal constructor(frontText: String, backText: String,
      * Initializes the components of the NewCardWindow.
      */
     internal open fun init() {
-        m_cancelButton.addActionListener { m_manager.endEditing() }
-        m_okButton.addActionListener { submitCandidateCardToDeck() }
+        cancelButton.addActionListener { m_manager.endEditing() }
+        okButton.addActionListener { submitCandidateCardToDeck() }
 
         // now add the buttons to the window
         val buttonPane = JPanel()
-        buttonPane.add(m_cancelButton)
-        buttonPane.add(m_okButton)
+        buttonPane.add(cancelButton)
+        buttonPane.add(okButton)
 
         // Now create a nice (or at least acceptable-looking) layout.
         val upperPanel = JSplitPane(JSplitPane.VERTICAL_SPLIT,
-                JScrollPane(m_frontOfCard), JScrollPane(m_backOfCard))
+                JScrollPane(cardFrontPane), JScrollPane(cardBackPane))
         upperPanel.resizeWeight = 0.5
         layout = GridBagLayout()
         val frontConstraints = GridBagConstraints()
@@ -248,18 +181,15 @@ internal constructor(frontText: String, backText: String,
     }
 
     fun updateContents(frontText: String, backText: String) {
-        m_frontOfCard.text = frontText
-        m_backOfCard.text = backText
-
+        cardFrontPane.text = frontText
+        cardBackPane.text = backText
     }
 
-    fun focusFront() {
-        m_frontOfCard.requestFocusInWindow()
-    }
+    fun focusFront() = cardFrontPane.requestFocusInWindow()
 
     companion object {
         // Default serialization ID (not used).
-        private val serialVersionUID = 3419171802910744055L
+        private const val serialVersionUID = 3419171802910744055L
 
         /**
          * Shows the NewCardWindow. Is necessary to accommodate the nullness checker,

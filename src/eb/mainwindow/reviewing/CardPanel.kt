@@ -17,60 +17,43 @@ import javax.swing.text.LabelView
 import javax.swing.text.ParagraphView
 import javax.swing.text.SimpleAttributeSet
 import javax.swing.text.StyleConstants
-import javax.swing.text.StyledDocument
 import javax.swing.text.StyledEditorKit
 import javax.swing.text.View
 import javax.swing.text.ViewFactory
 
-import eb.utilities.Utilities
 import java.lang.RuntimeException
 
 /**
- * A CardPanel shows a side of a card (either the front or the back). It is
- * basically a graphical display used during the review process, unlike the
- * TextAreas used for input.
+ * A CardPanel shows a side of a card (either the front or the back). It is basically a graphical display used during
+ * the review process, unlike the TextAreas used for input.
  *
  * @author Eric-Wubbo Lameijer
  */
 class CardPanel : JPanel() {
 
     // the area on which the text is to be displayed
-    private val m_textPane: JTextPane
+    private val textPane = JTextPane()
 
-    /**
-     * CardPanel constructor.
-     */
     init {
         layout = BorderLayout()
-        m_textPane = JTextPane()
-        m_textPane.isEditable = false
-        m_textPane.font = Font("Arial", Font.PLAIN, 30)
-        m_textPane.border = BorderFactory.createLineBorder(Color.black)
+        textPane.isEditable = false
+        textPane.font = Font("Arial", Font.PLAIN, 30)
+        textPane.border = BorderFactory.createLineBorder(Color.black)
 
-        // from
-        // http://stackoverflow.com/questions/3213045/centering-text-in-a-jtextarea-or-jtextpane-horizontal-text-alignment
-
-        m_textPane.editorKit = MyEditorKit()
-        val doc = m_textPane.styledDocument
+        // from http://stackoverflow.com/questions/3213045/centering-text-in-a-jtextarea-or-jtextpane-horizontal-text-alignment
+        textPane.editorKit = MyEditorKit()
+        val doc = textPane.styledDocument
         val center = SimpleAttributeSet()
         StyleConstants.setAlignment(center, StyleConstants.ALIGN_CENTER)
         doc.setParagraphAttributes(0, doc.length, center, false)
-        add(JScrollPane(m_textPane), BorderLayout.CENTER)
+        add(JScrollPane(textPane), BorderLayout.CENTER)
     }
 
-    /**
-     * Sets the text to be displayed in this panel. Can be an empty string (if the
-     * panel must yet remain empty).
-     *
-     * @param text
-     * the text to display in this panel.
-     */
-    internal fun setText(text: String?) {
-        require(text != null) { "CardPanel.setText() error: the text cannot be null." }
-        m_textPane.text = text
+    // Sets the text to be displayed in this panel. Can be an empty string (if the panel must yet remain empty).
+    internal fun setText(text: String) {
+        textPane.text = text
         repaint()
     }
-
 }
 
 internal class MyEditorKit : StyledEditorKit() {
@@ -99,20 +82,17 @@ internal class MyEditorKit : StyledEditorKit() {
             }
             return view
         }
-
     }
 }
 
 internal class CenteredBoxView(elem: Element, axis: Int) : BoxView(elem, axis) {
 
-    override fun layoutMajorAxis(targetSpan: Int, axis: Int, offsets: IntArray,
-                                 spans: IntArray) {
+    override fun layoutMajorAxis(targetSpan: Int, axis: Int, offsets: IntArray, spans: IntArray) {
 
         super.layoutMajorAxis(targetSpan, axis, offsets, spans)
         var textBlockHeight = 0
 
         for (i in spans.indices) {
-
             textBlockHeight = spans[i]
         }
         if (textBlockHeight * offsets.size < targetSpan) {

@@ -1,31 +1,33 @@
 package eb.subwindow
 
-import java.awt.Container
 import java.awt.event.KeyEvent
-import java.io.File
 
 import eb.data.DeckManager
 import eb.utilities.ProgrammableAction
 import javax.swing.*
 
-class ArchivingSettingsWindow internal constructor() : JFrame("Deck archiving settings") {
+object ArchivingSettingsWindow : JFrame("Deck archiving settings") {
 
-    internal var m_archivingLocation: JLabel
-    internal var m_changeLocationButton: JButton
+    private const val START_OF_LABEL = "Location for archive files: "
+    private var archivingLocation = JLabel(getLabelText())
+    private var changeLocationButton = JButton("Change location for archive files")
 
-    init {
-        val archivingDirectoryName = DeckManager.archivingDirectoryName
-        val displayedDirectoryName: String
-        if (archivingDirectoryName.isEmpty()) {
-            displayedDirectoryName = "[default]"
-        } else {
-            displayedDirectoryName = archivingDirectoryName
-        }
-        m_archivingLocation = JLabel(
-                "Location for archive files: $displayedDirectoryName")
-        m_changeLocationButton = JButton("Change location for archive files")
-        m_changeLocationButton.addActionListener { changeArchivingLocation() }
+    fun display() {
+        changeLocationButton.addActionListener { changeArchivingLocation() }
+        val box = Box.createHorizontalBox()
+        box.add(archivingLocation)
+        box.add(Box.createHorizontalStrut(10))
+        box.add(changeLocationButton)
+        add(box)
+        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+                .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "Cancel") //$NON-NLS-1$
+        getRootPane().actionMap.put("Cancel", ProgrammableAction { this.dispose() })
+        setSize(700, 400)
+        defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
+        isVisible = true
     }
+
+    private fun getLabelText() : String = START_OF_LABEL + (DeckManager.archivingDirectoryName() ?: "[default]")
 
     private fun changeArchivingLocation() {
         val chooser = JFileChooser()
@@ -34,34 +36,8 @@ class ArchivingSettingsWindow internal constructor() : JFrame("Deck archiving se
         if (result == JFileChooser.CANCEL_OPTION) {
             return
         } else {
-            val selectedDirectory = chooser.selectedFile
-            DeckManager.setArchivingDirectory(selectedDirectory)
-            m_archivingLocation.text = selectedDirectory.absolutePath
-        }
-
-    }
-
-    private fun init() {
-        val box = Box.createHorizontalBox()
-        box.add(m_archivingLocation)
-        box.add(Box.createHorizontalStrut(10))
-        box.add(m_changeLocationButton)
-        add(box)
-        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-                .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "Cancel") //$NON-NLS-1$
-        getRootPane().actionMap.put("Cancel",
-                ProgrammableAction { this.dispose() })
-        setSize(700, 400)
-        defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
-        isVisible = true
-    }
-
-    companion object {
-
-        fun display() {
-            val archivingSettingsWindow = ArchivingSettingsWindow()
-            archivingSettingsWindow.init()
+            DeckManager.setArchivingDirectory(chooser.selectedFile)
+            archivingLocation.text = getLabelText()
         }
     }
-
 }

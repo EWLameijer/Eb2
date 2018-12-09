@@ -23,33 +23,22 @@ class Card(var front: Hint, var back: String) : Serializable {
 
     fun hasBeenReviewed() = reviews.size > 0
 
-    /**
-     * Debugging function, helps check that the reviews have proceeded correctly.
-     * Reports all reviews of this card performed so far.
-     */
-    private fun reportReviews() = reviews.forEach { log("${it.thinkingTime} ${it.wasSuccess()}") }
 
-    /**
-     * Adds a new review to the list of reviews.
-     *
-     * @param review
-     * the review to be added to this card's list of reviews.
-     */
+    // Debugging function, helps check that the reviews have proceeded correctly.
+    // Reports all reviews of this card performed so far.
+    private fun reportReviews() = reviews.forEach { log("${it.thinkingTime} ${it.wasSuccess}") }
+
     fun addReview(review: Review) {
         reviews.add(review)
         reportReviews()
     }
 
-    /**
-     * How long the most recent streak is (2 uninterrupted successful reviews, 0
-     * successful reviews (after a failure), and so on...)
-     *
-     * @return the length of the current reviewing success streak (>=0)
-     */
-    fun streakSize() = reviews.takeLastWhile { it.wasSuccess() }.size
+    // Return the current number of consecutively successful reviews (2 uninterrupted successful reviews, 0
+    // successful reviews (after a failure), and so on...)
+    fun streakSize() = reviews.takeLastWhile { it.wasSuccess }.size
 
     companion object {
-        // the proper auto-generated serialVersionUID as CardCollection should be serializable.
+        // the proper auto-generated serialVersionUID as cards should be serializable.
         private const val serialVersionUID = -2746012998758766327L
     }
 }

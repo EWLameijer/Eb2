@@ -6,16 +6,11 @@ import java.awt.event.ActionEvent
 import java.awt.event.KeyEvent
 import java.awt.event.WindowListener
 import java.beans.EventHandler
-import java.io.File
 import java.io.IOException
 import java.nio.charset.Charset
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.Paths
-import java.time.Duration
 import java.util.ArrayList
-import java.util.Optional
-import java.util.logging.Logger
 
 import javax.swing.JButton
 import javax.swing.JFileChooser
@@ -39,223 +34,154 @@ import eb.mainwindow.reviewing.ReviewManager
 import eb.mainwindow.reviewing.ReviewPanel
 import eb.subwindow.ArchivingSettingsWindow
 import eb.subwindow.CardEditingManager
-import eb.subwindow.StudyOptions
 import eb.subwindow.StudyOptionsWindow
-import eb.utilities.TimeInterval
 import eb.utilities.Utilities
+import eb.utilities.doNothing
 import eb.utilities.isValidIdentifier
+import eb.utilities.pluralize
+import eb.utilities.log
+
+
+// The name of the program.
+private const val PROGRAM_NAME = "Eb"
 
 /**
  * The main window of Eb.
  *
  * @author Eric-Wubbo Lameijer
  */
-class MainWindow
-/**
- * MainWindow constructor. Sets title of the window, and creates some widgets.
- */
-internal constructor() : JFrame(PROGRAM_NAME), Listener {
+object MainWindow : JFrame(PROGRAM_NAME), Listener {
 
-    // The label that has to be shown if there is no card that needs to be
-    // reviewed currently, or if there is an error. Is the alternative to
-    // the regular "reviewing" window, which should be active most of the
-    // time.
-    private val m_messageLabel: JLabel
+    // The label that has to be shown if there is no card that needs to be reviewed currently, or if there is an error.
+    // Is the alternative to the regular "reviewing" window, which should be active most of the time.
+    private val messageLabel = JLabel()
 
     // the initial state of the main window
-    private var m_state = MainWindowState.REACTIVE
+    private var state = MainWindowState.REACTIVE
 
-    // button the user can press to start reviewing. Only visible if the user for some reason
-    // decides to not review cards yet (usually by having one rounds of review, and then
-    // stopping the reviewing)
-    private val m_startReviewingButton = JButton()
+    // button the user can press to start reviewing. Only visible if the user for some reason decides to not review
+    // cards yet (usually by having one rounds of review, and then stopping the reviewing)
+    private val startReviewingButton = JButton()
 
     // Contains the REVIEWING_PANEL and the INFORMATION_PANEL, using a CardLayout.
-    private val m_modesContainer: JPanel
+    private val modesContainer = JPanel()
 
     // The reviewing panel
-    private val m_reviewPanel: ReviewPanel = ReviewPanel()
+    private val reviewPanel: ReviewPanel = ReviewPanel()
 
     // To regularly update how long it is until the next reviewing session
-    private var m_messageUpdater: Timer? = null
+    private var messageUpdater: Timer? = null
 
-    /**
-     * Returns the commands of the user interface as a string, which can be used
-     * for example to instruct the user on Eb's use.
-     *
-     * @return the commands of the user interface
-     */
-    private// preconditions: none
-    // postconditions: none
-    val uiCommands: String
-        get() = ("<br>Ctrl+N to add a card.<br>" + "Ctrl+Q to quit.<br>"
-                + "Ctrl+K to create a deck.<br>" + "Ctrl+L to load a deck.<br>"
-                + "Ctrl+T to view/edit the study options.<br>"
-                + "Ctrl+R to view/edit the deck archiving options.<br>")
-
-    /**
-     * Returns a message about the size of the current deck.
-     *
-     * @return a message about the size of the current deck.
-     */
-    private// preconditions: none
-    // postconditions: none
-    val deckSizeMessage: String
-        get() = ("The current deck contains "
-                + DeckManager.currentDeck?.cards?.getTotal() + " cards.")
-
-    /**
-     * Returns text indicating how long it will be to the next review
-     *
-     * @return text indicating the time to the next review
-     */
-    internal// no cards
-    val timeToNextReviewMessage: String
-        get() {
-            val message = StringBuilder()
-            val currentDeck = DeckManager.currentDeck
-            val numCards = currentDeck?.cards?.getTotal() ?: 0
-            if (numCards > 0) {
-                message.append("Time till next review: ")
-                val timeUntilNextReviewAsDuration = currentDeck?.timeUntilNextReview()
-                val timeUntilNextReviewAsText = Utilities
-                        .durationToString(timeUntilNextReviewAsDuration!!)
-                message.append(timeUntilNextReviewAsText)
-                message.append("<br>")
-                m_startReviewingButton.isVisible = timeUntilNextReviewAsDuration.isNegative
-            } else {
-                m_startReviewingButton.isVisible = false
-            }
-            return message.toString()
-        }
+    //Returns the commands of the user interface as a string, which can be used to instruct the user on Eb's use.
+    private val uiCommands = ("""<br>
+            Ctrl+N to add a card.<br>
+            Ctrl+Q to quit.<br>
+            Ctrl+K to create a deck.<br>
+            Ctrl+L to load a deck.<br>
+            Ctrl+T to view/edit the study options.<br>
+            Ctrl+R to view/edit the deck archiving options.<br>""".trimIndent())
 
     init {
-        m_messageLabel = JLabel()
-        m_modesContainer = JPanel()
-        m_modesContainer.layout = CardLayout()
-    }// preconditions: none
-
-    /**
-     * Updates the message label (the information inside the main window, like time to next review)
-     */
-    internal fun updateMessageLabel() {
-        val message = StringBuilder()
-        message.append("<html>")
-        message.append(deckSizeMessage)
-        message.append("<br>")
-        message.append(timeToNextReviewMessage)
-        message.append(uiCommands)
-        message.append("</html>")
-        m_messageLabel.text = message.toString()
+        modesContainer.layout = CardLayout()
+        startReviewingButton.text = "Review now"
+        init()
     }
 
-    /**
-     * Updates the title of the window, which contains information like the number of cards in the deck
-     */
-    internal fun updateWindowTitle() {
-        val currentDeck = DeckManager.currentDeck!!
-        val numReviewingPoints = currentDeck.cards.getReviewingPoints()
+    private fun deckSizeMessage() =
+            "The current deck contains ${"card".pluralize(DeckManager.currentDeck().cardCollection.getTotal())}."
+
+    //Returns text indicating how long it will be to the next review
+    private fun timeToNextReviewMessage(): String {
+        val message = StringBuilder()
+        val currentDeck = DeckManager.currentDeck()
+        val numCards = currentDeck.cardCollection.getTotal()
+        if (numCards > 0) {
+            message.append("Time till next review: ")
+            val timeUntilNextReviewAsDuration = currentDeck.timeUntilNextReview()
+            val timeUntilNextReviewAsText = Utilities.durationToString(timeUntilNextReviewAsDuration)
+            message.append(timeUntilNextReviewAsText)
+            message.append("<br>")
+            startReviewingButton.isVisible = timeUntilNextReviewAsDuration.isNegative
+        } else {
+            startReviewingButton.isVisible = false
+        }
+        return message.toString()
+    }
+
+    // Updates the message label (the information inside the main window, like time to next review)
+    private fun updateMessageLabel() {
+        val message = StringBuilder()
+        message.append("<html>")
+        message.append(deckSizeMessage())
+        message.append("<br>")
+        message.append(timeToNextReviewMessage())
+        message.append(uiCommands)
+        message.append("</html>")
+        messageLabel.text = message.toString()
+    }
+
+    // Updates the title of the window, which contains information like the number of cards in the deck
+    private fun updateWindowTitle() {
+        val currentDeck = DeckManager.currentDeck()
+        val numReviewingPoints = currentDeck.cardCollection.getReviewingPoints()
 
         val numReviewableCards = currentDeck.reviewableCardList().size
-        var title = ("Eb: " + currentDeck.name + " ("
-                + Utilities.pluralText(numReviewableCards, "card")
-                + " to be reviewed in total")
-        if (m_state == MainWindowState.REVIEWING) {
-            title += (", " + Utilities
-                    .pluralText(ReviewManager.cardsToGoYet(), "card")
-                    + " yet to be reviewed in the current session")
+        var title = ("Eb: ${currentDeck.name} (${"card".pluralize(numReviewableCards)} to be reviewed in total")
+        if (state == MainWindowState.REVIEWING) {
+            title += (", ${"card".pluralize(ReviewManager.cardsToGoYet())} yet to be reviewed in the current session")
         }
-        val numCards = currentDeck.cards.getTotal()
-        title += (", " + Utilities.pluralText(numCards, "card") + " in deck, "
-                + Utilities.pluralText(numReviewingPoints, "point") + ")")
+        val numCards = currentDeck.cardCollection.getTotal()
+        title += (", ${"card".pluralize(numCards)} in deck, ${"point".pluralize(numReviewingPoints)})")
 
         this.title = title
     }
 
-    /**
-     * Updates the text on the review button
-     */
-    internal fun updateReviewButtonText() {
-        m_startReviewingButton.text = "Review now"
-    }
-
-    /**
-     * Gives the message label its correct (possibly updated) value.
-     */
-    internal fun updateOnScreenInformation() {
+    // Gives the message label its correct (possibly updated) value.
+    private fun updateOnScreenInformation() {
         updateMessageLabel()
         updateWindowTitle()
-        updateReviewButtonText()
     }
 
-    internal fun showCorrectPanel() {
-        when (m_state) {
+    private fun showCorrectPanel() =
+        when (state) {
             MainWindowState.REACTIVE -> showReactivePanel()
             MainWindowState.INFORMATIONAL -> showInformationPanel()
             MainWindowState.REVIEWING -> showReviewingPanel()
             MainWindowState.SUMMARIZING -> showSummarizingPanel()
-            MainWindowState.WAITING_FOR_TIMER_START -> switchToPanel(TIMED_REVIEW_START_PANEL_ID)
         }
 
-    }
+    private fun mustReviewNow() =
+        if (DeckManager.currentDeck().cardCollection.getTotal() == 0) false
+        else DeckManager.currentDeck().timeUntilNextReview().isNegative
 
-    private fun mustReviewNow(): Boolean {
-        // case 1: there are no cards in the deck - so nothing to review either
-        if (DeckManager.currentDeck!!.cards.getTotal() == 0) {
-            return false
-        } else {
-            val timeUntilNextReviewAsDuration = DeckManager.currentDeck!!.timeUntilNextReview()
-            return timeUntilNextReviewAsDuration.isNegative
-        }
-    }
-
-    /**
-     * Opens the study options window, at which one can set the study options for
-     * a deck (after which interval the first card should be studied, etc.)
-     */
-    private fun openStudyOptionsWindow() {
-        // preconditions: none (this method will simply be called when the user
-        // presses the correct button).
-
-        StudyOptionsWindow.display()
-
-        // postconditions: none (the user does not have to do anything with the
-        // settings)
-    }
+    // Opens the study options window, in which one can set the study options for
+     // a deck (after which interval the first card should be studied, etc.)
+    private fun openStudyOptionsWindow() = StudyOptionsWindow.display()
 
     private fun createDeck() {
         do {
             val deckName = JOptionPane.showInputDialog(null,
-                    "Please give name " + "for deck to be created")
+                    "Please give name for deck to be created")
             if (deckName == null) {
                 // cancel button has been pressed
                 return
             } else {
                 if (!deckName.isValidIdentifier) {
-                    JOptionPane.showMessageDialog(null, "Sorry, \"" + deckName
-                            + "\" is not a valid name for a deck. Please choose another name.")
-                } else if (Deck.Companion.getDeckFileHandle(deckName).exists()) {
-                    JOptionPane.showMessageDialog(null, "Sorry, the deck \"" + deckName
-                            + "\" already exists. Please choose another name.")
+                    JOptionPane.showMessageDialog(null,
+                            "Sorry, \"$deckName\" is not a valid name for a deck. Please choose another name.")
+                } else if (Deck.getDeckFileHandle(deckName).exists()) {
+                    JOptionPane.showMessageDialog(null,
+                            "Sorry, the deck \"$deckName\" already exists. Please choose another name.")
                 } else {
                     // The deckname is valid!
-                    m_messageUpdater!!.stop()
-                    DeckManager.createDeckWithName(deckName)
-                    // reset window
-                    m_state = MainWindowState.REACTIVE
-                    updateOnScreenInformation()
-                    m_messageUpdater!!.start()
-
+                    changeDeck { DeckManager.createDeckWithName(deckName) }
                     return
                 }
             }
-        } while (true)
+        } while (true) // user is allowed to try create decks until he/she succeeds or gives up
     }
 
-    /**
-     * Performs the proper buildup of the window (after the construction has
-     * initialized all components properly).
-     */
+    //Performs the proper buildup of the window (after the construction has initialized all components properly).
     private fun init() {
         // add menu
         val fileMenu = JMenu("File")
@@ -295,19 +221,15 @@ internal constructor() : JFrame(PROGRAM_NAME), Listener {
         jMenuBar = mainMenuBar
 
         // add message label (or show cards-to-be-reviewed)
-
         val informationPanel = createInformationPanel()
-        m_modesContainer.add(informationPanel, INFORMATION_PANEL_ID)
-        m_modesContainer.add(m_reviewPanel, REVIEW_PANEL_ID)
-        ReviewManager.setPanel(m_reviewPanel)
+        modesContainer.add(informationPanel, INFORMATION_PANEL_ID)
+        modesContainer.add(reviewPanel, REVIEW_PANEL_ID)
+        ReviewManager.setPanel(reviewPanel)
         val summarizingPanel = SummarizingPanel()
-        m_modesContainer.add(summarizingPanel, SUMMARIZING_PANEL_ID)
-        val timedReviewStartPanel = TimedReviewStartPanel()
-        m_modesContainer.add(timedReviewStartPanel, TIMED_REVIEW_START_PANEL_ID)
-        add(m_modesContainer)
+        modesContainer.add(summarizingPanel, SUMMARIZING_PANEL_ID)
+        add(modesContainer)
 
         setNameOfLastReviewedDeck()
-
         showCorrectPanel()
 
         // now show the window itself.
@@ -321,8 +243,8 @@ internal constructor() : JFrame(PROGRAM_NAME), Listener {
                 "saveAndQuit", null, "windowClosing"))
         isVisible = true
         BlackBoard.register(this, UpdateType.PROGRAMSTATE_CHANGED)
-        m_messageUpdater = Timer(100) { showCorrectPanel() }
-        m_messageUpdater!!.start()
+        messageUpdater = Timer(100) { showCorrectPanel() }
+        messageUpdater!!.start()
         updateOnScreenInformation()
     }
 
@@ -337,12 +259,7 @@ internal constructor() : JFrame(PROGRAM_NAME), Listener {
         }
     }
 
-    /**
-     * Opens a/the Deck archiving options window
-     */
-    private fun openDeckArchivingWindow() {
-        ArchivingSettingsWindow.display()
-    }
+    private fun openDeckArchivingWindow() =  ArchivingSettingsWindow.display()
 
     private fun setNameOfLastReviewedDeck() {
         val statusFilePath = Paths.get(EB_STATUS_FILE)
@@ -350,19 +267,16 @@ internal constructor() : JFrame(PROGRAM_NAME), Listener {
         val lines: List<String>
         try {
             lines = Files.readAllLines(statusFilePath, Charset.forName("UTF-8"))
-            val fileLine = lines.stream()
-                    .filter { e -> e.startsWith(mostRecentDeckIdentifier) }.findFirst()
-            if (fileLine.isPresent) {
-                val deckName = fileLine.get()
-                        .substring(mostRecentDeckIdentifier.length)
+            val fileLine = lines.find { it.startsWith(mostRecentDeckIdentifier) }
+            if (fileLine != null) {
+                val deckName = fileLine.substring(mostRecentDeckIdentifier.length)
                 DeckManager.setNameOfLastReviewedDeck(deckName)
             }
         } catch (e: IOException) {
             // If input fails, set name to ""
             DeckManager.setNameOfLastReviewedDeck("")
-            Logger.getGlobal().info(e.toString() + "")
+            log("$e")
         }
-
     }
 
     private fun loadDeck() {
@@ -372,22 +286,26 @@ internal constructor() : JFrame(PROGRAM_NAME), Listener {
                     ?: // Cancel button pressed
                     return
             if (canDeckBeLoaded(deckName)) {
-                m_messageUpdater!!.stop()
-                DeckManager.loadDeck(deckName)
-                // reset window
-                m_state = MainWindowState.REACTIVE
-                updateOnScreenInformation()
-                m_messageUpdater!!.start()
+                changeDeck { DeckManager.loadDeck(deckName) }
                 return
             }
         } while (true)
     }
 
+    private fun changeDeck(deckProducer: () -> Unit) {
+        messageUpdater!!.stop()
+        deckProducer()
+        // reset window
+        state = MainWindowState.REACTIVE
+        updateOnScreenInformation()
+        messageUpdater!!.start()
+    }
+
     private fun canDeckBeLoaded(deckName: String): Boolean {
         if (!deckName.isValidIdentifier) {
-            JOptionPane.showMessageDialog(null, "Sorry, \"" + deckName
-                    + "\" is not a valid name for a deck. Please choose another name.")
-        } else if (!Deck.Companion.getDeckFileHandle(deckName).exists()) {
+            JOptionPane.showMessageDialog(null,
+                    "Sorry, \"$deckName\" is not a valid name for a deck. Please choose another name.")
+        } else if (!Deck.getDeckFileHandle(deckName).exists()) {
             JOptionPane.showMessageDialog(null,
                     "Sorry, the deck \"$deckName\" does not exist yet.")
         } else {
@@ -397,8 +315,8 @@ internal constructor() : JFrame(PROGRAM_NAME), Listener {
                 return true
             } else {
                 JOptionPane.showMessageDialog(null,
-                        "An error occurred while loading the deck \"" + deckName
-                                + "\". It may be an invalid file; possibly try restore it from an archive file?")
+                        """An error occurred while loading the deck \"$deckName\". It may be an invalid file;
+                            possibly try restore it from an archive file?""")
             }
         }
         return false
@@ -407,18 +325,17 @@ internal constructor() : JFrame(PROGRAM_NAME), Listener {
     private fun createInformationPanel(): JPanel {
         val informationPanel = JPanel()
         informationPanel.layout = BorderLayout()
-        informationPanel.add(m_messageLabel, BorderLayout.CENTER)
-        m_startReviewingButton.isVisible = false
-        m_startReviewingButton.addActionListener {
+        informationPanel.add(messageLabel, BorderLayout.CENTER)
+        startReviewingButton.isVisible = false
+        startReviewingButton.addActionListener {
             BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, MainWindowState.REACTIVE.name))
         }
-        informationPanel.add(m_startReviewingButton, BorderLayout.SOUTH)
+        informationPanel.add(startReviewingButton, BorderLayout.SOUTH)
         return informationPanel
     }
 
-    /**
-     * Saves the current deck and its status, and quits Eb.
-     */
+    // Saves the current deck and its status, and quits Eb.
+    // NOTE: CANNOT BE MADE PRIVATE DESPITE COMPILER COMPLAINING DUE TO addWindowListener CALL
     fun saveAndQuit() {
         saveEbStatus()
         DeckManager.save()
@@ -428,19 +345,19 @@ internal constructor() : JFrame(PROGRAM_NAME), Listener {
 
     private fun saveEbStatus() {
         val lines = ArrayList<String>()
-        lines.add("most_recently_reviewed_deck: " + DeckManager.currentDeck!!.name)
+        lines.add("most_recently_reviewed_deck: " + DeckManager.currentDeck().name)
         val statusFilePath = Paths.get(EB_STATUS_FILE)
         try {
             Files.write(statusFilePath, lines, Charset.forName("UTF-8"))
         } catch (e: IOException) {
-            Logger.getGlobal().info(e.toString() + "")
+            log("$e")
         }
 
     }
 
     private fun switchToPanel(panelId: String) {
-        val cardLayout = m_modesContainer.layout as CardLayout
-        cardLayout.show(m_modesContainer, panelId)
+        val cardLayout = modesContainer.layout as CardLayout
+        cardLayout.show(modesContainer, panelId)
     }
 
     private fun showInformationPanel() {
@@ -448,23 +365,18 @@ internal constructor() : JFrame(PROGRAM_NAME), Listener {
         updateOnScreenInformation()
     }
 
-    /**
-     * Shows the reviewing panel
-     */
+    // Shows the reviewing panel
     private fun showReviewingPanel() {
-        if (m_state != MainWindowState.REVIEWING) {
-            ReviewManager.start(m_reviewPanel)
-            m_state = MainWindowState.REVIEWING
+        if (state != MainWindowState.REVIEWING) {
+            ReviewManager.start(reviewPanel)
+            state = MainWindowState.REVIEWING
         }
         switchToPanel(REVIEW_PANEL_ID)
         updateOnScreenInformation()
     }
 
-    /**
-     * Shows the 'reactive' panel, which means the informational panel if no
-     * reviews need to be conducted, and the reviewing panel when cards need to be
-     * reviewed.
-     */
+    // Shows the 'reactive' panel, which means the informational panel if no reviews need to be conducted,
+    // and the reviewing panel when cards need to be reviewed.
     private fun showReactivePanel() {
         updateOnScreenInformation()
         if (mustReviewNow()) {
@@ -474,52 +386,32 @@ internal constructor() : JFrame(PROGRAM_NAME), Listener {
         }
     }
 
-    override fun respondToUpdate(update: Update) {
-        if (update.type == UpdateType.DECK_CHANGED) {
-            showCorrectPanel()
-        } else if (update.type == UpdateType.PROGRAMSTATE_CHANGED) {
-            m_state = MainWindowState.valueOf(update.contents)
-            m_reviewPanel.refresh() // there may be new cards to refresh
+    override fun respondToUpdate(update: Update)  = when (update.type) {
+        UpdateType.DECK_CHANGED -> showCorrectPanel()
+        UpdateType.PROGRAMSTATE_CHANGED -> {
+            state = MainWindowState.valueOf(update.contents)
+            reviewPanel.refresh() // there may be new cards to refresh
             updateOnScreenInformation()
             showCorrectPanel()
-        } else if (update.type == UpdateType.DECK_SWAPPED) {
-            val newState = if (mustReviewNow())
-                MainWindowState.REVIEWING
-            else
-                MainWindowState.REACTIVE
-            BlackBoard
-                    .post(Update(UpdateType.PROGRAMSTATE_CHANGED, newState.name))
         }
-    }
-
-    private fun showSummarizingPanel() {
-        switchToPanel(SUMMARIZING_PANEL_ID)
-    }
-
-    companion object {
-
-        // Automatically generated ID for serialization (not used).
-        private val serialVersionUID = 5327238918756780751L
-
-        // The name of the program.
-        private val PROGRAM_NAME = "Eb"
-
-        // IDs of the various panels, necessary for adding them to the CardLayout of the main panel
-        private val REVIEW_PANEL_ID = "REVIEWING_PANEL"
-        private val INFORMATION_PANEL_ID = "INFORMATION_PANEL"
-        private val SUMMARIZING_PANEL_ID = "SUMMARIZING_PANEL"
-        private val TIMED_REVIEW_START_PANEL_ID = "TIMER_START_PANEL"
-
-        // the name of the file that contains which deck has been consulted last
-        private val EB_STATUS_FILE = "eb_status.txt"
-
-        /**
-         * Displays the main window. Necessary since the Checker framework dislikes
-         * initializing values and doing things like 'add' in the same method.
-         */
-        fun display() {
-            val mainWindow = MainWindow()
-            mainWindow.init()
+        UpdateType.DECK_SWAPPED ->{
+            val newState =
+                    if (mustReviewNow()) MainWindowState.REVIEWING
+                    else MainWindowState.REACTIVE
+            BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, newState.name))
         }
+        else -> doNothing
     }
+
+    private fun showSummarizingPanel() = switchToPanel(SUMMARIZING_PANEL_ID)
+
+    // IDs of the various panels, necessary for adding them to the CardLayout of the main panel
+    private const val REVIEW_PANEL_ID = "REVIEWING_PANEL"
+    private const val INFORMATION_PANEL_ID = "INFORMATION_PANEL"
+    private const val SUMMARIZING_PANEL_ID = "SUMMARIZING_PANEL"
+
+    // the name of the file that contains which deck has been consulted last
+    private const val EB_STATUS_FILE = "eb_status.txt"
+
+
 }

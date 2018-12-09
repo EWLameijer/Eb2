@@ -2,7 +2,6 @@ package eb.subwindow
 
 import java.io.Serializable
 import java.util.Objects
-import java.util.Optional
 
 import eb.utilities.TimeInterval
 import eb.utilities.TimeUnit
@@ -37,32 +36,17 @@ class StudyOptions(
     // postconditions: none. This is a simple getter method that should not
     // change anything.
 
-
-    // the number of cards to be reviewed in a single reviewing session (like 20)
-    /**
-     * Whether the contents of this StudyOptions object equal those of another
-     * (StudyOptions) object.
-     *
-     * @param otherObject
-     * the object to compare this StudyOptions object with
-     *
-     * @return whether the contents of the other object equal the contents of this
-     * particular object
-     */
-    override fun equals(other: Any?): Boolean {
-        if (this === other) {
-            return true
-        } else if (other == null) {
-            return false
-        } else if (javaClass != other.javaClass) {
-            return false
-        } else {
+    override fun equals(other: Any?) = when {
+        this === other -> true
+        other == null -> false
+        javaClass != other.javaClass -> false
+        else -> {
             val otherOptions = other as StudyOptions?
-            return (initialInterval == otherOptions!!.initialInterval
-                    && reviewSessionSize == otherOptions.reviewSessionSize
-                    && rememberedInterval == otherOptions.rememberedInterval
-                    && Utilities.doublesEqualWithinThousands(lengtheningFactor, otherOptions.lengtheningFactor)
-                    && forgottenInterval == otherOptions.forgottenInterval)
+            (initialInterval == otherOptions!!.initialInterval &&
+                    reviewSessionSize == otherOptions.reviewSessionSize &&
+                    rememberedInterval == otherOptions.rememberedInterval &&
+                    Utilities.doublesEqualWithinThousands(lengtheningFactor, otherOptions.lengtheningFactor) &&
+                    forgottenInterval == otherOptions.forgottenInterval)
         }
     }
 
@@ -76,20 +60,12 @@ class StudyOptions(
         private const val serialVersionUID = -5967297039338080285L
 
         // The default initial interval.
-        private val DEFAULT_INITIAL_INTERVAL = TimeInterval(
-                10.0, TimeUnit.MINUTE)
-        private val DEFAULT_REMEMBERED_INTERVAL = TimeInterval(
-                1.0, TimeUnit.DAY)
-        private val DEFAULT_FORGOTTEN_INTERVAL = TimeInterval(
-                1.0, TimeUnit.HOUR)
+        private val DEFAULT_INITIAL_INTERVAL = TimeInterval(10.0, TimeUnit.MINUTE)
+        private val DEFAULT_REMEMBERED_INTERVAL = TimeInterval(1.0, TimeUnit.DAY)
+        private val DEFAULT_FORGOTTEN_INTERVAL = TimeInterval(1.0, TimeUnit.HOUR)
 
         // the default number of cards to be reviewed in a single reviewing session
-        private val DEFAULT_REVIEW_SESSION_SIZE = 20
-
-        private val DEFAULT_LENGTHENING_FACTOR = 5.0
-
-        private val DEFAULT_TIMER_INTERVAL = TimeInterval(
-                5.0, TimeUnit.SECOND)
-
+        private const val DEFAULT_REVIEW_SESSION_SIZE = 20
+        private const val DEFAULT_LENGTHENING_FACTOR = 5.0
     }
 }
