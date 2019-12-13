@@ -1,0 +1,20 @@
+AtFunctional
+AtImplementation
+AtDictionary
+
+
+@Functional
+Overview of Eb (functional)
+
+@Implementation
+Overview of Eb (implementation)
+
+
+
+Eb: launches the application, by starting up/showing the main window.
+
+
+@Dictionary
+Eb: class that starts up/bootstraps the entire application, mostly by launching the main window (MainWindow)
+java: Eb needs Java SDK instead of Kotlin one, as it depends on Swing, which only is decently defined in Java
+version: defined as VERSION_STRING in Eb

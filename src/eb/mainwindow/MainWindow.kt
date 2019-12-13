@@ -1,9 +1,9 @@
 package eb.mainwindow
 
+import eb.analysis.Analyzer
 import java.awt.BorderLayout
 import java.awt.CardLayout
 import java.awt.event.ActionEvent
-import java.awt.event.KeyEvent
 import java.awt.event.WindowListener
 import java.beans.EventHandler
 import java.io.IOException
@@ -40,7 +40,17 @@ import eb.utilities.doNothing
 import eb.utilities.isValidIdentifier
 import eb.utilities.pluralize
 import eb.utilities.log
+import java.awt.event.KeyEvent.getExtendedKeyCodeForChar
+import kotlin.system.exitProcess
 
+const val EB_VERSION = "2.0.6"
+
+// 2.0.6. Extra feature: now properly inserts spacing around ,
+// 2.0.5: Extra feature: three-sided cards. ALSO: better font
+// 2.0.4. Bugfix: should accumulate percentages over one run, not reset score without a deckswap or quit
+// 2.0.3. QoL improvement: show current score of reviewing process
+// 2.0.2. QoL-improvement: show percentage of cards successfully remembered
+// 2.0.1. Bugfix: was able to add cards with the same front
 
 // The name of the program.
 private const val PROGRAM_NAME = "Eb"
@@ -61,7 +71,12 @@ object MainWindow : JFrame(PROGRAM_NAME), Listener {
 
     // button the user can press to start reviewing. Only visible if the user for some reason decides to not review
     // cards yet (usually by having one rounds of review, and then stopping the reviewing)
-    private val startReviewingButton = JButton()
+    private val startReviewingButton = JButton().apply {
+        isVisible = false
+        addActionListener {
+            BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, MainWindowState.REACTIVE.name))
+        }
+    }
 
     // Contains the REVIEWING_PANEL and the INFORMATION_PANEL, using a CardLayout.
     private val modesContainer = JPanel()
@@ -91,33 +106,31 @@ object MainWindow : JFrame(PROGRAM_NAME), Listener {
             "The current deck contains ${"card".pluralize(DeckManager.currentDeck().cardCollection.getTotal())}."
 
     //Returns text indicating how long it will be to the next review
-    private fun timeToNextReviewMessage(): String {
-        val message = StringBuilder()
+    private fun timeToNextReviewMessage() = buildString {
         val currentDeck = DeckManager.currentDeck()
         val numCards = currentDeck.cardCollection.getTotal()
         if (numCards > 0) {
-            message.append("Time till next review: ")
+            append("Time till next review: ")
             val timeUntilNextReviewAsDuration = currentDeck.timeUntilNextReview()
             val timeUntilNextReviewAsText = Utilities.durationToString(timeUntilNextReviewAsDuration)
-            message.append(timeUntilNextReviewAsText)
-            message.append("<br>")
+            append(timeUntilNextReviewAsText)
+            append("<br>")
             startReviewingButton.isVisible = timeUntilNextReviewAsDuration.isNegative
         } else {
             startReviewingButton.isVisible = false
         }
-        return message.toString()
     }
 
     // Updates the message label (the information inside the main window, like time to next review)
     private fun updateMessageLabel() {
-        val message = StringBuilder()
-        message.append("<html>")
-        message.append(deckSizeMessage())
-        message.append("<br>")
-        message.append(timeToNextReviewMessage())
-        message.append(uiCommands)
-        message.append("</html>")
-        messageLabel.text = message.toString()
+        messageLabel.text = buildString {
+            append("<html>")
+            append(deckSizeMessage())
+            append("<br>")
+            append(timeToNextReviewMessage())
+            append(uiCommands)
+            append("</html>")
+        }
     }
 
     // Updates the title of the window, which contains information like the number of cards in the deck
@@ -126,7 +139,7 @@ object MainWindow : JFrame(PROGRAM_NAME), Listener {
         val numReviewingPoints = currentDeck.cardCollection.getReviewingPoints()
 
         val numReviewableCards = currentDeck.reviewableCardList().size
-        var title = ("Eb: ${currentDeck.name} (${"card".pluralize(numReviewableCards)} to be reviewed in total")
+        var title = ("Eb$EB_VERSION: ${currentDeck.name} (${"card".pluralize(numReviewableCards)} to be reviewed in total")
         if (state == MainWindowState.REVIEWING) {
             title += (", ${"card".pluralize(ReviewManager.cardsToGoYet())} yet to be reviewed in the current session")
         }
@@ -143,19 +156,19 @@ object MainWindow : JFrame(PROGRAM_NAME), Listener {
     }
 
     private fun showCorrectPanel() =
-        when (state) {
-            MainWindowState.REACTIVE -> showReactivePanel()
-            MainWindowState.INFORMATIONAL -> showInformationPanel()
-            MainWindowState.REVIEWING -> showReviewingPanel()
-            MainWindowState.SUMMARIZING -> showSummarizingPanel()
-        }
+            when (state) {
+                MainWindowState.REACTIVE -> showReactivePanel()
+                MainWindowState.INFORMATIONAL -> showInformationPanel()
+                MainWindowState.REVIEWING -> showReviewingPanel()
+                MainWindowState.SUMMARIZING -> showSummarizingPanel()
+            }
 
     private fun mustReviewNow() =
-        if (DeckManager.currentDeck().cardCollection.getTotal() == 0) false
-        else DeckManager.currentDeck().timeUntilNextReview().isNegative
+            if (DeckManager.currentDeck().cardCollection.getTotal() == 0) false
+            else DeckManager.currentDeck().timeUntilNextReview().isNegative
 
     // Opens the study options window, in which one can set the study options for
-     // a deck (after which interval the first card should be studied, etc.)
+    // a deck (after which interval the first card should be studied, etc.)
     private fun openStudyOptionsWindow() = StudyOptionsWindow.display()
 
     private fun createDeck() {
@@ -181,40 +194,28 @@ object MainWindow : JFrame(PROGRAM_NAME), Listener {
         } while (true) // user is allowed to try create decks until he/she succeeds or gives up
     }
 
+    private fun createMenuItem(label: String, actionKey: Char, listener: () -> Unit) = JMenuItem(label).apply {
+        accelerator = KeyStroke.getKeyStroke(getExtendedKeyCodeForChar(actionKey.toInt()), ActionEvent.CTRL_MASK)
+        addActionListener { listener() }
+    }
+
+
     //Performs the proper buildup of the window (after the construction has initialized all components properly).
     private fun init() {
         // add menu
         val fileMenu = JMenu("File")
-        val createItem = JMenuItem("Create deck")
-        createItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_K, ActionEvent.CTRL_MASK)
-        createItem.addActionListener { createDeck() }
-        fileMenu.add(createItem)
-        val loadItem = JMenuItem("Load deck")
-        loadItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_L, ActionEvent.CTRL_MASK)
-        loadItem.addActionListener { loadDeck() }
-        fileMenu.add(loadItem)
-        val restoreItem = JMenuItem("Restore from archive")
-        restoreItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_H, ActionEvent.CTRL_MASK)
-        restoreItem.addActionListener { restoreDeck() }
-        fileMenu.add(restoreItem)
-        val quitItem = JMenuItem("Quit")
-        quitItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_Q, ActionEvent.CTRL_MASK)
-        quitItem.addActionListener { saveAndQuit() }
-        fileMenu.add(quitItem)
+        fileMenu.add(createMenuItem("Create deck", 'k', ::createDeck))
+        fileMenu.add(createMenuItem("Load deck", 'l', ::loadDeck))
+        fileMenu.add(createMenuItem("Restore from archive", 'h', ::restoreDeck))
+        fileMenu.add(createMenuItem("Analyze deck", 'z', ::analyzeDeck))
+        fileMenu.add(createMenuItem("Quit", 'q', ::saveAndQuit))
+
         val deckManagementMenu = JMenu("Manage Deck")
-        val addCardItem = JMenuItem("Add Card")
-        addCardItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_N, ActionEvent.CTRL_MASK)
-        addCardItem.addActionListener { CardEditingManager() }
-        deckManagementMenu.add(addCardItem)
-        val studyOptionsItem = JMenuItem("Study Options")
-        studyOptionsItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_T, ActionEvent.CTRL_MASK)
-        studyOptionsItem.addActionListener { openStudyOptionsWindow() }
-        deckManagementMenu.add(studyOptionsItem)
-        val archivingOptionsItem = JMenuItem(
-                "Deck Archiving Options")
-        archivingOptionsItem.accelerator = KeyStroke.getKeyStroke(KeyEvent.VK_R, ActionEvent.CTRL_MASK)
-        archivingOptionsItem.addActionListener { openDeckArchivingWindow() }
-        deckManagementMenu.add(archivingOptionsItem)
+        deckManagementMenu.add(createMenuItem("Add Card", 'n') { CardEditingManager(false) })
+        deckManagementMenu.add(createMenuItem("Add Card (triple mode)", 'o') { CardEditingManager(true) })
+        deckManagementMenu.add(createMenuItem("Study Options", 't', ::openStudyOptionsWindow))
+        deckManagementMenu.add(createMenuItem("Deck Archiving Options", 'r', ::openDeckArchivingWindow))
+
         val mainMenuBar = JMenuBar()
         mainMenuBar.add(fileMenu)
         mainMenuBar.add(deckManagementMenu)
@@ -234,7 +235,7 @@ object MainWindow : JFrame(PROGRAM_NAME), Listener {
 
         // now show the window itself.
         setSize(1000, 700)
-        defaultCloseOperation = JFrame.EXIT_ON_CLOSE
+        defaultCloseOperation = EXIT_ON_CLOSE
 
         // Instead of using the WindowAdapter class, use the EventHandler utility
         // class to create a class with default noop methods, just overriding the
@@ -248,6 +249,10 @@ object MainWindow : JFrame(PROGRAM_NAME), Listener {
         updateOnScreenInformation()
     }
 
+    private fun analyzeDeck() {
+        Analyzer.run()
+    }
+
     private fun restoreDeck() {
         val chooser = JFileChooser()
         val result = chooser.showOpenDialog(this)
@@ -259,7 +264,7 @@ object MainWindow : JFrame(PROGRAM_NAME), Listener {
         }
     }
 
-    private fun openDeckArchivingWindow() =  ArchivingSettingsWindow.display()
+    private fun openDeckArchivingWindow() = ArchivingSettingsWindow.display()
 
     private fun setNameOfLastReviewedDeck() {
         val statusFilePath = Paths.get(EB_STATUS_FILE)
@@ -322,16 +327,10 @@ object MainWindow : JFrame(PROGRAM_NAME), Listener {
         return false
     }
 
-    private fun createInformationPanel(): JPanel {
-        val informationPanel = JPanel()
-        informationPanel.layout = BorderLayout()
-        informationPanel.add(messageLabel, BorderLayout.CENTER)
-        startReviewingButton.isVisible = false
-        startReviewingButton.addActionListener {
-            BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, MainWindowState.REACTIVE.name))
-        }
-        informationPanel.add(startReviewingButton, BorderLayout.SOUTH)
-        return informationPanel
+    private fun createInformationPanel() = JPanel().apply{
+        layout = BorderLayout()
+        add(messageLabel, BorderLayout.CENTER)
+        add(startReviewingButton, BorderLayout.SOUTH)
     }
 
     // Saves the current deck and its status, and quits Eb.
@@ -340,7 +339,7 @@ object MainWindow : JFrame(PROGRAM_NAME), Listener {
         saveEbStatus()
         DeckManager.save()
         dispose()
-        System.exit(0)
+        exitProcess(0)
     }
 
     private fun saveEbStatus() {
@@ -386,7 +385,7 @@ object MainWindow : JFrame(PROGRAM_NAME), Listener {
         }
     }
 
-    override fun respondToUpdate(update: Update)  = when (update.type) {
+    override fun respondToUpdate(update: Update) = when (update.type) {
         UpdateType.DECK_CHANGED -> showCorrectPanel()
         UpdateType.PROGRAMSTATE_CHANGED -> {
             state = MainWindowState.valueOf(update.contents)
@@ -394,7 +393,7 @@ object MainWindow : JFrame(PROGRAM_NAME), Listener {
             updateOnScreenInformation()
             showCorrectPanel()
         }
-        UpdateType.DECK_SWAPPED ->{
+        UpdateType.DECK_SWAPPED -> {
             val newState =
                     if (mustReviewNow()) MainWindowState.REVIEWING
                     else MainWindowState.REACTIVE
@@ -412,6 +411,4 @@ object MainWindow : JFrame(PROGRAM_NAME), Listener {
 
     // the name of the file that contains which deck has been consulted last
     private const val EB_STATUS_FILE = "eb_status.txt"
-
-
 }

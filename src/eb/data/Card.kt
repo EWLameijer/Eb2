@@ -15,7 +15,7 @@ import eb.utilities.log
 class Card(var front: Hint, var back: String) : Serializable {
 
     internal val creationInstant = Instant.now()
-    private var reviews = mutableListOf<Review>()
+    private val reviews = mutableListOf<Review>()
 
     fun lastReview() : Review? = reviews.last()
 
@@ -35,6 +35,8 @@ class Card(var front: Hint, var back: String) : Serializable {
     // Return the current number of consecutively successful reviews (2 uninterrupted successful reviews, 0
     // successful reviews (after a failure), and so on...)
     fun streakSize() = reviews.takeLastWhile { it.wasSuccess }.size
+
+    fun getReviews() = reviews.toList()
 
     companion object {
         // the proper auto-generated serialVersionUID as cards should be serializable.

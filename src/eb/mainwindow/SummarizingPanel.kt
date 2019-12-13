@@ -5,7 +5,7 @@ import java.awt.Graphics
 import java.awt.event.ComponentListener
 import java.beans.EventHandler
 
-import com.sun.glass.events.KeyEvent
+import java.awt.event.KeyEvent
 
 import eb.data.DeckManager
 import eb.eventhandling.BlackBoard
@@ -91,28 +91,31 @@ class SummarizingPanel internal constructor() : JPanel() {
 
     public override fun paintComponent(g: Graphics) {
         super.paintComponent(g)
-        val allReviews = ReviewManager.reviewResults()
-        val completedReviews = allReviews.filterNotNull()
-        val text = StringBuilder()
-        text.append("<html>")
-        text.append("<b>Summary</b><br><br>")
-        text.append("Cards reviewed<br>")
-        val totalNumberOfReviews = completedReviews.size.toLong()
-        val (correctReviews, incorrectReviews ) = completedReviews.partition { it.wasSuccess }
-        text.append("total: $totalNumberOfReviews <br>")
-        text.append("correctly answered: ${correctReviews.size}<br>")
-        text.append("incorrectly answered: ${incorrectReviews.size}<br>")
-        text.append("<br><br>")
-        text.append("time needed for answering<br>")
-        val averageTime = completedReviews.map { it.thinkingTime }.averageOrNull()
-        text.append("average time: ${optionalDoubleToString(averageTime)}<br>")
 
-        val averageCorrectTime = correctReviews.map { it.thinkingTime }.averageOrNull()
-        text.append("average time per correct card: ${optionalDoubleToString(averageCorrectTime)}<br>")
-        val averageIncorrectTime = incorrectReviews.map { it.thinkingTime }.averageOrNull()
-        text.append("average time per incorrect card: ${optionalDoubleToString(averageIncorrectTime)}<br>")
-        text.append("</html>")
-        report.text = text.toString()
+        report.text  = buildString {
+            append("<html>")
+            append("<b>Summary</b><br><br>")
+            append("Cards reviewed<br>")
+            val allReviews = ReviewManager.reviewResults()
+            val completedReviews = allReviews.filterNotNull()
+            val totalNumberOfReviews = completedReviews.size.toLong()
+            val (correctReviews, incorrectReviews) = completedReviews.partition { it.wasSuccess }
+            append("total: $totalNumberOfReviews <br>")
+            append("correctly answered: ${correctReviews.size}<br>")
+            append("incorrectly answered: ${incorrectReviews.size}<br>")
+            val percentageOfCorrectReviews = 100.0 * correctReviews.size / totalNumberOfReviews
+            val percentageCorrectReviewsAsString = String.format("%.2f", percentageOfCorrectReviews)
+            append("percentage of correct reviews: $percentageCorrectReviewsAsString%")
+            append("<br><br>")
+            append("time needed for answering<br>")
+            val averageTime = completedReviews.map { it.thinkingTime }.averageOrNull()
+            append("average time: ${optionalDoubleToString(averageTime)}<br>")
+            val averageCorrectTime = correctReviews.map { it.thinkingTime }.averageOrNull()
+            append("average time per correct card: ${optionalDoubleToString(averageCorrectTime)}<br>")
+            val averageIncorrectTime = incorrectReviews.map { it.thinkingTime }.averageOrNull()
+            append("average time per incorrect card: ${optionalDoubleToString(averageIncorrectTime)}<br>")
+            append("</html>")
+        }
         val cardLayout = buttonPanel.layout as CardLayout
         if (DeckManager.currentDeck().reviewableCardList().isEmpty()) {
             cardLayout.show(buttonPanel, REVIEWS_COMPLETED_MODE)

@@ -9,12 +9,12 @@ import java.text.DecimalFormat
 import java.text.NumberFormat
 import java.text.ParsePosition
 import java.time.Duration
-import java.util.Arrays
 import java.util.HashSet
 import java.util.logging.Logger
 import java.util.regex.Pattern
 
 import javax.swing.KeyStroke
+import kotlin.math.abs
 
 /**
  * Contains some tools/generic methods that are not application-domain specific
@@ -28,14 +28,30 @@ class Hint(rawContents: String) : Comparable<Hint>, Serializable {
 
     val contents = if (rawContents.isBlank())
         throw IllegalArgumentException("A Hint object needs to contain visible data")
-        else rawContents.trim()
+    else rawContents.trim()
 
     override fun compareTo(other: Hint) = contents.compareTo(other.contents)
 
     override fun toString() = contents
 
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (javaClass != other?.javaClass) return false
+
+        other as Hint
+
+        if (contents != other.contents) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return contents.hashCode()
+    }
+
     companion object {
         fun isValid(candidateContents: String) = !candidateContents.isBlank()
+        private const val serialVersionUID = -6526056675010032709L // to prevent updates from breaking Eb
     }
 }
 
@@ -50,7 +66,7 @@ fun log(text: String) = Logger.getGlobal().info(text)
 
 object Utilities {
     // Line separator that, unlike '\n', consistently works when producing output
-    val EOL : String = System.getProperty("line.separator")
+    val EOL: String = System.getProperty("line.separator")
 
 
     fun stringToDouble(string: String): Double? {
@@ -72,9 +88,9 @@ object Utilities {
      * the component to be patched
      */
     fun makeTabTransferFocus(component: Component) {
-        var strokes: Set<KeyStroke> = HashSet(Arrays.asList(KeyStroke.getKeyStroke("pressed TAB")))
+        var strokes: Set<KeyStroke> = HashSet(listOf(KeyStroke.getKeyStroke("pressed TAB")))
         component.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, strokes)
-        strokes = HashSet( Arrays.asList(KeyStroke.getKeyStroke("shift pressed TAB")))
+        strokes = HashSet(listOf(KeyStroke.getKeyStroke("shift pressed TAB")))
         component.setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, strokes)
     }
 
@@ -87,10 +103,10 @@ object Utilities {
      * the component to be patched.
      */
     fun makeTabAndEnterTransferFocus(component: Component) {
-        var strokes: MutableSet<KeyStroke> = HashSet(Arrays.asList(KeyStroke.getKeyStroke("pressed TAB")))
-        strokes.addAll(Arrays.asList(KeyStroke.getKeyStroke("pressed ENTER")))
+        var strokes: MutableSet<KeyStroke> = HashSet(listOf(KeyStroke.getKeyStroke("pressed TAB")))
+        strokes.addAll(listOf(KeyStroke.getKeyStroke("pressed ENTER")))
         component.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, strokes)
-        strokes = HashSet(Arrays.asList(KeyStroke.getKeyStroke("shift pressed TAB")))
+        strokes = HashSet(listOf(KeyStroke.getKeyStroke("shift pressed TAB")))
         component.setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, strokes)
     }
 
@@ -108,7 +124,8 @@ object Utilities {
     fun doubleToMaxPrecisionString(number: Double, maxPrecision: Int): String {
         // preconditions: maxPrecision should be 0 or greater
         require(maxPrecision >= 0) {
-                "Utilities.doubleToMaxPrecisionString error: the given precision should be 0 or positive."}
+            "Utilities.doubleToMaxPrecisionString error: the given precision should be 0 or positive."
+        }
 
         val numberFormatter = DecimalFormat()
         numberFormatter.isGroupingUsed = false
@@ -123,7 +140,7 @@ object Utilities {
     // returns whether the given string is fully filled with a valid integer (...-2,-1,0,1,2,...).
     // Note that this method does not accept leading or trailing whitespace, nor a '+' sign.
     fun representsInteger(string: String, maxSize: Int? = null) =
-            if (maxSize != null && string.length > maxSize ) false
+            if (maxSize != null && string.length > maxSize) false
             else Pattern.matches("-?\\d+", string)
 
     /**
@@ -139,7 +156,8 @@ object Utilities {
      */
     private fun representsFractionalNumber(string: String, maxPrecision: Int): Boolean {
         require(maxPrecision >= 0) {
-            "Utilities.representsFractionalNumber() error: the maximum precision should be a positive number."}
+            "Utilities.representsFractionalNumber() error: the maximum precision should be a positive number."
+        }
         if (!string.isValidIdentifier) {
             return false
         }
@@ -159,8 +177,8 @@ object Utilities {
      * positive integer, that is also formally a rational number)
      */
     fun representsPositiveFractionalNumber(string: String, maxPrecision: Int) =
-        if (string.startsWith("-")) false
-        else representsFractionalNumber(string, maxPrecision)
+            if (string.startsWith("-")) false
+            else representsFractionalNumber(string, maxPrecision)
 
 
     fun stringToInt(string: String): Int? {
@@ -169,10 +187,10 @@ object Utilities {
         val numberFormat = NumberFormat.getNumberInstance()
         val parsePosition = ParsePosition(0)
         val number = numberFormat.parse(string, parsePosition)
-        return if (parsePosition.index == 0) null else  number.toInt()
+        return if (parsePosition.index == 0) null else number.toInt()
     }
 
-    fun durationToString(duration: Duration): String {
+    fun durationToString(duration: Duration) = buildString {
         var durationAsSeconds = duration.seconds
         var finalPrefix = ""
         if (durationAsSeconds < 0) {
@@ -180,25 +198,25 @@ object Utilities {
             finalPrefix = "minus "
         }
         val seconds = durationAsSeconds % 60
-        val output = StringBuilder(" seconds")
-        output.insert(0, seconds)
+        append(" seconds")
+        insert(0, seconds)
         val durationAsMinutes = durationAsSeconds / 60
         if (durationAsMinutes > 0) {
             val minutes = durationAsMinutes % 60
-            output.insert(0, minutes.toString() + " minutes and ")
+            insert(0, "$minutes minutes and ")
             val durationAsHours = durationAsMinutes / 60
             if (durationAsHours > 0) {
                 val hours = durationAsHours % 24
-                output.insert(0, hours.toString() + " hours, ")
+                insert(0, "$hours hours, ")
                 val days = durationAsHours / 24
                 if (days > 0) {
-                    output.insert(0, days.toString() + " days, ")
+                    insert(0, "$days days, ")
                 }
             }
         }
-        output.insert(0, finalPrefix)
-        return output.toString()
+        insert(0, finalPrefix)
     }
+
 
     fun durationToSeconds(duration: Duration): Double {
         val nanoPart = duration.nano / 1_000_000_000.0
@@ -235,12 +253,12 @@ object Utilities {
             java.lang.Double.doubleToLongBits(d1 - d2) == 0L -> true
             // Note that d2 cannot be 0.0 because otherwise the first if-statement
             // would already have returned.
-            java.lang.Double.doubleToLongBits(d1) == 0L -> Math.abs(d2) < smallestAllowedDifference
-            java.lang.Double.doubleToLongBits(d2) == 0L -> Math.abs(d1) < smallestAllowedDifference
+            java.lang.Double.doubleToLongBits(d1) == 0L -> abs(d2) < smallestAllowedDifference
+            java.lang.Double.doubleToLongBits(d2) == 0L -> abs(d1) < smallestAllowedDifference
             else -> {
                 val largerAbsoluteNumber: Double
                 val smallerAbsoluteNumber: Double
-                if (Math.abs(d1) > Math.abs(d2)) {
+                if (abs(d1) > abs(d2)) {
                     largerAbsoluteNumber = d1
                     smallerAbsoluteNumber = d2
                 } else {
@@ -248,7 +266,7 @@ object Utilities {
                     smallerAbsoluteNumber = d1
                 }
                 val ratio = (largerAbsoluteNumber - smallerAbsoluteNumber) / smallerAbsoluteNumber
-                Math.abs(ratio) < smallestAllowedDifference
+                abs(ratio) < smallestAllowedDifference
             }
         }
     }
@@ -258,4 +276,4 @@ object Utilities {
     fun pluralize(word: String, number: Int) = word + if (number == 1) EMPTY_STRING else "s"
 }
 
-fun String.pluralize(number: Int) = number.toString() + " " + Utilities.pluralize(this, number)
+fun String.pluralize(number: Int) = "$number ${Utilities.pluralize(this, number)}"

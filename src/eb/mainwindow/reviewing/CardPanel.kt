@@ -37,7 +37,9 @@ class CardPanel : JPanel() {
     init {
         layout = BorderLayout()
         textPane.isEditable = false
-        textPane.font = Font("Arial", Font.PLAIN, 30)
+        textPane.font = Font("Yu Gothic UI Regular", Font.PLAIN, 30) // Arial NO Times new Roman NO Helvetica NO
+        // Yu Gothic UI Regular 7.75
+        // Yu Gothic Regular 6.75 OK
         textPane.border = BorderFactory.createLineBorder(Color.black)
 
         // from http://stackoverflow.com/questions/3213045/centering-text-in-a-jtextarea-or-jtextpane-horizontal-text-alignment

@@ -2,13 +2,9 @@ package eb
 
 import java.io.IOException
 import java.net.ServerSocket
-
 import javax.swing.JOptionPane
 
-import eb.eventhandling.BlackBoard
-import eb.eventhandling.UpdateType
 import eb.mainwindow.MainWindow
-import eb.mainwindow.reviewing.ReviewManager
 
 /**
  * Runs Eb.
@@ -17,11 +13,7 @@ import eb.mainwindow.reviewing.ReviewManager
  */
 object Eb {
 
-    var VERSION_STRING = "1.3"
-
-    private var errortype = "Access Error"
-
-    var error = "The application is already running....."
+    const val VERSION_STRING = "1.3"
 
     @JvmStatic
     fun main(args: Array<String>) {
@@ -29,18 +21,17 @@ object Eb {
         // http://stackoverflow.com/questions/19082265/how-to-ensure-only-one-instance-of-a-java-program-can-be-executed
 
         try {
-            //creating object of server socket and bind to some port number
+            // create object of server socket and bind to some port number
             ServerSocket(14356)
-            ////do not put common port number like 80 etc. Because they are already used by system
-            // If exists another instance, show message and terminates the current instance.
+            // do not put common port number like 80 etc. Because they are already used by system
+            // If another instance exists, show message and terminates the current instance.
             // Otherwise starts application.
 
-            BlackBoard.register(ReviewManager, UpdateType.DECK_SWAPPED)
-            BlackBoard.register(ReviewManager, UpdateType.CARD_CHANGED)
-            BlackBoard.register(ReviewManager, UpdateType.DECK_CHANGED)
             MainWindow
+
         } catch (exc: IOException) {
-            JOptionPane.showMessageDialog(null, error, errortype, JOptionPane.ERROR_MESSAGE)
+            JOptionPane.showMessageDialog(null, "The application is already running.....",
+                    "Access Error", JOptionPane.ERROR_MESSAGE)
             System.exit(0)
         }
     }

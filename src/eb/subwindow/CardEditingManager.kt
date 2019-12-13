@@ -19,10 +19,10 @@ import eb.utilities.Hint
  *
  * @author Eric-Wubbo Lameijer
  */
-class CardEditingManager (private var card: Card? = null) {
+class CardEditingManager(private val tripleModus: Boolean = false, private var card: Card? = null) {
 
-    private val cardEditingWindow: CardEditingWindow? = when (card) {
-        null -> CardEditingWindow.display("", "", this)
+    private val cardEditingWindow: GenericCardEditingWindow? = when (card) {
+        null -> if (tripleModus) ThreeSidedCardWindow.display(this) else CardEditingWindow.display("", "", this)
         !in c_cardsBeingEdited -> CardEditingWindow.display(card!!.front.contents, card!!.back, this)
         else -> null
     }
@@ -35,7 +35,7 @@ class CardEditingManager (private var card: Card? = null) {
 
     fun inCardCreatingMode() = card == null
 
-    fun processProposedContents(frontText: String, backText: String) {
+    fun processProposedContents(frontText: String, backText: String, shouldClearCardWindow: Boolean, callingWindow: GenericCardEditingWindow) {
         // Case 1 of 3: there are empty fields. Or at least: the front is empty.
         // Investigate the exact problem.
         if (!Hint.isValid(frontText)) {
@@ -57,41 +57,27 @@ class CardEditingManager (private var card: Card? = null) {
             val frontHint = Hint(frontText)
             val currentCardWithThisFront = DeckManager.currentDeck().cardCollection.getCardWithFront(frontHint)
             if (frontText == currentFront() || currentCardWithThisFront == null) {
-                submitCardContents(frontHint, backText)
+                submitCardContents(frontHint, backText, shouldClearCardWindow, callingWindow)
             } else {
                 // Case 3 of 3: there is a current (but different) card with the same front. Resolve this conflict.
-                handleCardBeingDuplicate(frontHint, backText, currentCardWithThisFront)
+                handleCardBeingDuplicate(frontHint, backText, currentCardWithThisFront, callingWindow)
             }
         }
     }
 
-    private fun handleCardBeingDuplicate(frontText: Hint, backText: String, duplicate: Card) {
-        val reeditButton = JButton("Re-edit card")
-        reeditButton.addActionListener { closeOptionPane() }
+    private fun handleCardBeingDuplicate(frontText: Hint, backText: String, duplicate: Card, callingWindow: GenericCardEditingWindow) {
+        val reeditButton = JButton("Re-edit card").apply {
+            addActionListener { closeOptionPane() }
+        }
 
-        val mergeButton = JButton("Merge backs of cards")
-        mergeButton.addActionListener {
-            val otherBack = duplicate.back
-            val newBack = "$otherBack; $backText"
-            closeOptionPane()
-            cardEditingWindow!!.updateContents(frontText.contents, newBack)
-            DeckManager.currentDeck().cardCollection.removeCard(duplicate)
+        val mergeButton = JButton("Merge backs of cards").apply {
+            addActionListener { mergeBacks(duplicate, backText, frontText) }
         }
-        val deleteThisButton = JButton("Delete this card")
-        deleteThisButton.addActionListener {
-            closeOptionPane()
-            if (inCardCreatingMode()) {
-                cardEditingWindow!!.updateContents("", "")
-            } else {
-                DeckManager.currentDeck().cardCollection.removeCard(card!!)
-                endEditing()
-            }
+        val deleteThisButton = JButton("Delete this card").apply {
+            addActionListener { deleteCurrentCard() }
         }
-        val deleteOtherButton = JButton("Delete the other card")
-        deleteOtherButton.addActionListener {
-            DeckManager.currentDeck().cardCollection.removeCard(duplicate)
-            closeOptionPane()
-            submitCardContents(frontText, backText)
+        val deleteOtherButton = JButton("Delete the other card").apply {
+            addActionListener { deleteOtherCard(duplicate, frontText, backText, callingWindow) }
         }
         val buttons = arrayOf(reeditButton, mergeButton, deleteThisButton, deleteOtherButton)
         JOptionPane.showOptionDialog(null,
@@ -100,13 +86,41 @@ class CardEditingManager (private var card: Card? = null) {
                 JOptionPane.QUESTION_MESSAGE, null, buttons, null)
     }
 
+    private fun deleteOtherCard(duplicate: Card, frontText: Hint, backText: String, callingWindow: GenericCardEditingWindow) {
+        DeckManager.currentDeck().cardCollection.removeCard(duplicate)
+        closeOptionPane()
+        submitCardContents(frontText, backText, true, callingWindow)
+    }
+
+    private fun deleteCurrentCard() {
+        closeOptionPane()
+        if (inCardCreatingMode()) {
+            cardEditingWindow!!.clearContents()
+        } else {
+            DeckManager.currentDeck().cardCollection.removeCard(card!!)
+            endEditing()
+        }
+    }
+
+    private fun mergeBacks(duplicate: Card, backText: String, frontText: Hint) {
+        val otherBack = duplicate.back
+        val newBack = "$otherBack; $backText"
+        closeOptionPane()
+        if (!tripleModus) {
+            cardEditingWindow!!.updateContents(frontText.contents, newBack)
+        } else {
+            CardEditingWindow.display(frontText.contents, newBack, this)
+        }
+        DeckManager.currentDeck().cardCollection.removeCard(duplicate)
+    }
+
     // Submits these contents to the deck, and closes the editing window if appropriate.
-    private fun submitCardContents(frontText: Hint, backText: String) {
+    private fun submitCardContents(frontText: Hint, backText: String, shouldClearCardWindow: Boolean, callingWindow: GenericCardEditingWindow) {
         if (inCardCreatingMode()) {
             val candidateCard = Card(frontText, backText)
             DeckManager.currentDeck().cardCollection.addCard(candidateCard)
-            cardEditingWindow!!.updateContents("", "")
-            cardEditingWindow.focusFront()
+            if (shouldClearCardWindow) callingWindow.clearContents()
+            callingWindow.focusFront()
         } else {
             // in editing mode
             card!!.front = frontText

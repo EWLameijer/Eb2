@@ -21,5 +21,5 @@ object BlackBoard {
         listeners[update.type]?.forEach { it.respondToUpdate(update) }
     }
 
-    fun register(listener: Listener, updateType: UpdateType) = listeners[updateType]!!.add(listener)
+    fun register(listener: Listener, updateType: UpdateType) = (listeners[updateType] ?: error("")).add(listener)
 }

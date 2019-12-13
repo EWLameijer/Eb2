@@ -16,6 +16,7 @@ import eb.utilities.Hint
 import eb.utilities.EMPTY_STRING
 import eb.utilities.doNothing
 import eb.utilities.log
+import kotlin.math.min
 
 /**
  * Manages the review session much like Deck manages the LogicalDeck: there can only be one review at a time
@@ -23,10 +24,16 @@ import eb.utilities.log
  * @author Eric-Wubbo Lameijer
  */
 object ReviewManager : Listener {
+    init {
+        BlackBoard.register(this, UpdateType.DECK_SWAPPED)
+        BlackBoard.register(this, UpdateType.CARD_CHANGED)
+        BlackBoard.register(this, UpdateType.DECK_CHANGED)
+    }
 
     private var reviewPanel: ReviewPanel? = null
     private var currentDeck: Deck? = null
     private var cardsToBeReviewed = mutableListOf<Card>()
+    private var cardsReviewed = mutableListOf<Card>()
 
     // counter stores the index of the card in the cardsToBeReviewed list that should be reviewed next.
     private var counter: Int = 0
@@ -43,7 +50,7 @@ object ReviewManager : Listener {
 
     fun reviewResults(): List<Review?> {
         ensureReviewSessionIsValid()
-        return cardsToBeReviewed.map{ it.lastReview()}
+        return cardsReviewed.map { it.lastReview() }
     }
 
     fun currentCard(): Card? =
@@ -63,11 +70,11 @@ object ReviewManager : Listener {
             reviewPanel = inputReviewPanel
             currentDeck = DeckManager.currentDeck()
         }
-        initializeReviewSession()
+        continueReviewSession()
     }
 
     private fun ensureReviewSessionIsValid() {
-        if (currentDeck !== DeckManager.currentDeck()) {
+        if (currentDeck != DeckManager.currentDeck()) {
             currentDeck = DeckManager.currentDeck()
             initializeReviewSession()
         }
@@ -79,6 +86,7 @@ object ReviewManager : Listener {
         val durationInSeconds = duration.nano / 1000_000_000.0 + duration.seconds
         log("$counter $durationInSeconds")
         currentCard()!!.addReview(Review(duration, wasRemembered))
+        cardsReviewed.add(currentCard()!!)
         moveToNextReviewOrEnd()
     }
 
@@ -104,20 +112,26 @@ object ReviewManager : Listener {
     }
 
     private fun initializeReviewSession() {
+        cardsReviewed = mutableListOf() // don't carry old reviews with you.
+        continueReviewSession()
+    }
+
+    private fun continueReviewSession() {
         val currentDeck = DeckManager.currentDeck()
+
         val maxNumReviews = currentDeck.studyOptions.reviewSessionSize
         val reviewableCards = currentDeck.reviewableCardList().toMutableList()
         val totalNumberOfReviewableCards = reviewableCards.size
         log("Number of reviewable cards is $totalNumberOfReviewableCards")
         val numCardsToBeReviewed =
                 if (maxNumReviews == null) totalNumberOfReviewableCards
-                else Math.min(maxNumReviews, totalNumberOfReviewableCards)
+                else min(maxNumReviews, totalNumberOfReviewableCards)
         // now, for best effect, those cards which have expired more recently should
         // be rehearsed first, as other cards probably need to be relearned anyway,
         // and we should try to contain the damage.
         reviewableCards.sortBy { currentDeck.getTimeUntilNextReview(it) }
         // get the first n for the review
-        cardsToBeReviewed = ArrayList( reviewableCards.subList(0, numCardsToBeReviewed))
+        cardsToBeReviewed = ArrayList(reviewableCards.subList(0, numCardsToBeReviewed))
         cardsToBeReviewed.shuffle()
 
         counter = 0
@@ -160,10 +174,9 @@ object ReviewManager : Listener {
             return
         }
         val deletingCurrentCard = !deckContainsCardWithThisFront(cardsToBeReviewed[counter].front)
-        val deletedIndices = cardsToBeReviewed.withIndex().
-                filter{ !deckContainsCardWithThisFront(cardsToBeReviewed[it.index].front) }.map { it.index }
-        cardsToBeReviewed = cardsToBeReviewed.filter { deckContainsCardWithThisFront(it.front)}.toMutableList()
-        deletedIndices.forEach{ if (it <= counter) counter-- }
+        val deletedIndices = cardsToBeReviewed.withIndex().filter { !deckContainsCardWithThisFront(cardsToBeReviewed[it.index].front) }.map { it.index }
+        cardsToBeReviewed = cardsToBeReviewed.filter { deckContainsCardWithThisFront(it.front) }.toMutableList()
+        deletedIndices.forEach { if (it <= counter) counter-- }
 
         if (deletingCurrentCard) {
             moveToNextReviewOrEnd()

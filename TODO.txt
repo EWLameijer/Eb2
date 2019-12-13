@@ -1,3 +1,24 @@
+PLAN
+
+
+
+1) Print results (#card, percentages) out (stdout) so you won't forget them easily
+1) fix bug where in deleting cards you still see the card after deletion =? I cannot reproduce that...
+2) Automatically add "[H]"? 2 35 min
+4) analysis: how long? 800 - 2 u
+    first review after: (log scale) <1u, 1u-1.5u, 1.5u-2u, 3u, 5u, 8u, 12u, 18u, 27u, 40u, 60u, 60+u
+    Dan F1: remembered at interval:
+    Dan F2: FirstDuration AND secondDuration. Both separate firstDuration and secondDuration stats. Expected: success secondDuration inches up if firstDuration is longer.
+5) support pictures 500 - 6u
+6) Better at remembering at certain times than others? (morning, evening, afternoon?)
+
+
+Problem:
+initializeReviewSession
+->
+
+
+
 GENERAL:
 ONLY 10 min on working days, until time paid back (8u+12 min!) Niet tot ik die 1659 min heb ingehaald :!
 
@@ -35,6 +56,9 @@ Next: finish own fast review, then print, re-review and book-comment
 ? retest everything?
 ? invest time in automatic testing?
 ? You can have multiple study-options windows open?
+? Whenever a bug, try at least 10 min testing framework;
+    AssertJSwing https://joel-costigliola.github.io/assertj/assertj-swing.html#code
+    http://sikulix.com/quickstart/
 
 After: self-check (redundancies, comments)
 

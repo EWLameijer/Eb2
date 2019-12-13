@@ -5,29 +5,31 @@ import java.awt.GridBagLayout
 import java.awt.Insets
 
 import eb.data.DeckManager
+import eb.utilities.EMPTY_STRING
 import eb.utilities.Utilities
 import javax.swing.*
 
 /**
- * CardEditingWindow allows the user to add a new card to the deck, or to edit
- * an existing card.
+ * ThreeSidedCardWindow allows the user to add a new card to the deck, with
+ * a writing part (like kanji, like 明日), a pronounciation part (like kana, like あした
+ * and a meaning part (like 'tomorrow'), which will result in 4 new cards being made
  *
  * It is managed by a CardEditingManager object, which checks the returned
  * contents and opens/closes it.
  *
  * @author Eric-Wubbo Lameijer
  */
-class CardEditingWindow(frontText: String, backText: String, private val manager: CardEditingManager) : GenericCardEditingWindow() {
+class ThreeSidedCardWindow(private val manager: CardEditingManager) : GenericCardEditingWindow() {
 
+    private val cardTopPane = JTextPane()
 
+    private val cardMiddlePane = JTextPane()
 
-    // Allows the creation/editing of the content on the front of the card.
-    private val cardFrontPane = JTextPane()
+    private val cardBottomPane = JTextPane()
 
-    // Allows the creation/editing of the contents of the back of the card.
-    private val cardBackPane = JTextPane()
+    // The button to cancel creating this card, and return to the calling window.
 
-    override val cardPanes = listOf(cardFrontPane, cardBackPane)
+    override val cardPanes = listOf(cardTopPane, cardMiddlePane, cardBottomPane)
 
     init {
         // preconditions: none (we can assume the user clicked the appropriate
@@ -39,22 +41,19 @@ class CardEditingWindow(frontText: String, backText: String, private val manager
         // and tab transfer focus to the panel for editing the back of the card.
         // Escape should cancel the card-creating process and close the
         // NewCardWindow
-        cardFrontPane.text = frontText
-        Utilities.makeTabAndEnterTransferFocus(cardFrontPane)
 
-        cardFrontPane.addKeyListener(escapeKeyListener)
-        cardFrontPane.addFocusListener(CleaningFocusListener())
+        cardPanes.forEach {
+            it.text = EMPTY_STRING
+            it.addKeyListener(escapeKeyListener)
+            it.addFocusListener(CleaningFocusListener())
+            if (it != cardBottomPane) {
+                Utilities.makeTabAndEnterTransferFocus(it)
 
-        // Now create the panel to edit the back of the card; make tab transfer
-        // focus to the front (for editing the front again), escape should (like
-        // for the front panel) again cancel editing and close the NewCardWindow.
-        // Pressing the Enter key, however, should try save the card instead of
-        // transferring the focus back to the front-TextArea.
-        cardBackPane.text = backText
-        Utilities.makeTabTransferFocus(cardBackPane)
-        cardBackPane.addKeyListener(enterKeyListener)
-        cardBackPane.addKeyListener(escapeKeyListener)
-        cardBackPane.addFocusListener(CleaningFocusListener())
+            } else { // for the bottom pane
+                Utilities.makeTabTransferFocus(it)
+                it.addKeyListener(enterKeyListener)
+            }
+        }
 
         // we just want tab to cycle from the front to the back of the card,
         // and vice versa, and not hit the buttons
@@ -64,6 +63,9 @@ class CardEditingWindow(frontText: String, backText: String, private val manager
         // postconditions: none. The window exists and should henceforth handle
         // its own business using the appropriate GUI elements.
     }
+
+    //Listens for a specific key and consumes it (and performs the appropriate action) when it is pressed
+
 
     /**
      * Converts the current contents of the NewCardWindow into a card (with front
@@ -78,10 +80,17 @@ class CardEditingWindow(frontText: String, backText: String, private val manager
         // (in this case the OK button) is pressed.
 
         standardizeFields()
-        val frontText = cardFrontPane.text
-        val backText = cardBackPane.text
+        val writingText = cardTopPane.text
+        val pronounciationText = cardMiddlePane.text
+        val meaningText = cardBottomPane.text
 
-        manager.processProposedContents(frontText, backText, true, this)
+        if (writingText != EMPTY_STRING) { // regular card, like 明日 / あした / tomorrow
+            manager.processProposedContents("$writingText [m]", meaningText, false, this)
+            manager.processProposedContents("$writingText [p]", pronounciationText, false, this)
+        }
+        val writingTextToBeAdded = if (writingText == "") "" else " ($writingText)"
+        manager.processProposedContents(pronounciationText, "$meaningText$writingTextToBeAdded", false, this)
+        manager.processProposedContents(meaningText, "$pronounciationText$writingTextToBeAdded", true, this)
 
         // postconditions: If adding succeeded, the front and back should
         // be blank again, if it didn't, they should be the same as they were
@@ -100,8 +109,11 @@ class CardEditingWindow(frontText: String, backText: String, private val manager
         buttonPane.add(okButton)
 
         // Now create a nice (or at least acceptable-looking) layout.
-        val upperPanel = JSplitPane(JSplitPane.VERTICAL_SPLIT, JScrollPane(cardFrontPane), JScrollPane(cardBackPane))
-        upperPanel.resizeWeight = 0.5
+        val upperPanel = Box.createVerticalBox()
+        cardPanes.forEach {
+            upperPanel.add(Box.createVerticalStrut(10))
+            upperPanel.add(it)
+        }
         layout = GridBagLayout()
         val frontConstraints = GridBagConstraints().apply {
             gridx = 0
@@ -135,8 +147,8 @@ class CardEditingWindow(frontText: String, backText: String, private val manager
          * fields (of course, warnings could be suppressed, but programming around it
          * seemed more elegant).
          */
-        internal fun display(frontText: String, backText: String, manager: CardEditingManager): CardEditingWindow {
-            val newCardWindow = CardEditingWindow(frontText, backText, manager)
+        internal fun display(manager: CardEditingManager): ThreeSidedCardWindow {
+            val newCardWindow = ThreeSidedCardWindow(manager)
             newCardWindow.init()
             return newCardWindow
         }

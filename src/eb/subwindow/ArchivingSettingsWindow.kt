@@ -14,10 +14,11 @@ object ArchivingSettingsWindow : JFrame("Deck archiving settings") {
 
     fun display() {
         changeLocationButton.addActionListener { changeArchivingLocation() }
-        val box = Box.createHorizontalBox()
-        box.add(archivingLocation)
-        box.add(Box.createHorizontalStrut(10))
-        box.add(changeLocationButton)
+        val box = Box.createHorizontalBox().apply {
+            add(archivingLocation)
+            add(Box.createHorizontalStrut(10))
+            add(changeLocationButton)
+        }
         add(box)
         getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
                 .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "Cancel") //$NON-NLS-1$

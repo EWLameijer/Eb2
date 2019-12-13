@@ -11,6 +11,10 @@ import java.awt.event.KeyEvent
 import java.beans.EventHandler
 
 import eb.data.DeckManager
+import eb.eventhandling.BlackBoard
+import eb.eventhandling.Update
+import eb.eventhandling.UpdateType
+import eb.mainwindow.MainWindowState
 import eb.subwindow.CardEditingManager
 import eb.utilities.ProgrammableAction
 import javax.swing.*
@@ -34,114 +38,118 @@ class ReviewPanel : JPanel() {
                 "requestFocusInWindow", null, "componentShown"))
 
         layout = GridBagLayout()
-        val frontOfCardConstraints = GridBagConstraints()
 
-        frontOfCardConstraints.gridx = 0
-        frontOfCardConstraints.gridy = 0
-        frontOfCardConstraints.gridwidth = 4
-        frontOfCardConstraints.gridheight = 2
-        frontOfCardConstraints.weightx = 4.0
-        frontOfCardConstraints.weighty = 2.0
-        frontOfCardConstraints.fill = GridBagConstraints.BOTH
-        frontOfCardPanel.background = Color.PINK
-        add(frontOfCardPanel, frontOfCardConstraints)
+        initFrontOfCardPanel()
+        initBackOfCardPanel()
+        initSituationalPanel() // Show answer (if only front is shown), or Remembered/Forgotten (if back is shown too, so user can check his learning)
+        initFixedButtonPanel()
+        initSidePanel()
+    }
 
-        val backOfCardConstraints = GridBagConstraints()
-        backOfCardConstraints.gridx = 0
-        backOfCardConstraints.gridy = 2
-        backOfCardConstraints.gridwidth = 4
-        backOfCardConstraints.gridheight = 2
-        backOfCardConstraints.weightx = 4.0
-        backOfCardConstraints.weighty = 2.0
-        backOfCardConstraints.fill = GridBagConstraints.BOTH
-        backOfCardPanel.background = Color.YELLOW
-        add(backOfCardPanel, backOfCardConstraints)
+    private fun initFixedButtonPanel() {
+        // the fixed button panel contains buttons that need to be visible always
+        val fixedButtonPanelConstraints = GridBagConstraints().apply {
+            gridx = 3
+            gridy = 4
+            gridwidth = 1
+            gridheight = 1
+            weightx = 1.0
+            weighty = 1.0
+            fill = GridBagConstraints.BOTH
+        }
+        fixedButtonPanel.add(createKeyPressSensitiveButton("Edit card", 'e') { editCard() })
+        fixedButtonPanel.add(createKeyPressSensitiveButton("Delete card", 'd', ::deleteCard))
+        fixedButtonPanel.add(createKeyPressSensitiveButton("View score", 'v', ::showScore))
+        add(fixedButtonPanel, fixedButtonPanelConstraints)
+    }
 
-        val buttonPanelForHiddenBack = JPanel()
-        buttonPanelForHiddenBack.layout = FlowLayout()
-        val showAnswerButton = JButton("Show Answer")
-        showAnswerButton.mnemonic = KeyEvent.VK_S
-        showAnswerButton.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-                .put(KeyStroke.getKeyStroke('s'), "show answer")
-        showAnswerButton.actionMap.put("show answer", ProgrammableAction { showAnswer() })
-        showAnswerButton.addActionListener { showAnswer() }
-        buttonPanelForHiddenBack.add(showAnswerButton)
+    private fun showScore() {
+        BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, MainWindowState.SUMMARIZING.name))
+    }
 
-        val buttonPanelForShownBack = JPanel()
-        val rememberedButton = JButton("Remembered")
-        rememberedButton.mnemonic = KeyEvent.VK_R
-        rememberedButton.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-                .put(KeyStroke.getKeyStroke('r'), "remembered")
-        rememberedButton.actionMap.put("remembered", ProgrammableAction { registerAnswer(true) })
-        rememberedButton.addActionListener { registerAnswer(true) }
-        buttonPanelForShownBack.add(rememberedButton)
-        val forgottenButton = JButton("Forgotten")
-        forgottenButton.mnemonic = KeyEvent.VK_F
-        forgottenButton.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-                .put(KeyStroke.getKeyStroke('f'), "forgotten")
-        forgottenButton.actionMap.put("forgotten", ProgrammableAction { registerAnswer(false) })
-        forgottenButton.addActionListener { registerAnswer(false) }
-        buttonPanelForShownBack.add(forgottenButton)
+    private fun createKeyPressSensitiveButton(text: String, actionKey: Char, action: () -> Unit): JButton =
+            JButton(text).apply {
+                val actionOnKeyPressId = "actionOnKeyPress"
+                mnemonic = KeyEvent.getExtendedKeyCodeForChar(actionKey.toInt())
+                getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(actionKey), actionOnKeyPressId)
+                actionMap.put(actionOnKeyPressId, ProgrammableAction { action() })
+                addActionListener { action() }
+            }
 
+    private fun initSituationalPanel() {
         // for buttons that depend on the situation, like when the back of the card
         // is shown or when it is not yet shown.
-        val situationalButtonPanelConstraints = GridBagConstraints()
-        situationalButtonPanelConstraints.gridx = 0
-        situationalButtonPanelConstraints.gridy = 4
-        situationalButtonPanelConstraints.gridwidth = 3
-        situationalButtonPanelConstraints.gridheight = 1
-        situationalButtonPanelConstraints.weightx = 3.0
-        situationalButtonPanelConstraints.weighty = 1.0
-        situationalButtonPanelConstraints.fill = GridBagConstraints.BOTH
+        val buttonPanelForHiddenBack = JPanel().apply {
+            layout = FlowLayout()
+            add(createKeyPressSensitiveButton("Show Answer", 's', ::showAnswer))
+        }
+
+        val buttonPanelForShownBack = JPanel().apply {
+            add(createKeyPressSensitiveButton("Remembered", 'r') { registerAnswer(true) })
+            add(createKeyPressSensitiveButton("Forgotten", 'f') { registerAnswer(false) })
+        }
+        val situationalButtonPanelConstraints = GridBagConstraints().apply {
+            gridx = 0
+            gridy = 4
+            gridwidth = 3
+            gridheight = 1
+            weightx = 3.0
+            weighty = 1.0
+            fill = GridBagConstraints.BOTH
+        }
         situationalButtonPanel.layout = CardLayout()
         situationalButtonPanel.add(buttonPanelForHiddenBack, HIDDEN_ANSWER)
         situationalButtonPanel.add(buttonPanelForShownBack, SHOWN_ANSWER)
         situationalButtonPanel.background = Color.GREEN
         add(situationalButtonPanel, situationalButtonPanelConstraints)
+    }
 
-        val editButton = JButton("Edit card")
-        editButton.mnemonic = KeyEvent.VK_E
-        editButton.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-                .put(KeyStroke.getKeyStroke('e'), "edit")
-        editButton.actionMap.put("edit", ProgrammableAction { editCard() })
-        editButton.addActionListener { editCard() }
+    private fun initBackOfCardPanel() {
+        val backOfCardConstraints = GridBagConstraints().apply {
+            gridx = 0
+            gridy = 2
+            gridwidth = 4
+            gridheight = 2
+            weightx = 4.0
+            weighty = 2.0
+            fill = GridBagConstraints.BOTH
+        }
+        backOfCardPanel.background = Color.YELLOW
+        add(backOfCardPanel, backOfCardConstraints)
+    }
 
-        val deleteButton = JButton("Delete card")
-        deleteButton.mnemonic = KeyEvent.VK_D
-        deleteButton.getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-                .put(KeyStroke.getKeyStroke('d'), "delete")
-        deleteButton.actionMap.put("delete", ProgrammableAction { deleteCard() })
-        deleteButton.addActionListener { deleteCard() }
+    private fun initFrontOfCardPanel() {
+        val frontOfCardConstraints = GridBagConstraints().apply {
+            gridx = 0
+            gridy = 0
+            gridwidth = 4
+            gridheight = 2
+            weightx = 4.0
+            weighty = 2.0
+            fill = GridBagConstraints.BOTH
+        }
+        frontOfCardPanel.background = Color.PINK
+        add(frontOfCardPanel, frontOfCardConstraints)
+    }
 
-        // the fixed button panel contains buttons that need to be visible always
-        val fixedButtonPanelConstraints = GridBagConstraints()
-        fixedButtonPanelConstraints.gridx = 3
-        fixedButtonPanelConstraints.gridy = 4
-        fixedButtonPanelConstraints.gridwidth = 1
-        fixedButtonPanelConstraints.gridheight = 1
-        fixedButtonPanelConstraints.weightx = 1.0
-        fixedButtonPanelConstraints.weighty = 1.0
-        fixedButtonPanelConstraints.fill = GridBagConstraints.BOTH
-        fixedButtonPanel.add(editButton)
-        fixedButtonPanel.add(deleteButton)
-        add(fixedButtonPanel, fixedButtonPanelConstraints)
-
+    private fun initSidePanel() {
         // panel, to be used in future to show successful/unsuccessful cards
         // for now hidden?
-        val sidePanelConstraints = GridBagConstraints()
-        sidePanelConstraints.gridx = 4
-        sidePanelConstraints.gridy = 0
-        sidePanelConstraints.gridwidth = 1
-        sidePanelConstraints.gridheight = 5
-        sidePanelConstraints.fill = GridBagConstraints.BOTH
-        sidePanelConstraints.weightx = 1.0
-        sidePanelConstraints.weighty = 5.0
+        val sidePanelConstraints = GridBagConstraints().apply {
+            gridx = 4
+            gridy = 0
+            gridwidth = 1
+            gridheight = 5
+            fill = GridBagConstraints.BOTH
+            weightx = 1.0
+            weighty = 5.0
+        }
         val sidePanel = JPanel()
         sidePanel.background = Color.RED
         add(sidePanel, sidePanelConstraints)
     }
 
-    private fun editCard() = CardEditingManager(ReviewManager.currentCard())
+    private fun editCard() = CardEditingManager(false, ReviewManager.currentCard())
 
     private fun deleteCard() {
         val choice = JOptionPane.showConfirmDialog(backOfCardPanel,
@@ -172,7 +180,7 @@ class ReviewPanel : JPanel() {
         frontOfCardPanel.setText(ReviewManager.currentFront())
     }
 
-    fun refresh() =  repaint()
+    fun refresh() = repaint()
 
     fun updatePanels(frontText: String, backText: String, showAnswer: Boolean) {
         frontOfCardPanel.setText(frontText)

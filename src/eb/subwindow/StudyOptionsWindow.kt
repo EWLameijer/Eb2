@@ -91,13 +91,12 @@ class StudyOptionsWindow : JFrame(), Listener {
     private fun loadCurrentDeckSettings() = loadSettings(DeckManager.currentDeck().studyOptions)
 
     //  Collects the data from the GUI, and packages it nicely into a StudyOptions object.
-    private fun gatherUIDataIntoStudyOptionsObject(): StudyOptions {
-        return StudyOptions(initialIntervalBox.interval,
-                Utilities.stringToInt(sizeOfReview.contents()),
-                timeToWaitAfterCorrectReview.interval,
-                timeToWaitAfterIncorrectReview.interval,
-                Utilities.stringToDouble(lengtheningFactor.contents())!!)
-    }
+    private fun gatherUIDataIntoStudyOptionsObject() = StudyOptions(
+            initialIntervalBox.interval,
+            Utilities.stringToInt(sizeOfReview.contents()),
+            timeToWaitAfterCorrectReview.interval,
+            timeToWaitAfterIncorrectReview.interval,
+            Utilities.stringToDouble(lengtheningFactor.contents())!!)
 
     private fun saveSettingsToDeck() {
         DeckManager.setStudyOptions(gatherUIDataIntoStudyOptionsObject())
@@ -123,26 +122,29 @@ class StudyOptionsWindow : JFrame(), Listener {
         // Then create two panels: one for setting the correct values for the study
         // options, and one to contain the reset/confirm/reload etc. buttons.
         val settingsPane = JPanel()
-        val buttonsPane = JPanel()
+
 
         // Give the panes appropriate layouts
         settingsPane.layout = BorderLayout()
 
-        buttonsPane.layout = GridLayout(2, 2)
-
         // now fill the panes
-        val settingsBox = Box.createVerticalBox()
-        settingsBox.add(initialIntervalBox)
-        settingsBox.add(sizeOfReview)
-        settingsBox.add(timeToWaitAfterCorrectReview)
-        settingsBox.add(lengtheningFactor)
-        settingsBox.add(timeToWaitAfterIncorrectReview)
+        val settingsBox = Box.createVerticalBox().apply {
+            add(initialIntervalBox)
+            add(sizeOfReview)
+            add(timeToWaitAfterCorrectReview)
+            add(lengtheningFactor)
+            add(timeToWaitAfterIncorrectReview)
+        }
         settingsPane.add(settingsBox, BorderLayout.NORTH)
 
-        buttonsPane.add(cancelButton)
-        buttonsPane.add(loadEbDefaultsButton)
-        buttonsPane.add(loadCurrentDeckSettingsButton)
-        buttonsPane.add(setToTheseValuesButton)
+        val buttonsPane = JPanel().apply {
+            add(cancelButton)
+            add(loadEbDefaultsButton)
+            add(loadCurrentDeckSettingsButton)
+            add(setToTheseValuesButton)
+
+            layout = GridLayout(2, 2)
+        }
 
         add(settingsPane, BorderLayout.NORTH)
         add(buttonsPane, BorderLayout.SOUTH)
@@ -154,8 +156,8 @@ class StudyOptionsWindow : JFrame(), Listener {
     }
 
     override fun respondToUpdate(update: Update) =
-        if (update.type == UpdateType.INPUTFIELD_CHANGED) updateFrame()
-        else doNothing
+            if (update.type == UpdateType.INPUTFIELD_CHANGED) updateFrame()
+            else doNothing
 
     companion object {
         // Displays the study options window. In order to pacify the nullness checker,

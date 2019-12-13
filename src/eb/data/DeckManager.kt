@@ -5,7 +5,6 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
-import java.util.logging.Logger
 
 import eb.writer.CardConverter
 import eb.eventhandling.BlackBoard
@@ -15,6 +14,10 @@ import eb.subwindow.StudyOptions
 import eb.utilities.isValidIdentifier
 import eb.utilities.log
 import java.lang.RuntimeException
+import java.io.IOException
+import java.io.FileReader
+import com.google.gson.GsonBuilder
+
 
 /**
  * The DeckManager class concerns itself with all the housekeeping (such as interacting with the GUI) that the deck
@@ -43,14 +46,14 @@ object DeckManager {
         }
         // postconditions: m_currentDeck cannot be null, but that is ensured by the Deck.createDeckWithName call,
         // which exits with an error if a deck cannot be created.
-        require(deckHasBeenLoaded()) {"Deck.ensureDeckExists() error: there is no valid deck."}
+        require(deckHasBeenLoaded()) { "Deck.ensureDeckExists() error: there is no valid deck." }
     }
 
     // Returns the name of the deck studied previously (ideal when starting a new session of Eb).
     private fun nameOfLastDeck() = if (nameOfLastReviewedDeck.isEmpty()) DEFAULT_DECKNAME else nameOfLastReviewedDeck
 
     fun loadDeck(name: String) {
-        require(canLoadDeck(name)){"Deck.loadDeck() error: deck cannot be loaded. Was canLoadDeck called?"}
+        require(canLoadDeck(name)) { "Deck.loadDeck() error: deck cannot be loaded. Was canLoadDeck called?" }
 
         save()
         val deckFile = Deck.getDeckFileHandle(name)
@@ -80,27 +83,28 @@ object DeckManager {
         if (!deckFile.isFile) return false
 
         // so the file must exist. But does it contain a valid deck?
-        try {
+        return try {
             val objectInputStream = ObjectInputStream(FileInputStream(deckFile))
             objectInputStream.readObject() as? Deck
-            return true
+            true
         } catch (e: Exception) {
-                // something goes wrong with deserializing the deck; so you also can't read the file
+            // something goes wrong with deserializing the deck; so you also can't read the file
             log("$e Deck.canLoadDeck() error: could not load deck from file")
-            return false
+            false
         }
     }
 
     fun createDeckWithName(name: String) {
         require(name.isValidIdentifier) {
-            "Deck.createDeckWithName() error: name has to contain non-whitespace characters." }
+            "Deck.createDeckWithName() error: name has to contain non-whitespace characters."
+        }
 
         // Save the current deck to disk before creating the new deck
         save()
         deck = Deck(name)
 
         // postconditions: the deck should exist (deck.save handles any errors occurring during saving the deck).
-        require(deckHasBeenLoaded()){ "Deck.createDeckWithName() error: problem creating and/or writing the new deck." }
+        require(deckHasBeenLoaded()) { "Deck.createDeckWithName() error: problem creating and/or writing the new deck." }
 
         // The deck has been changed. So ensure depending GUI-elements know that.
         reportDeckChangeEvent()
@@ -149,6 +153,38 @@ object DeckManager {
         return deck!!.archivingSettings.directoryName()
     }
 
+    private fun createDeckFromJson(jsonFile: File) {
+        // Save the current deck to disk before creating the new deck
+        save()
+
+        val builder = GsonBuilder()
+        builder.setPrettyPrinting()
+
+        val gson = builder.create()
+        try {
+            val fr = FileReader(jsonFile) // UTF-8?
+
+            val stringBuilder = StringBuilder()
+            while (true) {
+                val i = fr.read()
+                if (i == -1) break
+                stringBuilder.append(i.toChar())
+            }
+            val json = stringBuilder.toString()
+            deck = gson.fromJson(json, Deck::class.java)
+
+            // postconditions: the deck should exist (deck.save handles any errors
+            // occurring during saving the deck).
+            require(deckHasBeenLoaded()) { "Deck.createDeckWithName() error: " + "problem creating and/or writing the new deck." }
+
+            // The deck has been changed. So ensure depending GUI-elements know that.
+            BlackBoard.post(Update(UpdateType.DECK_SWAPPED))
+        } catch (e: IOException) {
+            // some error. NOt sure how to handle it.
+        }
+
+    }
+
     // create deck from archive (text!) file (instead of regular loading via deserialization)
     fun createDeckFromArchive(selectedFile: File) {
         val fileName = selectedFile.name
@@ -158,7 +194,8 @@ object DeckManager {
         createDeckWithName(deckName)
         ensureDeckExists()
 
-        CardConverter.extractCardsFromArchiveFile(selectedFile)
+        if (fileName.endsWith("json")) createDeckFromJson(selectedFile)
+        else CardConverter.extractCardsFromArchiveFile(selectedFile)
     }
 
     fun currentDeck(): Deck {

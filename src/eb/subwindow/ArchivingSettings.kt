@@ -1,6 +1,5 @@
 package eb.subwindow
 
-import eb.utilities.EMPTY_STRING
 import java.io.File
 import java.io.Serializable
 
