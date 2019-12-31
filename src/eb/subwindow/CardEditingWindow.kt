@@ -19,13 +19,29 @@ import javax.swing.*
  */
 class CardEditingWindow(frontText: String, backText: String, private val manager: CardEditingManager) : GenericCardEditingWindow() {
 
+    // Create the panel to edit the front of the card, and make enter
+    // and tab transfer focus to the panel for editing the back of the card.
+    // Escape should cancel the card-creating process and close the
+    // NewCardWindow
+    private val cardFrontPane = JTextPane().apply {
+        text = frontText
+        Utilities.makeTabAndEnterTransferFocus(this)
+        addKeyListener(escapeKeyListener)
+        addFocusListener(CleaningFocusListener())
+    }
 
-
-    // Allows the creation/editing of the content on the front of the card.
-    private val cardFrontPane = JTextPane()
-
-    // Allows the creation/editing of the contents of the back of the card.
-    private val cardBackPane = JTextPane()
+    // Now create the panel to edit the back of the card; make tab transfer
+    // focus to the front (for editing the front again), escape should (like
+    // for the front panel) again cancel editing and close the NewCardWindow.
+    // Pressing the Enter key, however, should try save the card instead of
+    // transferring the focus back to the front-TextArea.
+    private val cardBackPane = JTextPane().apply {
+        text = backText
+        Utilities.makeTabTransferFocus(this)
+        addKeyListener(enterKeyListener)
+        addKeyListener(escapeKeyListener)
+        addFocusListener(CleaningFocusListener())
+    }
 
     override val cardPanes = listOf(cardFrontPane, cardBackPane)
 
@@ -35,34 +51,10 @@ class CardEditingWindow(frontText: String, backText: String, private val manager
         val operation = if (manager.inCardCreatingMode()) "add" else "edit"
         this.title = "${DeckManager.currentDeck().name}: $operation card"
 
-        // Create the panel to edit the front of the card, and make enter
-        // and tab transfer focus to the panel for editing the back of the card.
-        // Escape should cancel the card-creating process and close the
-        // NewCardWindow
-        cardFrontPane.text = frontText
-        Utilities.makeTabAndEnterTransferFocus(cardFrontPane)
-
-        cardFrontPane.addKeyListener(escapeKeyListener)
-        cardFrontPane.addFocusListener(CleaningFocusListener())
-
-        // Now create the panel to edit the back of the card; make tab transfer
-        // focus to the front (for editing the front again), escape should (like
-        // for the front panel) again cancel editing and close the NewCardWindow.
-        // Pressing the Enter key, however, should try save the card instead of
-        // transferring the focus back to the front-TextArea.
-        cardBackPane.text = backText
-        Utilities.makeTabTransferFocus(cardBackPane)
-        cardBackPane.addKeyListener(enterKeyListener)
-        cardBackPane.addKeyListener(escapeKeyListener)
-        cardBackPane.addFocusListener(CleaningFocusListener())
-
         // we just want tab to cycle from the front to the back of the card,
         // and vice versa, and not hit the buttons
         cancelButton.isFocusable = false
         okButton.isFocusable = false
-
-        // postconditions: none. The window exists and should henceforth handle
-        // its own business using the appropriate GUI elements.
     }
 
     /**

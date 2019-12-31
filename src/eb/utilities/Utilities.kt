@@ -2,6 +2,7 @@ package eb.utilities
 
 import java.awt.Component
 import java.awt.KeyboardFocusManager
+import java.awt.event.KeyEvent
 import java.io.Serializable
 import java.lang.IllegalArgumentException
 import java.math.RoundingMode
@@ -12,6 +13,8 @@ import java.time.Duration
 import java.util.HashSet
 import java.util.logging.Logger
 import java.util.regex.Pattern
+import javax.swing.JButton
+import javax.swing.JComponent
 
 import javax.swing.KeyStroke
 import kotlin.math.abs
@@ -88,7 +91,7 @@ object Utilities {
      * the component to be patched
      */
     fun makeTabTransferFocus(component: Component) {
-        var strokes: Set<KeyStroke> = HashSet(listOf(KeyStroke.getKeyStroke("pressed TAB")))
+        var strokes: HashSet<KeyStroke> = HashSet(listOf(KeyStroke.getKeyStroke("pressed TAB")))
         component.setFocusTraversalKeys(KeyboardFocusManager.FORWARD_TRAVERSAL_KEYS, strokes)
         strokes = HashSet(listOf(KeyStroke.getKeyStroke("shift pressed TAB")))
         component.setFocusTraversalKeys(KeyboardFocusManager.BACKWARD_TRAVERSAL_KEYS, strokes)
@@ -274,6 +277,21 @@ object Utilities {
     // Utility function: gives the right version (singular or plural) for a noun given the number,
     // so 0 cards, 1 card, 2 cards etc.
     fun pluralize(word: String, number: Int) = word + if (number == 1) EMPTY_STRING else "s"
+
+    private fun createKeyPressSensitiveButton(text: String, actionKey: KeyStroke, action: () -> Unit): JButton =
+            JButton(text).apply {
+                val actionOnKeyPressId = "actionOnKeyPress"
+                mnemonic = KeyEvent.getExtendedKeyCodeForChar(actionKey.keyChar.toInt())
+                getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(actionKey, actionOnKeyPressId)
+                actionMap.put(actionOnKeyPressId, ProgrammableAction { action() })
+                addActionListener { action() }
+            }
+
+    fun createKeyPressSensitiveButton(text: String, key: Char, action: () -> Unit): JButton  =
+        createKeyPressSensitiveButton(text,  KeyStroke.getKeyStroke(key), action)
+
+    fun createKeyPressSensitiveButton(text: String, key: String, action: () -> Unit): JButton =
+        createKeyPressSensitiveButton(text, KeyStroke.getKeyStroke(key), action)
 }
 
 fun String.pluralize(number: Int) = "$number ${Utilities.pluralize(this, number)}"

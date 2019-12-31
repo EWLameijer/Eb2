@@ -17,7 +17,7 @@ class Card(var front: Hint, var back: String) : Serializable {
     internal val creationInstant = Instant.now()
     private val reviews = mutableListOf<Review>()
 
-    fun lastReview() : Review? = reviews.last()
+    fun lastReview(): Review? = reviews.last()
 
     fun history() = reviews.joinToString(prefix = "[", postfix = "]")
 
@@ -42,4 +42,6 @@ class Card(var front: Hint, var back: String) : Serializable {
         // the proper auto-generated serialVersionUID as cards should be serializable.
         private const val serialVersionUID = -2746012998758766327L
     }
+
+    fun preLastReview() = reviews[reviews.lastIndex - 1]
 }

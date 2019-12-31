@@ -61,6 +61,7 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
             } else {
                 // Case 3 of 3: there is a current (but different) card with the same front. Resolve this conflict.
                 handleCardBeingDuplicate(frontHint, backText, currentCardWithThisFront, callingWindow)
+                if (shouldClearCardWindow) callingWindow.clearContents()
             }
         }
     }
@@ -74,14 +75,14 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
             addActionListener { mergeBacks(duplicate, backText, frontText) }
         }
         val deleteThisButton = JButton("Delete this card").apply {
-            addActionListener { deleteCurrentCard() }
+            addActionListener { deleteCurrentCard(callingWindow) }
         }
         val deleteOtherButton = JButton("Delete the other card").apply {
             addActionListener { deleteOtherCard(duplicate, frontText, backText, callingWindow) }
         }
         val buttons = arrayOf(reeditButton, mergeButton, deleteThisButton, deleteOtherButton)
         JOptionPane.showOptionDialog(null,
-                "A card with this front already exists; on the back is the text '${duplicate.back}'",
+                "A card with the front '$frontText' already exists; on the back is the text '${duplicate.back}', replace with '$backText'?",
                 "A card with this front already exists. What do you want to do?", 0,
                 JOptionPane.QUESTION_MESSAGE, null, buttons, null)
     }
@@ -92,10 +93,10 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
         submitCardContents(frontText, backText, true, callingWindow)
     }
 
-    private fun deleteCurrentCard() {
+    private fun deleteCurrentCard(callingWindow: GenericCardEditingWindow) {
         closeOptionPane()
         if (inCardCreatingMode()) {
-            cardEditingWindow!!.clearContents()
+            if (callingWindow !is ThreeSidedCardWindow) cardEditingWindow!!.clearContents()
         } else {
             DeckManager.currentDeck().cardCollection.removeCard(card!!)
             endEditing()

@@ -43,8 +43,14 @@ import eb.utilities.log
 import java.awt.event.KeyEvent.getExtendedKeyCodeForChar
 import kotlin.system.exitProcess
 
-const val EB_VERSION = "2.0.6"
+const val EB_VERSION = "2.1.1"
 
+// 2.1.1: Prioritize reviewing of known cards. Not yet prioritized for relative delay.
+// 2.1.0: Ensure that 'delete this card' works properly with the 3-sided creation window. Also shows card merging more clearly.
+// 2.0.9: Fix to make it impossible to open duplicate Eb instances (not sure how it works, though... Possibly a var? not optimized away by compiler).
+// .....: ALSO allow multi-line-input to shift focus to the last card, so Ctrl-V Tab Enter should do the trick
+// 2.0.8: Makes the 'duplicate card insertion' error more clear, and allows multiline input (copy-pasted text with newline)
+// 2.0.7: creates log file so one can check score even if one forgot to write it down...
 // 2.0.6. Extra feature: now properly inserts spacing around ,
 // 2.0.5: Extra feature: three-sided cards. ALSO: better font
 // 2.0.4. Bugfix: should accumulate percentages over one run, not reset score without a deckswap or quit
@@ -327,7 +333,7 @@ object MainWindow : JFrame(PROGRAM_NAME), Listener {
         return false
     }
 
-    private fun createInformationPanel() = JPanel().apply{
+    private fun createInformationPanel() = JPanel().apply {
         layout = BorderLayout()
         add(messageLabel, BorderLayout.CENTER)
         add(startReviewingButton, BorderLayout.SOUTH)
@@ -403,6 +409,7 @@ object MainWindow : JFrame(PROGRAM_NAME), Listener {
     }
 
     private fun showSummarizingPanel() = switchToPanel(SUMMARIZING_PANEL_ID)
+
 
     // IDs of the various panels, necessary for adding them to the CardLayout of the main panel
     private const val REVIEW_PANEL_ID = "REVIEWING_PANEL"

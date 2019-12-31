@@ -47,12 +47,24 @@ abstract class GenericCardEditingWindow : JFrame() {
         override fun focusLost(arg0: FocusEvent) = standardizeFields()
     }
 
-    fun standardizeFields() = cardPanes.forEach { pane ->
+    fun standardizeFields() = cardPanes.forEachIndexed { index, pane ->
+        val lines = pane.text.split("\n")
+        (1..2).forEach {
+            val cardIndex = index + it
+            if (lines.size > it && cardIndex <= cardPanes.lastIndex) {
+                cardPanes[cardIndex].run {
+                    text += lines[it]
+                    requestFocusInWindow()
+                }
+            }
+        }
+        pane.text = lines[0]
+
         pane.text = pane.text.standardizeSeparator(' ', " ")
         pane.text = pane.text.standardizeSeparator(',', ", ")
     }
 
-    private fun String.standardizeSeparator(separator: Char, whatItShouldLookLike: String) : String {
+    private fun String.standardizeSeparator(separator: Char, whatItShouldLookLike: String): String {
         val words = this.split(separator).map { it.trim() }.filter { it != "" }
         return words.joinToString(separator = whatItShouldLookLike)
     }

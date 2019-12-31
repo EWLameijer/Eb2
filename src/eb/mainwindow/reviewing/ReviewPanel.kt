@@ -17,6 +17,7 @@ import eb.eventhandling.UpdateType
 import eb.mainwindow.MainWindowState
 import eb.subwindow.CardEditingManager
 import eb.utilities.ProgrammableAction
+import eb.utilities.Utilities.createKeyPressSensitiveButton
 import javax.swing.*
 
 /**
@@ -66,15 +67,6 @@ class ReviewPanel : JPanel() {
     private fun showScore() {
         BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, MainWindowState.SUMMARIZING.name))
     }
-
-    private fun createKeyPressSensitiveButton(text: String, actionKey: Char, action: () -> Unit): JButton =
-            JButton(text).apply {
-                val actionOnKeyPressId = "actionOnKeyPress"
-                mnemonic = KeyEvent.getExtendedKeyCodeForChar(actionKey.toInt())
-                getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(KeyStroke.getKeyStroke(actionKey), actionOnKeyPressId)
-                actionMap.put(actionOnKeyPressId, ProgrammableAction { action() })
-                addActionListener { action() }
-            }
 
     private fun initSituationalPanel() {
         // for buttons that depend on the situation, like when the back of the card

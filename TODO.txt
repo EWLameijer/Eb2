@@ -1,8 +1,11 @@
 PLAN
 
+View review history in side panel?
+
+1) Delete current card is iffy...
 
 
-1) Print results (#card, percentages) out (stdout) so you won't forget them easily
+
 1) fix bug where in deleting cards you still see the card after deletion =? I cannot reproduce that...
 2) Automatically add "[H]"? 2 35 min
 4) analysis: how long? 800 - 2 u
@@ -16,7 +19,7 @@ PLAN
 Problem:
 initializeReviewSession
 ->
-
+lo
 
 
 GENERAL:

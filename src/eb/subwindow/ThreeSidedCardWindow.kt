@@ -81,16 +81,16 @@ class ThreeSidedCardWindow(private val manager: CardEditingManager) : GenericCar
 
         standardizeFields()
         val writingText = cardTopPane.text
-        val pronounciationText = cardMiddlePane.text
+        val pronunciationText = cardMiddlePane.text
         val meaningText = cardBottomPane.text
 
         if (writingText != EMPTY_STRING) { // regular card, like 明日 / あした / tomorrow
             manager.processProposedContents("$writingText [m]", meaningText, false, this)
-            manager.processProposedContents("$writingText [p]", pronounciationText, false, this)
+            manager.processProposedContents("$writingText [p]", pronunciationText, false, this)
         }
         val writingTextToBeAdded = if (writingText == "") "" else " ($writingText)"
-        manager.processProposedContents(pronounciationText, "$meaningText$writingTextToBeAdded", false, this)
-        manager.processProposedContents(meaningText, "$pronounciationText$writingTextToBeAdded", true, this)
+        manager.processProposedContents(pronunciationText, "$meaningText$writingTextToBeAdded", false, this)
+        manager.processProposedContents(meaningText, "$pronunciationText$writingTextToBeAdded", true, this)
 
         // postconditions: If adding succeeded, the front and back should
         // be blank again, if it didn't, they should be the same as they were
@@ -104,9 +104,10 @@ class ThreeSidedCardWindow(private val manager: CardEditingManager) : GenericCar
         okButton.addActionListener { submitCandidateCardToDeck() }
 
         // now add the buttons to the window
-        val buttonPane = JPanel()
-        buttonPane.add(cancelButton)
-        buttonPane.add(okButton)
+        val buttonPane = JPanel(). apply {
+            add(cancelButton)
+            add(okButton)
+        }
 
         // Now create a nice (or at least acceptable-looking) layout.
         val upperPanel = Box.createVerticalBox()

@@ -53,6 +53,11 @@ object ReviewManager : Listener {
         return cardsReviewed.map { it.lastReview() }
     }
 
+    fun reviewedCards(): List<Card> {
+        ensureReviewSessionIsValid()
+        return cardsReviewed.toList()
+    }
+
     fun currentCard(): Card? =
             if (cardsToBeReviewed.isEmpty() || counter >= cardsToBeReviewed.size) null
             else cardsToBeReviewed[counter]
@@ -129,9 +134,15 @@ object ReviewManager : Listener {
         // now, for best effect, those cards which have expired more recently should
         // be rehearsed first, as other cards probably need to be relearned anyway,
         // and we should try to contain the damage.
-        reviewableCards.sortBy { currentDeck.getTimeUntilNextReview(it) }
-        // get the first n for the review
-        cardsToBeReviewed = ArrayList(reviewableCards.subList(0, numCardsToBeReviewed))
+        val (newlyReviewedCards, repeatReviewedCards) = reviewableCards.partition { it.getReviews().isEmpty() }
+        val (previouslySucceededCards, previouslyFailedCards) = repeatReviewedCards.partition { it.lastReview()!!.wasSuccess }
+        val sortedPrevSuccCards = previouslySucceededCards.sortedBy { currentDeck.getTimeUntilNextReview(it) }
+        val sortedPrevFailedCards = previouslyFailedCards.sortedBy { currentDeck.getTimeUntilNextReview(it) }
+        val sortedNewCards = newlyReviewedCards.sortedBy { currentDeck.getTimeUntilNextReview(it) }
+        val prioritizedReviewList = sortedPrevSuccCards + sortedPrevFailedCards + sortedNewCards
+
+                // get the first n for the review
+        cardsToBeReviewed = ArrayList(prioritizedReviewList.subList(0, numCardsToBeReviewed))
         cardsToBeReviewed.shuffle()
 
         counter = 0
