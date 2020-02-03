@@ -43,8 +43,14 @@ import eb.utilities.log
 import java.awt.event.KeyEvent.getExtendedKeyCodeForChar
 import kotlin.system.exitProcess
 
-const val EB_VERSION = "2.1.1"
+const val EB_VERSION = "2.1.3"
+// FUTURE PLANS:
+// show history of card in side window
+// enable pictures to be shown with cards
+// better sorting of repeated cards 
 
+// 2.1.3: Solved problems when starting up on other computer, partly due to decimal point differences
+// 2.1.2: Ensure that after merging cards in triple mode, the separate merging window is disposed of after it has fulfilled its purpose
 // 2.1.1: Prioritize reviewing of known cards. Not yet prioritized for relative delay.
 // 2.1.0: Ensure that 'delete this card' works properly with the 3-sided creation window. Also shows card merging more clearly.
 // 2.0.9: Fix to make it impossible to open duplicate Eb instances (not sure how it works, though... Possibly a var? not optimized away by compiler).
@@ -66,7 +72,12 @@ private const val PROGRAM_NAME = "Eb"
  *
  * @author Eric-Wubbo Lameijer
  */
-object MainWindow : JFrame(PROGRAM_NAME), Listener {
+class MainWindow : JFrame(PROGRAM_NAME), Listener {
+
+    private val EB_STATUS_FILE = "eb_status.txt"
+    private val REVIEW_PANEL_ID = "REVIEWING_PANEL"
+    private val INFORMATION_PANEL_ID = "INFORMATION_PANEL"
+    private val SUMMARIZING_PANEL_ID = "SUMMARIZING_PANEL"
 
     // The label that has to be shown if there is no card that needs to be reviewed currently, or if there is an error.
     // Is the alternative to the regular "reviewing" window, which should be active most of the time.
@@ -221,7 +232,6 @@ object MainWindow : JFrame(PROGRAM_NAME), Listener {
         deckManagementMenu.add(createMenuItem("Add Card (triple mode)", 'o') { CardEditingManager(true) })
         deckManagementMenu.add(createMenuItem("Study Options", 't', ::openStudyOptionsWindow))
         deckManagementMenu.add(createMenuItem("Deck Archiving Options", 'r', ::openDeckArchivingWindow))
-
         val mainMenuBar = JMenuBar()
         mainMenuBar.add(fileMenu)
         mainMenuBar.add(deckManagementMenu)
@@ -235,7 +245,6 @@ object MainWindow : JFrame(PROGRAM_NAME), Listener {
         val summarizingPanel = SummarizingPanel()
         modesContainer.add(summarizingPanel, SUMMARIZING_PANEL_ID)
         add(modesContainer)
-
         setNameOfLastReviewedDeck()
         showCorrectPanel()
 
@@ -412,10 +421,8 @@ object MainWindow : JFrame(PROGRAM_NAME), Listener {
 
 
     // IDs of the various panels, necessary for adding them to the CardLayout of the main panel
-    private const val REVIEW_PANEL_ID = "REVIEWING_PANEL"
-    private const val INFORMATION_PANEL_ID = "INFORMATION_PANEL"
-    private const val SUMMARIZING_PANEL_ID = "SUMMARIZING_PANEL"
+
 
     // the name of the file that contains which deck has been consulted last
-    private const val EB_STATUS_FILE = "eb_status.txt"
+
 }

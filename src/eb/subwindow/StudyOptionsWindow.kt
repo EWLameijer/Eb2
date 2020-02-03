@@ -61,7 +61,7 @@ class StudyOptionsWindow : JFrame(), Listener {
                 "Time to wait for re-reviewing remembered card:", studyOptions.rememberedInterval)
         lengtheningFactor = LabelledTextField(
                 "after each successful review, increase review time by a factor",
-                studyOptions.lengtheningFactor.toString(), 5, 2)
+                Utilities.toRegionalString(studyOptions.lengtheningFactor.toString()), 5, 2)
         timeToWaitAfterIncorrectReview = TimeInputElement(
                 "Time to wait for re-reviewing forgotten card:", studyOptions.forgottenInterval)
     }
@@ -165,3 +165,5 @@ class StudyOptionsWindow : JFrame(), Listener {
         fun display() = StudyOptionsWindow().init()
     }
 }
+
+

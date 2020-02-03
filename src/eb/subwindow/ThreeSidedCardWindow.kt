@@ -19,7 +19,7 @@ import javax.swing.*
  *
  * @author Eric-Wubbo Lameijer
  */
-class ThreeSidedCardWindow(private val manager: CardEditingManager) : GenericCardEditingWindow() {
+class ThreeSidedCardWindow(manager: CardEditingManager) : GenericCardEditingWindow(manager) {
 
     private val cardTopPane = JTextPane()
 
@@ -74,7 +74,7 @@ class ThreeSidedCardWindow(private val manager: CardEditingManager) : GenericCar
      * depending on whether the front is valid, and not a duplicate of another
      * front.
      */
-    private fun submitCandidateCardToDeck() {
+    override fun submitCandidateCardToDeck() {
         // preconditions: none: this is a button-press-response function,
         // and should therefore always activate when the associated button
         // (in this case the OK button) is pressed.
@@ -100,9 +100,6 @@ class ThreeSidedCardWindow(private val manager: CardEditingManager) : GenericCar
     }
 
     internal fun init() {
-        cancelButton.addActionListener { manager.endEditing() }
-        okButton.addActionListener { submitCandidateCardToDeck() }
-
         // now add the buttons to the window
         val buttonPane = JPanel(). apply {
             add(cancelButton)

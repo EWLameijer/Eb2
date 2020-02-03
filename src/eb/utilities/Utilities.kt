@@ -71,6 +71,7 @@ object Utilities {
     // Line separator that, unlike '\n', consistently works when producing output
     val EOL: String = System.getProperty("line.separator")
 
+    fun toRegionalString(str: String) = str.replace('.', decimalSeparator)
 
     fun stringToDouble(string: String): Double? {
         // Get a numberFormat object. Note that the number it returns will be Long

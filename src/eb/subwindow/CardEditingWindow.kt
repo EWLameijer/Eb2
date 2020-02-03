@@ -17,7 +17,7 @@ import javax.swing.*
  *
  * @author Eric-Wubbo Lameijer
  */
-class CardEditingWindow(frontText: String, backText: String, private val manager: CardEditingManager) : GenericCardEditingWindow() {
+class CardEditingWindow(frontText: String, backText: String, manager: CardEditingManager, private val autokill: Boolean) : GenericCardEditingWindow(manager) {
 
     // Create the panel to edit the front of the card, and make enter
     // and tab transfer focus to the panel for editing the back of the card.
@@ -64,7 +64,7 @@ class CardEditingWindow(frontText: String, backText: String, private val manager
      * depending on whether the front is valid, and not a duplicate of another
      * front.
      */
-    private fun submitCandidateCardToDeck() {
+    override fun submitCandidateCardToDeck() {
         // preconditions: none: this is a button-press-response function,
         // and should therefore always activate when the associated button
         // (in this case the OK button) is pressed.
@@ -74,6 +74,7 @@ class CardEditingWindow(frontText: String, backText: String, private val manager
         val backText = cardBackPane.text
 
         manager.processProposedContents(frontText, backText, true, this)
+        if (autokill) this.dispose()
 
         // postconditions: If adding succeeded, the front and back should
         // be blank again, if it didn't, they should be the same as they were
@@ -83,9 +84,6 @@ class CardEditingWindow(frontText: String, backText: String, private val manager
     }
 
     internal fun init() {
-        cancelButton.addActionListener { manager.endEditing() }
-        okButton.addActionListener { submitCandidateCardToDeck() }
-
         // now add the buttons to the window
         val buttonPane = JPanel()
         buttonPane.add(cancelButton)
@@ -127,8 +125,8 @@ class CardEditingWindow(frontText: String, backText: String, private val manager
          * fields (of course, warnings could be suppressed, but programming around it
          * seemed more elegant).
          */
-        internal fun display(frontText: String, backText: String, manager: CardEditingManager): CardEditingWindow {
-            val newCardWindow = CardEditingWindow(frontText, backText, manager)
+        internal fun display(frontText: String, backText: String, manager: CardEditingManager, autokill: Boolean): CardEditingWindow {
+            val newCardWindow = CardEditingWindow(frontText, backText, manager, autokill)
             newCardWindow.init()
             return newCardWindow
         }

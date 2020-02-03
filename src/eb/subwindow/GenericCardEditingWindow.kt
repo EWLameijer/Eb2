@@ -9,15 +9,21 @@ import javax.swing.JButton
 import javax.swing.JFrame
 import javax.swing.JTextPane
 
-abstract class GenericCardEditingWindow : JFrame() {
+abstract class GenericCardEditingWindow(protected val manager: CardEditingManager) : JFrame() {
 
     // The button to cancel creating this card, and return to the calling window.
-    protected val cancelButton = JButton("Cancel")
+    protected val cancelButton = JButton("Cancel").apply {
+        addActionListener { manager.endEditing(this@GenericCardEditingWindow) }
+    }
 
     // The button to press that requests the current deck to check whether this
     // card is a valid/usable card (so no duplicate of an existing card, for
     // example) and if so, to add it.
-    protected val okButton = JButton("Ok")
+    protected val okButton = JButton("Ok").apply {
+        addActionListener { submitCandidateCardToDeck() }
+    }
+
+    protected abstract fun submitCandidateCardToDeck()
 
     protected val escapeKeyListener = SpecificKeyListener(KeyEvent.VK_ESCAPE) { cancelButton.doClick() }
     protected val enterKeyListener = SpecificKeyListener(KeyEvent.VK_ENTER) { okButton.doClick() }

@@ -37,12 +37,10 @@ class FixedSizeNumberDocument (
                      number must be at least two greater than the number of digits allotted to the fractional part."""}
         }
     }
-
-
+    
     //Inserts a new string into this document, unless the string is invalid or would give other problems.
     @Throws(BadLocationException::class)
     override fun insertString(offs: Int, str: String?, a: AttributeSet?) {
-
         val originalText = owner.text
 
         // first test: if the original string is long enough, you cannot insert.

@@ -53,7 +53,7 @@ object Eb {
             // If another instance exists, show message and terminates the current instance.
             // Otherwise starts application.
 
-            MainWindow
+            MainWindow()
 
         } catch (exc: IOException) {
             JOptionPane.showMessageDialog(null, "The application is already running.....",

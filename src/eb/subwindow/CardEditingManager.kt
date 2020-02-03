@@ -22,8 +22,8 @@ import eb.utilities.Hint
 class CardEditingManager(private val tripleModus: Boolean = false, private var card: Card? = null) {
 
     private val cardEditingWindow: GenericCardEditingWindow? = when (card) {
-        null -> if (tripleModus) ThreeSidedCardWindow.display(this) else CardEditingWindow.display("", "", this)
-        !in c_cardsBeingEdited -> CardEditingWindow.display(card!!.front.contents, card!!.back, this)
+        null -> if (tripleModus) ThreeSidedCardWindow.display(this) else CardEditingWindow.display("", "", this, false)
+        !in c_cardsBeingEdited -> CardEditingWindow.display(card!!.front.contents, card!!.back, this, false)
         else -> null
     }
 
@@ -41,7 +41,7 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
         if (!Hint.isValid(frontText)) {
             // if back is empty, then this is just a hasty return. Is okay.
             if (backText.isEmpty()) {
-                endEditing()
+                endEditing(callingWindow)
             } else {
                 // back is filled: so there is an error
                 val verb = if (inCardCreatingMode()) "add" else "modify"
@@ -99,7 +99,7 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
             if (callingWindow !is ThreeSidedCardWindow) cardEditingWindow!!.clearContents()
         } else {
             DeckManager.currentDeck().cardCollection.removeCard(card!!)
-            endEditing()
+            endEditing(callingWindow)
         }
     }
 
@@ -109,8 +109,8 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
         closeOptionPane()
         if (!tripleModus) {
             cardEditingWindow!!.updateContents(frontText.contents, newBack)
-        } else {
-            CardEditingWindow.display(frontText.contents, newBack, this)
+        } else { // Create a new normal card window
+            CardEditingWindow.display(frontText.contents, newBack, this, true)
         }
         DeckManager.currentDeck().cardCollection.removeCard(duplicate)
     }
@@ -126,16 +126,16 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
             // in editing mode
             card!!.front = frontText
             card!!.back = backText
-            endEditing()
+            endEditing(callingWindow)
         }
         BlackBoard.post(Update(UpdateType.CARD_CHANGED))
     }
 
-    fun endEditing() {
+    fun endEditing(window: GenericCardEditingWindow) {
         if (!inCardCreatingMode()) {
             c_cardsBeingEdited.remove(card)
         }
-        cardEditingWindow!!.dispose()
+        window.dispose()
     }
 
     companion object {

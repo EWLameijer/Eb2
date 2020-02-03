@@ -2,7 +2,11 @@ PLAN
 
 View review history in side panel?
 
-1) Delete current card is iffy...
+
+Bug: if an extra card window is made for merging cards, it should not persist/be empty
+
+CardEditingManager - endEditing
+
 
 
 
