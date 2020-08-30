@@ -1,7 +1,9 @@
 PLAN
 
 View review history in side panel?
+?Weird bug/crash if editing 5.0 field in study options
 
+Bug: if a card is first reviewed incorrectly and afterwards (during the same run of Eb) reviewed correctly, both reviews should be counted for statistics, not just the last one.
 
 Bug: if an extra card window is made for merging cards, it should not persist/be empty
 

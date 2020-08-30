@@ -38,10 +38,10 @@ class Card(var front: Hint, var back: String) : Serializable {
 
     fun getReviews() = reviews.toList()
 
+    fun getReviewsAfter(instant: Instant) = reviews.filter { it.instant > instant }
+
     companion object {
         // the proper auto-generated serialVersionUID as cards should be serializable.
         private const val serialVersionUID = -2746012998758766327L
     }
-
-    fun preLastReview() = reviews[reviews.lastIndex - 1]
 }

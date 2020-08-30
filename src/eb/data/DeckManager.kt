@@ -17,6 +17,7 @@ import java.lang.RuntimeException
 import java.io.IOException
 import java.io.FileReader
 import com.google.gson.GsonBuilder
+import java.time.Instant
 
 
 /**
@@ -28,6 +29,8 @@ import com.google.gson.GsonBuilder
 object DeckManager {
     // The deck managed by the DeckManager.
     private var deck: Deck? = null
+    private var loadTime : Instant = Instant.now()
+    fun deckLoadTime() = loadTime
 
     private var nameOfLastReviewedDeck = ""
 
@@ -62,6 +65,7 @@ object DeckManager {
             val loadedDeck = objectInputStream.readObject() as Deck?
             if (loadedDeck != null) {
                 deck = loadedDeck
+                loadTime = Instant.now()
                 BlackBoard.post(Update(UpdateType.DECK_SWAPPED))
             } else {
                 throw RuntimeException("Deck.loadDeck() error: the requested deck cannot be loaded.")
@@ -102,7 +106,7 @@ object DeckManager {
         // Save the current deck to disk before creating the new deck
         save()
         deck = Deck(name)
-
+        loadTime = Instant.now()
         // postconditions: the deck should exist (deck.save handles any errors occurring during saving the deck).
         require(deckHasBeenLoaded()) { "Deck.createDeckWithName() error: problem creating and/or writing the new deck." }
 

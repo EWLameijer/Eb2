@@ -47,8 +47,8 @@ class Deck(val name: String) : Serializable {
     internal val archivingSettings: ArchivingSettings = ArchivingSettings()
 
     // Returns a list of all the cards which should be reviewed at the current moment and study settings.
-    fun reviewableCardList(): MutableList<Card> =
-            cardCollection.getCards().filter { getTimeUntilNextReview(it).isNegative }.toMutableList()
+    fun reviewableCardList(): List<Card> =
+            cardCollection.getCards().filter { getTimeUntilNextReview(it).isNegative }
 
     fun timeUntilNextReview(): Duration {
         require(cardCollection.getTotal() > 0) {
@@ -104,6 +104,8 @@ class Deck(val name: String) : Serializable {
         }
     }
 
+    fun getRipenessFactor(card: Card) = getTimeUntilNextReview(card).seconds.toDouble()
+
     // Returns the time till the next review of the given card. The time can be negative, as that information can help
     // deprioritize 'over-ripe' cards which likely have to be learned anew anyway.
     fun getTimeUntilNextReview(card: Card): Duration =
@@ -116,11 +118,13 @@ class Deck(val name: String) : Serializable {
                 Duration.between(Instant.now(), getOfficialReviewInstant(card))
 
 
+    private fun getWaitTime(card: Card) =
+            if (card.lastReview()!!.wasSuccess) getIntervalAfterSuccessfulReview(card)
+            else studyOptions.forgottenInterval.asDuration()
+
     private fun getOfficialReviewInstant(card: Card): Temporal {
         val lastReview = card.lastReview()!!
-        val waitTime =
-                if (lastReview.wasSuccess) getIntervalAfterSuccessfulReview(card)
-                else studyOptions.forgottenInterval.asDuration()
+        val waitTime = getWaitTime(card)
 
         return waitTime.addTo(lastReview.instant)
     }
@@ -140,7 +144,6 @@ class Deck(val name: String) : Serializable {
     }
 
     companion object {
-
         // Automatically generated ID for serialization.
         private const val serialVersionUID = 8271837223354295531L
 

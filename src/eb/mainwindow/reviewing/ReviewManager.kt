@@ -33,7 +33,7 @@ object ReviewManager : Listener {
     private var reviewPanel: ReviewPanel? = null
     private var currentDeck: Deck? = null
     private var cardsToBeReviewed = mutableListOf<Card>()
-    private var cardsReviewed = mutableListOf<Card>()
+    private var cardsReviewed = mutableSetOf<Card>()
 
     // counter stores the index of the card in the cardsToBeReviewed list that should be reviewed next.
     private var counter: Int = 0
@@ -48,15 +48,37 @@ object ReviewManager : Listener {
     // 'Yes'/true when the user needs to check the answer.
     private var showAnswer: Boolean = false
 
-    fun reviewResults(): List<Review?> {
+    fun reviewResults(): List<Review> {
         ensureReviewSessionIsValid()
-        return cardsReviewed.map { it.lastReview() }
+        return cardsReviewed.flatMap { it.getReviewsAfter(DeckManager.deckLoadTime()) }
     }
 
     fun reviewedCards(): List<Card> {
         ensureReviewSessionIsValid()
         return cardsReviewed.toList()
     }
+
+    fun getNewFirstReviews(): List<Review> {
+        ensureReviewSessionIsValid()
+        return cardsReviewed.map { it.getReviews().first() }.filter { it.instant > DeckManager.deckLoadTime() }
+    }
+
+    fun getNonFirstReviews(): Pair<List<Review>, List<Review>> {
+        ensureReviewSessionIsValid()
+        val previouslySucceeded = mutableListOf<Review>()
+        val previouslyFailed = mutableListOf<Review>()
+        cardsReviewed.forEach { card ->
+            val reversedReviews = card.getReviews().reversed()
+            for (index in 0 until reversedReviews.lastIndex) { // for each review EXCEPT the 'first review'
+                val review = reversedReviews[index]
+                if (review.instant > DeckManager.deckLoadTime()) {
+                    if (reversedReviews[index+1].wasSuccess) previouslySucceeded += review else previouslyFailed += review
+                } else break
+            }
+        }
+        return previouslySucceeded to previouslyFailed
+    }
+
 
     fun currentCard(): Card? =
             if (cardsToBeReviewed.isEmpty() || counter >= cardsToBeReviewed.size) null
@@ -117,7 +139,7 @@ object ReviewManager : Listener {
     }
 
     private fun initializeReviewSession() {
-        cardsReviewed = mutableListOf() // don't carry old reviews with you.
+        cardsReviewed = mutableSetOf() // don't carry old reviews with you.
         continueReviewSession()
     }
 
@@ -125,7 +147,7 @@ object ReviewManager : Listener {
         val currentDeck = DeckManager.currentDeck()
 
         val maxNumReviews = currentDeck.studyOptions.reviewSessionSize
-        val reviewableCards = currentDeck.reviewableCardList().toMutableList()
+        val reviewableCards = currentDeck.reviewableCardList()
         val totalNumberOfReviewableCards = reviewableCards.size
         log("Number of reviewable cards is $totalNumberOfReviewableCards")
         val numCardsToBeReviewed =
@@ -135,13 +157,11 @@ object ReviewManager : Listener {
         // be rehearsed first, as other cards probably need to be relearned anyway,
         // and we should try to contain the damage.
         val (newlyReviewedCards, repeatReviewedCards) = reviewableCards.partition { it.getReviews().isEmpty() }
-        val (previouslySucceededCards, previouslyFailedCards) = repeatReviewedCards.partition { it.lastReview()!!.wasSuccess }
-        val sortedPrevSuccCards = previouslySucceededCards.sortedBy { currentDeck.getTimeUntilNextReview(it) }
-        val sortedPrevFailedCards = previouslyFailedCards.sortedBy { currentDeck.getTimeUntilNextReview(it) }
-        val sortedNewCards = newlyReviewedCards.sortedBy { currentDeck.getTimeUntilNextReview(it) }
-        val prioritizedReviewList = sortedPrevSuccCards + sortedPrevFailedCards + sortedNewCards
+        val sortedReviewedCards = repeatReviewedCards.sortedByDescending { currentDeck.getRipenessFactor(it) }
+        val sortedNewCards = newlyReviewedCards.sortedByDescending { currentDeck.getRipenessFactor(it) }
+        val prioritizedReviewList = sortedReviewedCards + sortedNewCards
 
-                // get the first n for the review
+        // get the first n for the review
         cardsToBeReviewed = ArrayList(prioritizedReviewList.subList(0, numCardsToBeReviewed))
         cardsToBeReviewed.shuffle()
 

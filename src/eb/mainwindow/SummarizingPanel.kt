@@ -1,11 +1,11 @@
 package eb.mainwindow
 
-import eb.data.Card
 import java.awt.CardLayout
 import java.awt.Graphics
 import java.awt.event.ComponentListener
 import java.beans.EventHandler
 import eb.data.DeckManager
+import eb.data.Review
 import eb.eventhandling.BlackBoard
 import eb.eventhandling.Update
 import eb.eventhandling.UpdateType
@@ -60,18 +60,15 @@ class SummarizingPanel internal constructor() : JPanel() {
             if (this.isEmpty()) null
             else this.average()
 
-
-
-    private fun successStatistics(cards: List<Card>, text: String) = buildString {
-        val completedReviews = cards.map{ it.getReviews().last()}
-        val totalNumberOfReviews = completedReviews.size.toLong()
-        val (correctReviews, incorrectReviews) = completedReviews.partition { it.wasSuccess }
-
+    private fun successStatistics(reviews: List<Review>, text: String) = buildString {
         append("$text<br>")
+        val totalNumberOfReviews = reviews.size
         append("total: $totalNumberOfReviews <br>")
-        append("correctly answered: ${correctReviews.size}<br>")
+        val (correctReviews, incorrectReviews) = reviews.partition { it.wasSuccess }
+        val numberOfCorrectReviews = correctReviews.size
+        append("correctly answered: $numberOfCorrectReviews<br>")
         append("incorrectly answered: ${incorrectReviews.size}<br>")
-        val percentageOfCorrectReviews = 100.0 * correctReviews.size / totalNumberOfReviews
+        val percentageOfCorrectReviews = 100.0 * numberOfCorrectReviews / totalNumberOfReviews
         val percentageCorrectReviewsAsString = String.format("%.2f", percentageOfCorrectReviews)
         append("percentage of correct reviews: $percentageCorrectReviewsAsString%")
         append("<br><br>")
@@ -80,37 +77,7 @@ class SummarizingPanel internal constructor() : JPanel() {
     public override fun paintComponent(g: Graphics) {
         super.paintComponent(g)
 
-        report.text = buildString {
-            append("<html>")
-            append("<b>Summary</b><br><br>")
-            append("Cards reviewed<br>")
-            val allReviews = ReviewManager.reviewResults()
-            val completedReviews = allReviews.filterNotNull()
-            val totalNumberOfReviews = completedReviews.size.toLong()
-            val (correctReviews, incorrectReviews) = completedReviews.partition { it.wasSuccess }
-            append("total: $totalNumberOfReviews <br>")
-            append("correctly answered: ${correctReviews.size}<br>")
-            append("incorrectly answered: ${incorrectReviews.size}<br>")
-            val percentageOfCorrectReviews = 100.0 * correctReviews.size / totalNumberOfReviews
-            val percentageCorrectReviewsAsString = String.format("%.2f", percentageOfCorrectReviews)
-            append("percentage of correct reviews: $percentageCorrectReviewsAsString%")
-            append("<br><br>")
-            val reviewedCards = ReviewManager.reviewedCards()
-            val (newlyReviewedCards, repeatReviewedCards) = reviewedCards.partition { it.getReviews().size == 1 }
-            val (previouslySucceededCards, previouslyFailedCards) = repeatReviewedCards.partition { it.preLastReview().wasSuccess }
-            append(successStatistics(previouslySucceededCards, "Previously succeeded cards"))
-            append(successStatistics(previouslyFailedCards, "Previously failed cards"))
-            append(successStatistics(newlyReviewedCards, "New cards"))
-
-            append("time needed for answering<br>")
-            val averageTime = completedReviews.map { it.thinkingTime }.averageOrNull()
-            append("average time: ${optionalDoubleToString(averageTime)}<br>")
-            val averageCorrectTime = correctReviews.map { it.thinkingTime }.averageOrNull()
-            append("average time per correct card: ${optionalDoubleToString(averageCorrectTime)}<br>")
-            val averageIncorrectTime = incorrectReviews.map { it.thinkingTime }.averageOrNull()
-            append("average time per incorrect card: ${optionalDoubleToString(averageIncorrectTime)}<br>")
-            append("</html>")
-        }
+        report.text = getReport()
         File("log.txt").writeText(report.text.replace("<br>", "\n").replace("<.*?>".toRegex(), ""))
         val cardLayout = buttonPanel.layout as CardLayout
 
@@ -119,6 +86,20 @@ class SummarizingPanel internal constructor() : JPanel() {
         } else {
             cardLayout.show(buttonPanel, STILL_REVIEWS_TODO_MODE)
         }
+    }
+
+    private fun getReport() = buildString {
+        append("<html>")
+        append("<b>Summary</b><br><br>")
+        val allReviews = ReviewManager.reviewResults()
+        append(successStatistics(allReviews, "Total reviews"))
+
+        val firstTimeReviews = ReviewManager.getNewFirstReviews() // reviewedCards.filter { it.getReviews().size == it.getReviewsAfter(DeckManager.deckLoadTime()).size }
+        val (previouslySucceededReviews, previouslyFailedReviews) = ReviewManager.getNonFirstReviews()
+        append(successStatistics(previouslySucceededReviews, "Previously succeeded cards"))
+        append(successStatistics(previouslyFailedReviews, "Previously failed cards"))
+        append(successStatistics(firstTimeReviews, "New cards"))
+        append("</html>")
     }
 
     companion object {

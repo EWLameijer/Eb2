@@ -43,12 +43,15 @@ import eb.utilities.log
 import java.awt.event.KeyEvent.getExtendedKeyCodeForChar
 import kotlin.system.exitProcess
 
-const val EB_VERSION = "2.1.3"
+const val EB_VERSION = "2.1.5"
 // FUTURE PLANS:
-// show history of card in side window
+// show history of card in side window!!! (want to know tough cases, so can adapt)
 // enable pictures to be shown with cards
-// better sorting of repeated cards 
+// better sorting of repeated cards [what does that mean?]
+// ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
+// 2.1.5: Solved bug where a failed review was not shown properly in the statistics window if it had been reviewed multiple times during a session.
+// 2.1.4: Prioritize reviewing of already-reviewed cards (so only new cards skipped if needed). Sorting algorithm should work properly now
 // 2.1.3: Solved problems when starting up on other computer, partly due to decimal point differences
 // 2.1.2: Ensure that after merging cards in triple mode, the separate merging window is disposed of after it has fulfilled its purpose
 // 2.1.1: Prioritize reviewing of known cards. Not yet prioritized for relative delay.
