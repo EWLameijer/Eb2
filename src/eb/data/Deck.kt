@@ -48,7 +48,7 @@ class Deck(val name: String) : Serializable {
 
     // Returns a list of all the cards which should be reviewed at the current moment and study settings.
     fun reviewableCardList(): List<Card> =
-            cardCollection.getCards().filter { getTimeUntilNextReview(it).isNegative }
+        cardCollection.getCards().filter { getTimeUntilNextReview(it).isNegative }
 
     fun timeUntilNextReview(): Duration {
         require(cardCollection.getTotal() > 0) {
@@ -62,8 +62,8 @@ class Deck(val name: String) : Serializable {
         val now = LocalDateTime.now()
         val nameOfArchivingDirectory = archivingSettings.directoryName()
         val textFileDirectory =
-                if (nameOfArchivingDirectory == null) EMPTY_STRING
-                else nameOfArchivingDirectory + File.separator
+            if (nameOfArchivingDirectory == null) EMPTY_STRING
+            else nameOfArchivingDirectory + File.separator
         val twoDigitFormat = "%02d" // format numbers as 01, 02...99
 
         val baseFileName = (textFileDirectory + name + "_"
@@ -110,17 +110,17 @@ class Deck(val name: String) : Serializable {
     // deprioritize 'over-ripe' cards which likely have to be learned anew anyway.
     fun getTimeUntilNextReview(card: Card): Duration =
     // case 1: the card has never been reviewed yet.
-            // Take the creation instant and add the user-specified initial interval.
-            if (!card.hasBeenReviewed())
-                Duration.between(Instant.now(), studyOptions.initialInterval.asDuration().addTo(card.creationInstant))
-            else
-            // other cases: there have been previous reviews.
-                Duration.between(Instant.now(), getOfficialReviewInstant(card))
+        // Take the creation instant and add the user-specified initial interval.
+        if (!card.hasBeenReviewed())
+            Duration.between(Instant.now(), studyOptions.initialInterval.asDuration().addTo(card.creationInstant))
+        else
+        // other cases: there have been previous reviews.
+            Duration.between(Instant.now(), getOfficialReviewInstant(card))
 
 
     private fun getWaitTime(card: Card) =
-            if (card.lastReview()!!.wasSuccess) getIntervalAfterSuccessfulReview(card)
-            else studyOptions.forgottenInterval.asDuration()
+        if (card.lastReview()!!.wasSuccess) getIntervalAfterSuccessfulReview(card)
+        else studyOptions.forgottenInterval.asDuration()
 
     private fun getOfficialReviewInstant(card: Card): Temporal {
         val lastReview = card.lastReview()!!
@@ -142,6 +142,8 @@ class Deck(val name: String) : Serializable {
         val numberOfLengthenings = streakLength - 1 // 2 reviews = lengthen 1x.
         return Utilities.multiplyDurationBy(waitTime, lengtheningFactor.pow(numberOfLengthenings.toDouble()))
     }
+
+    fun getFronts(): List<String> = cardCollection.getCards().map { it.front.contents }
 
     companion object {
         // Automatically generated ID for serialization.

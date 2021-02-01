@@ -1,5 +1,6 @@
 package eb.mainwindow
 
+import eb.Eb
 import eb.analysis.Analyzer
 import java.awt.BorderLayout
 import java.awt.CardLayout
@@ -43,13 +44,13 @@ import eb.utilities.log
 import java.awt.event.KeyEvent.getExtendedKeyCodeForChar
 import kotlin.system.exitProcess
 
-const val EB_VERSION = "2.1.5"
 // FUTURE PLANS:
 // show history of card in side window!!! (want to know tough cases, so can adapt)
 // enable pictures to be shown with cards
 // better sorting of repeated cards [what does that mean?]
 // ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
+// 2.1.6: Added overview panel so you can see when you are creating a duplicate card before you have fully created it
 // 2.1.5: Solved bug where a failed review was not shown properly in the statistics window if it had been reviewed multiple times during a session.
 // 2.1.4: Prioritize reviewing of already-reviewed cards (so only new cards skipped if needed). Sorting algorithm should work properly now
 // 2.1.3: Solved problems when starting up on other computer, partly due to decimal point differences
@@ -159,7 +160,7 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         val numReviewingPoints = currentDeck.cardCollection.getReviewingPoints()
 
         val numReviewableCards = currentDeck.reviewableCardList().size
-        var title = ("Eb$EB_VERSION: ${currentDeck.name} (${"card".pluralize(numReviewableCards)} to be reviewed in total")
+        var title = ("Eb${Eb.VERSION_STRING}: ${currentDeck.name} (${"card".pluralize(numReviewableCards)} to be reviewed in total")
         if (state == MainWindowState.REVIEWING) {
             title += (", ${"card".pluralize(ReviewManager.cardsToGoYet())} yet to be reviewed in the current session")
         }

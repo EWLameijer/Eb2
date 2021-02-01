@@ -37,7 +37,7 @@ object SingleInstance {
 
 object Eb {
 
-    const val VERSION_STRING = "1.3"
+    const val VERSION_STRING = "2.1.6"
     private var ss: ServerSocket? = null
 
     @JvmStatic

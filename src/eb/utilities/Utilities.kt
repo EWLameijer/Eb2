@@ -184,7 +184,6 @@ object Utilities {
             if (string.startsWith("-")) false
             else representsFractionalNumber(string, maxPrecision)
 
-
     fun stringToInt(string: String): Int? {
         // Get a numberFormat object. Note that the number it returns will be Long
         // if possible, otherwise a Double.

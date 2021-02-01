@@ -3,10 +3,15 @@ package eb.subwindow
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.Insets
+import java.awt.Dimension
+import javax.swing.*
+import javax.swing.event.ListSelectionEvent
 
 import eb.data.DeckManager
+import eb.eventhandling.DelegatingDocumentListener
+import eb.utilities.Hint
 import eb.utilities.Utilities
-import javax.swing.*
+
 
 /**
  * CardEditingWindow allows the user to add a new card to the deck, or to edit
@@ -17,7 +22,25 @@ import javax.swing.*
  *
  * @author Eric-Wubbo Lameijer
  */
-class CardEditingWindow(frontText: String, backText: String, manager: CardEditingManager, private val autokill: Boolean) : GenericCardEditingWindow(manager) {
+class CardEditingWindow(
+    frontText: String,
+    backText: String,
+    manager: CardEditingManager,
+    private val autokill: Boolean
+) : GenericCardEditingWindow(manager) {
+
+    private val defaultDocumentListener = DelegatingDocumentListener {
+        val doHighlight = Runnable {
+            updateFrontList()
+        }
+        SwingUtilities.invokeLater(doHighlight)
+    }
+
+    private fun updateFrontList() {
+        cardFronts.clear()
+        val allCardFronts = DeckManager.currentDeck().getFronts()
+        cardFronts.addAll(allCardFronts.filter { it.startsWith(cardFrontPane.text) }.sorted())
+    }
 
     // Create the panel to edit the front of the card, and make enter
     // and tab transfer focus to the panel for editing the back of the card.
@@ -25,6 +48,7 @@ class CardEditingWindow(frontText: String, backText: String, manager: CardEditin
     // NewCardWindow
     private val cardFrontPane = JTextPane().apply {
         text = frontText
+        document.addDocumentListener(defaultDocumentListener)
         Utilities.makeTabAndEnterTransferFocus(this)
         addKeyListener(escapeKeyListener)
         addFocusListener(CleaningFocusListener())
@@ -46,8 +70,6 @@ class CardEditingWindow(frontText: String, backText: String, manager: CardEditin
     override val cardPanes = listOf(cardFrontPane, cardBackPane)
 
     init {
-        // preconditions: none (we can assume the user clicked the appropriate
-        // button, and even otherwise there is not a big problem)
         val operation = if (manager.inCardCreatingMode()) "add" else "edit"
         this.title = "${DeckManager.currentDeck().name}: $operation card"
 
@@ -65,31 +87,28 @@ class CardEditingWindow(frontText: String, backText: String, manager: CardEditin
      * front.
      */
     override fun submitCandidateCardToDeck() {
-        // preconditions: none: this is a button-press-response function,
-        // and should therefore always activate when the associated button
-        // (in this case the OK button) is pressed.
-
         standardizeFields()
         val frontText = cardFrontPane.text
         val backText = cardBackPane.text
 
         manager.processProposedContents(frontText, backText, true, this)
         if (autokill) this.dispose()
-
-        // postconditions: If adding succeeded, the front and back should
-        // be blank again, if it didn't, they should be the same as they were
-        // before (so nothing changed). Since the logic of the postcondition
-        // would be as complex as the logic of the function itself, it's kind
-        // of double and I skip it here.
     }
 
     internal fun init() {
         // now add the buttons to the window
-        val buttonPane = JPanel()
-        buttonPane.add(cancelButton)
-        buttonPane.add(okButton)
-
         // Now create a nice (or at least acceptable-looking) layout.
+        addCardPanel()
+        addListPanel()
+        addButtonPanel()
+
+        // And finally set the general settings of the 'new card'-window.
+        setSize(600, 400)
+        defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
+        isVisible = true
+    }
+
+    private fun addCardPanel() {
         val upperPanel = JSplitPane(JSplitPane.VERTICAL_SPLIT, JScrollPane(cardFrontPane), JScrollPane(cardBackPane))
         upperPanel.resizeWeight = 0.5
         layout = GridBagLayout()
@@ -102,20 +121,34 @@ class CardEditingWindow(frontText: String, backText: String, manager: CardEditin
             fill = GridBagConstraints.BOTH
         }
         add(upperPanel, frontConstraints)
+    }
 
-        val buttonPaneConstraints = GridBagConstraints().apply {
-            gridx = 0
-            gridy = 1
-            weightx = 0.0
-            weighty = 0.0
-            insets = Insets(10, 10, 10, 10)
+    private val listPanelConstraints = GridBagConstraints().apply {
+        gridx = 1
+        gridy = 0
+        weightx = 0.1
+        weighty = 1.0
+        insets = Insets(0, 0, 5, 0)
+        fill = GridBagConstraints.BOTH
+    }
+
+    private fun addListPanel() {
+        listBox.addListSelectionListener(::copyCardFromList)
+        cardFronts.addAll(DeckManager.currentDeck().getFronts().filter { it >= cardFrontPane.text }.sorted())
+        val listPanel = JPanel().apply {
+            add(listBox)
+            minimumSize = Dimension(100, 200)
         }
-        add(buttonPane, buttonPaneConstraints)
+        add(listPanel, listPanelConstraints)
+    }
 
-        // And finally set the general settings of the 'new card'-window.
-        setSize(400, 400)
-        defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
-        isVisible = true
+    private fun copyCardFromList(e: ListSelectionEvent) {
+        val list = e.source as JList<*>
+        val newFrontText = list.selectedValue as String?
+        if (newFrontText != null) {
+            cardFrontPane.text = newFrontText
+            cardBackPane.text = DeckManager.currentDeck().cardCollection.getCardWithFront(Hint(newFrontText))?.back
+        }
     }
 
     companion object {
@@ -125,7 +158,12 @@ class CardEditingWindow(frontText: String, backText: String, manager: CardEditin
          * fields (of course, warnings could be suppressed, but programming around it
          * seemed more elegant).
          */
-        internal fun display(frontText: String, backText: String, manager: CardEditingManager, autokill: Boolean): CardEditingWindow {
+        internal fun display(
+            frontText: String,
+            backText: String,
+            manager: CardEditingManager,
+            autokill: Boolean
+        ): CardEditingWindow {
             val newCardWindow = CardEditingWindow(frontText, backText, manager, autokill)
             newCardWindow.init()
             return newCardWindow

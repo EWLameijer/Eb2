@@ -1,15 +1,27 @@
 package eb.subwindow
 
+import eb.utilities.SpecificKeyListener
 import eb.utilities.doNothing
+import java.awt.Dimension
+import java.awt.GridBagConstraints
+import java.awt.Insets
 import java.awt.event.FocusEvent
 import java.awt.event.FocusListener
 import java.awt.event.KeyEvent
-import java.awt.event.KeyListener
-import javax.swing.JButton
-import javax.swing.JFrame
-import javax.swing.JTextPane
+import javax.swing.*
+import javax.swing.DefaultListModel
+
 
 abstract class GenericCardEditingWindow(protected val manager: CardEditingManager) : JFrame() {
+
+    protected val cardFronts = DefaultListModel<String>()
+
+    protected val listBox = JList(cardFronts).apply {
+        fixedCellWidth = 100
+        selectionMode = ListSelectionModel.SINGLE_SELECTION
+        visibleRowCount = -1 // to keep all values visible
+        preferredSize= Dimension(100,400)
+    }
 
     // The button to cancel creating this card, and return to the calling window.
     protected val cancelButton = JButton("Cancel").apply {
@@ -31,20 +43,7 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
     protected abstract val cardPanes: List<JTextPane>
 
     //Listens for a specific key and consumes it (and performs the appropriate action) when it is pressed
-    protected inner class SpecificKeyListener(private val keyCode: Int, val action: () -> Unit) : KeyListener {
-        override fun keyPressed(e: KeyEvent) {
-            if (e.keyCode == keyCode) {
-                e.consume()
-                action()
-            }
-        }
 
-        // dummy method: we only need to respond to the pressing of the key, not to the release.
-        override fun keyReleased(arg0: KeyEvent) = doNothing
-
-        // dummy method: we only need to respond to the pressing of the key, not to it being typed
-        override fun keyTyped(arg0: KeyEvent) = doNothing
-    }
 
     internal inner class CleaningFocusListener : FocusListener {
 
@@ -77,8 +76,24 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
 
     fun focusFront() = cardPanes[0].requestFocusInWindow()
 
-    fun updateContents(vararg cardTexts: String) = cardTexts.forEachIndexed { index, contents -> cardPanes[index].text = contents }
+    fun updateContents(vararg cardTexts: String) =
+        cardTexts.forEachIndexed { index, contents -> cardPanes[index].text = contents }
 
     fun clearContents() = cardPanes.forEach { it.text = "" }
+
+    protected fun addButtonPanel() {
+        val buttonPane = JPanel().apply {
+            add(cancelButton)
+            add(okButton)
+        }
+        val buttonPaneConstraints = GridBagConstraints().apply {
+            gridx = 0
+            gridy = 1
+            weightx = 0.0
+            weighty = 0.0
+            insets = Insets(10, 10, 10, 10)
+        }
+        add(buttonPane, buttonPaneConstraints)
+    }
 
 }

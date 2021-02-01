@@ -100,13 +100,17 @@ class ThreeSidedCardWindow(manager: CardEditingManager) : GenericCardEditingWind
     }
 
     internal fun init() {
-        // now add the buttons to the window
-        val buttonPane = JPanel(). apply {
-            add(cancelButton)
-            add(okButton)
-        }
-
         // Now create a nice (or at least acceptable-looking) layout.
+        addCardContentPanel()
+        addButtonPanel()
+
+        // And finally set the general settings of the 'new card'-window.
+        setSize(400, 400)
+        defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
+        isVisible = true
+    }
+
+    private fun addCardContentPanel() {
         val upperPanel = Box.createVerticalBox()
         cardPanes.forEach {
             upperPanel.add(Box.createVerticalStrut(10))
@@ -122,20 +126,6 @@ class ThreeSidedCardWindow(manager: CardEditingManager) : GenericCardEditingWind
             fill = GridBagConstraints.BOTH
         }
         add(upperPanel, frontConstraints)
-
-        val buttonPaneConstraints = GridBagConstraints().apply {
-            gridx = 0
-            gridy = 1
-            weightx = 0.0
-            weighty = 0.0
-            insets = Insets(10, 10, 10, 10)
-        }
-        add(buttonPane, buttonPaneConstraints)
-
-        // And finally set the general settings of the 'new card'-window.
-        setSize(400, 400)
-        defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
-        isVisible = true
     }
 
     companion object {
