@@ -50,28 +50,38 @@ class StudyOptionsWindow : JFrame(), Listener {
 
     private val lengtheningFactor: LabelledTextField
 
+    private val targetedSuccessPercentage: LabelledTextField
+
     private val timeToWaitAfterIncorrectReview: TimeInputElement
 
     init {
         val studyOptions = DeckManager.currentDeck().studyOptions
         initialIntervalBox = TimeInputElement("Initial review after", studyOptions.initialInterval)
-        sizeOfReview = LabelledTextField("number of cards per reviewing session",
-                studyOptions.reviewSessionSize.toString(), 3, 0)
+        sizeOfReview = LabelledTextField(
+            "number of cards per reviewing session",
+            studyOptions.reviewSessionSize.toString(), 3, 0
+        )
         timeToWaitAfterCorrectReview = TimeInputElement(
-                "Time to wait for re-reviewing remembered card:", studyOptions.rememberedInterval)
+            "Time to wait for re-reviewing remembered card:", studyOptions.rememberedInterval
+        )
         lengtheningFactor = LabelledTextField(
-                "after each successful review, increase review time by a factor",
-                Utilities.toRegionalString(studyOptions.lengtheningFactor.toString()), 5, 2)
+            "after each successful review, increase review time by a factor",
+            Utilities.toRegionalString(studyOptions.lengtheningFactor.toString()), 5, 2
+        )
         timeToWaitAfterIncorrectReview = TimeInputElement(
-                "Time to wait for re-reviewing forgotten card:", studyOptions.forgottenInterval)
+            "Time to wait for re-reviewing forgotten card:", studyOptions.forgottenInterval
+        )
+        targetedSuccessPercentage = LabelledTextField(
+            "Strive for this percentage successful reviews (between 80% and 90% likely best)",
+            Utilities.toRegionalString(studyOptions.idealSuccessPercentage.toString()), 5, 2
+        )
     }
 
     // Updates the title of the frame in response to changes to indicate to the user whether there are unsaved changes.
     private fun updateFrame() {
         val guiStudyOptions = gatherUIDataIntoStudyOptionsObject()
-        var title = "Study Options"
         val deckStudyOptions = DeckManager.currentDeck().studyOptions
-        title +=
+        val title = "Study Options" +
                 if (guiStudyOptions == deckStudyOptions) " - no unsaved changes"
                 else " - UNSAVED CHANGES"
 
@@ -84,6 +94,7 @@ class StudyOptionsWindow : JFrame(), Listener {
         timeToWaitAfterCorrectReview.interval = settings.rememberedInterval
         lengtheningFactor.setContents(settings.lengtheningFactor)
         timeToWaitAfterIncorrectReview.interval = settings.forgottenInterval
+        targetedSuccessPercentage.setContents(settings.idealSuccessPercentage)
     }
 
     private fun loadEbDefaults() = loadSettings(StudyOptions())
@@ -92,11 +103,13 @@ class StudyOptionsWindow : JFrame(), Listener {
 
     //  Collects the data from the GUI, and packages it nicely into a StudyOptions object.
     private fun gatherUIDataIntoStudyOptionsObject() = StudyOptions(
-            initialIntervalBox.interval,
-            Utilities.stringToInt(sizeOfReview.contents()),
-            timeToWaitAfterCorrectReview.interval,
-            timeToWaitAfterIncorrectReview.interval,
-            Utilities.stringToDouble(lengtheningFactor.contents())!!)
+        initialIntervalBox.interval,
+        Utilities.stringToInt(sizeOfReview.contents()),
+        timeToWaitAfterCorrectReview.interval,
+        timeToWaitAfterIncorrectReview.interval,
+        Utilities.stringToDouble(lengtheningFactor.contents())!!,
+        Utilities.stringToDouble(targetedSuccessPercentage.contents())!!
+    )
 
     private fun saveSettingsToDeck() {
         DeckManager.setStudyOptions(gatherUIDataIntoStudyOptionsObject())
@@ -109,44 +122,17 @@ class StudyOptionsWindow : JFrame(), Listener {
     internal fun init() {
         layout = BorderLayout()
 
-        // first: make the buttons do something
-        cancelButton.addActionListener { dispose() }
         getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-                .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "Cancel") //$NON-NLS-1$
+            .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "Cancel") //$NON-NLS-1$
         getRootPane().actionMap.put("Cancel", ProgrammableAction { dispose() })
-        loadCurrentDeckSettingsButton.addActionListener { loadCurrentDeckSettings() }
-        loadEbDefaultsButton.addActionListener { loadEbDefaults() }
-        setToTheseValuesButton.addActionListener { saveSettingsToDeck() }
+        bindActionsToButtons()
         BlackBoard.register(this, UpdateType.INPUTFIELD_CHANGED)
 
         // Then create two panels: one for setting the correct values for the study
         // options, and one to contain the reset/confirm/reload etc. buttons.
-        val settingsPane = JPanel()
-
-
-        // Give the panes appropriate layouts
-        settingsPane.layout = BorderLayout()
-
-        // now fill the panes
-        val settingsBox = Box.createVerticalBox().apply {
-            add(initialIntervalBox)
-            add(sizeOfReview)
-            add(timeToWaitAfterCorrectReview)
-            add(lengtheningFactor)
-            add(timeToWaitAfterIncorrectReview)
-        }
-        settingsPane.add(settingsBox, BorderLayout.NORTH)
-
-        val buttonsPane = JPanel().apply {
-            add(cancelButton)
-            add(loadEbDefaultsButton)
-            add(loadCurrentDeckSettingsButton)
-            add(setToTheseValuesButton)
-
-            layout = GridLayout(2, 2)
-        }
-
+        val settingsPane = initSettingsPane()
         add(settingsPane, BorderLayout.NORTH)
+        val buttonsPane = initButtonsPane()
         add(buttonsPane, BorderLayout.SOUTH)
 
         setSize(700, 400)
@@ -155,9 +141,46 @@ class StudyOptionsWindow : JFrame(), Listener {
         isVisible = true
     }
 
+    private fun bindActionsToButtons() {
+        cancelButton.addActionListener { dispose() }
+        loadCurrentDeckSettingsButton.addActionListener { loadCurrentDeckSettings() }
+        loadEbDefaultsButton.addActionListener { loadEbDefaults() }
+        setToTheseValuesButton.addActionListener { saveSettingsToDeck() }
+    }
+
+    private fun initSettingsPane(): JPanel {
+        val settingsPane = JPanel().apply {
+            layout = BorderLayout()
+        }
+
+        // now fill the panes
+        val settingsBox = Box.createVerticalBox().apply {
+            add(initialIntervalBox)
+            add(sizeOfReview)
+            add(timeToWaitAfterCorrectReview)
+            add(lengtheningFactor)
+            add(timeToWaitAfterIncorrectReview)
+            add(targetedSuccessPercentage)
+        }
+        settingsPane.add(settingsBox, BorderLayout.NORTH)
+        return settingsPane
+    }
+
+    private fun initButtonsPane(): JPanel {
+        val buttonsPane = JPanel().apply {
+            add(cancelButton)
+            add(loadEbDefaultsButton)
+            add(loadCurrentDeckSettingsButton)
+            add(setToTheseValuesButton)
+
+            layout = GridLayout(2, 2)
+        }
+        return buttonsPane
+    }
+
     override fun respondToUpdate(update: Update) =
-            if (update.type == UpdateType.INPUTFIELD_CHANGED) updateFrame()
-            else doNothing
+        if (update.type == UpdateType.INPUTFIELD_CHANGED) updateFrame()
+        else doNothing
 
     companion object {
         // Displays the study options window. In order to pacify the nullness checker,

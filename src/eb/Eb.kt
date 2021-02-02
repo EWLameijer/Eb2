@@ -14,6 +14,7 @@ import kotlin.system.exitProcess
 // better sorting of repeated cards [what does that mean?]
 // ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
+// 2.1.9: Now also adds an option in the study options menu to set the desired success percentage.
 // 2.1.8: Added the ability to tweak the reviewing times automatically based on successes and failures.
 // 2.1.7: Added 'Clear' button to edit panel, as well as refining the search that you can also search for substrings in the bottom card.
 // 2.1.6: Added overview panel so you can see when you are creating a duplicate card before you have fully created it
@@ -42,7 +43,7 @@ import kotlin.system.exitProcess
 
 object Eb {
 
-    const val VERSION_STRING = "2.1.8"
+    const val VERSION_STRING = "2.1.9"
     private var ss: ServerSocket? = null
 
     @JvmStatic

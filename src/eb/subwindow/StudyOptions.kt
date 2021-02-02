@@ -15,11 +15,14 @@ import eb.utilities.Utilities
  * @author Eric-Wubbo Lameijer
  */
 class StudyOptions(
-        var initialInterval: TimeInterval = DEFAULT_INITIAL_INTERVAL,
-        var reviewSessionSize: Int? = DEFAULT_REVIEW_SESSION_SIZE, // if not specified, review all/infinite cards
-        var rememberedInterval: TimeInterval = DEFAULT_REMEMBERED_INTERVAL,
-        var forgottenInterval: TimeInterval = DEFAULT_FORGOTTEN_INTERVAL,
-        var lengtheningFactor: Double = DEFAULT_LENGTHENING_FACTOR) : Serializable {
+    var initialInterval: TimeInterval = DEFAULT_INITIAL_INTERVAL,
+    var reviewSessionSize: Int? = DEFAULT_REVIEW_SESSION_SIZE, // if not specified, review all/infinite cards
+    var rememberedInterval: TimeInterval = DEFAULT_REMEMBERED_INTERVAL,
+    var forgottenInterval: TimeInterval = DEFAULT_FORGOTTEN_INTERVAL,
+    var lengtheningFactor: Double = DEFAULT_LENGTHENING_FACTOR,
+    var idealSuccessPercentage: Double = DEFAULT_SUCCESS_TARGET
+) : Serializable {
+
 
     override fun equals(other: Any?) = when {
         this === other -> true
@@ -31,11 +34,13 @@ class StudyOptions(
                     reviewSessionSize == otherOptions.reviewSessionSize &&
                     rememberedInterval == otherOptions.rememberedInterval &&
                     Utilities.doublesEqualWithinThousands(lengtheningFactor, otherOptions.lengtheningFactor) &&
-                    forgottenInterval == otherOptions.forgottenInterval)
+                    forgottenInterval == otherOptions.forgottenInterval &&
+                    Utilities.doublesEqualWithinThousands(idealSuccessPercentage, otherOptions.idealSuccessPercentage))
         }
     }
 
-    override fun hashCode() = Objects.hash(initialInterval, reviewSessionSize, rememberedInterval, forgottenInterval)
+    override fun hashCode() =
+        Objects.hash(initialInterval, reviewSessionSize, rememberedInterval, forgottenInterval, idealSuccessPercentage)
 
     companion object {
         // The serialization ID. Automatically generated, can be ignored.
@@ -51,5 +56,6 @@ class StudyOptions(
         private const val DEFAULT_REVIEW_SESSION_SIZE = 20
 
         private const val DEFAULT_LENGTHENING_FACTOR = 5.0
+        private const val DEFAULT_SUCCESS_TARGET = 85.0
     }
 }

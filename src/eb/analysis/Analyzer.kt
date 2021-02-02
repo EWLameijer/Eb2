@@ -2,6 +2,7 @@ package eb.analysis
 
 import eb.Eb
 import eb.data.*
+import eb.subwindow.StudyOptions
 import eb.utilities.Utilities
 import eb.utilities.getDateString
 import java.io.BufferedWriter
@@ -125,7 +126,7 @@ object Analyzer {
     }
 
     private fun improvedTime(averageReviewingTime: Double, currentSuccessPercentage: Double): Double {
-        val idealSuccessPercentage = 85.0
+        val idealSuccessPercentage = DeckManager.currentDeck().studyOptions.idealSuccessPercentage
         val percentageDifference = currentSuccessPercentage - idealSuccessPercentage
         var workingDifference = percentageDifference
         var multiplicationFactor = 1.0
