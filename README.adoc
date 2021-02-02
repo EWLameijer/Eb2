@@ -1,0 +1,44 @@
+= Eb, a simple yet quite smart Spaced Repetition System
+Eric-Wubbo Lameijer
+v1.0, 2021-02-02
+:toc:
+:toc-title: Contents
+
+== 1. Why Spaced Repetition Systems?
+
+If you look at research into effective learning, how not just to learn for the next exam, but ideally also remember things for the next exam, and the next, or possibly for the rest of your life, https://pcl.sitehost.iu.edu/rgoldsto/courses/dunloskyimprovinglearning.pdf[science tells a few things]: there are at least two learning strategies with a strong effect.
+1) reading things is not a very effective way of learning, testing yourself works much better. "Practice testing", as is is called.
+2) cramming is very inefficient, mostly because it is not effective brain training (if you cram, you are basically like someone who tries to become a weightlifter by lifting a piece of paper over and over; it has to do with 'retrieval strength' vs 'storage strength', see https://www.wired.com/2008/04/ff-wozniak/[this article on for more explanation]. Ideally, you need to 'space out' repetition in increasing intervals. Of course, you can use Leitner boxes for that, but really that is quite a lot of administrative hassle that a computer can conveniently do for you. This method is called "Distributed Practice".
+
+A good Spaced Repetition Sytem (SRS) automatically combines both of these - self-testing and distributed practice. So they are ideal if you want to learn things like the vocabulary of a field, or language. They may even work for things like learning to troubleshoot (though to be fair, in such cases a SRS that can deal with pictures and sounds may be necessary; Eb isn't one of those yet). But for learning natural or programming languages or jargon or random things that can easily be written, SRSes are extremely useful!
+
+== 2. Why Eb?
+
+Update Februari 2nd, 2020. I have been using Eb a lot for the past few years, and while I have not experimented yet with much memory-experimental features, Eb is currently quite usable. Features:
+
+1) 'vacation-resistant learning'. Sick or very busy or on holiday? Eb will always show you the cards that you have the greatest chance of answering correctly first, so you won't run the risk of reviewing a card - which you have forgotten, and it gets somewhere in the middle of the stack of 2000 _other_ cards you need to review too, and by the time you get to it (in a week or so) you have forgotten it and can learn it over again. Not with Eb! You'll find the card as soon as you would usually find a new or forgotten card (currently about 14-15 hours for me personally) Those cards that are days, weeks, or months overdue can be dealt with later!
+
+2) Self-learning interval improvements. Depending on the difficulty of cards (are you learning Spanish or Japanese?) Eb will measure success and failure times and gradually optimize your intervals, so that you do not waste needless time 'overlearning' cards you already know, nor with relearning too many cards which you have forgotten due to the interval being too high. And if you're curious about your exact learning data, press Ctrl-Z to get a file withd details!
+
+3) Consistent progress indicator. Many SRSes only indicate how many cards there are in the deck, so even if you train for half an hour, there is little visible progress. Or worse, you feel like you're playing whack-a-mole with green bars turning into orange, yellow or red. Eb indicates a score based on how many successive successful reviews each card has had; so after a study session you'll see your score increase, even if you haven't any cards into your deck, indicating that you have actually learned stuff.
+
+4) Wanting to add a card but not sure whether you already have 'manzana' in the deck? Or want to check why lessiveuse reminds you of the dishes? Fill in the first letters in the card's front field (or part of the result you're searching for in the back field) and you will find out that you indeed have manzana (though, if you click on the term you can easily edit the card to add an example sentence, for example)
+
+5) When is the next review? Tired of feeling the need of either checking the SRS every hour or so or the frustration of forgetting to check for a long time and there being a laundry list of cards for you to review? Eb always indicates when the next batch of cards is due (in how many days, hours, minutes and seconds).
+
+6) For those learners of Chinese or Japanese (or those who are really fanatic about those weird western languages where spelling and pronounciation can be very different and you would frankly need phonetic script too [I'm looking at you, English!]; Eb has a triple mode in which you can enter writing, pronounciation, and meaning, and automatically writing-pronounciation (with meaning hint), writing-meaning, and pronounciation-meaning cards are generated. Sure, it does not generate all 6 combinations, but still, for starters, it saves a LOT of copy-pasting!
+
+7) For those who like it: you are in control. Ever wonder why sometimes systems seem to bombard you with easy cards? Or make your life impossible? With Eb - of course I have made sensible defaults based on my own experimentation, but you are in charge. A longer interval for the first review? Or shorter? Easier and more often or harder and less frequent repetitions? Eb will of course learn and bring you to your preferred rhythm (the targeted success percentage is the 'thermostat' but you yourself can greatly speed up that process by tweaking the parameters yourself, instead of trying to learn Russian with a system with settings optimized and set in stone by someone speaking Italian has made for Spanish...
+
+== 3. Eb's history (for those of you who are curious)
+
+My 'regular' hobby is studying scientific talent, and due to that I have learned that to excel in anything, you need knowledge. And, as I have learned due to my research for an education research blog, the best way known to learn things (at least semantic knowledge/concepts) is using spaced repetition systems. Of course, those SRSes should ideally be extended by mnemonics, concept maps and other tricks, as each learning task is different, but a SRS is in many cases quite a good start.
+
+Of course, there are already plenty of spaced repetition systems (see for example https://en.wikipedia.org/wiki/List_of_flashcard_software[Wikipedia's list of existing SRSes]), and I have tried quite a few of those, both offline (like Anki, Mnemosyne and Supermemo) and online (spaced repetition systems are also used by for example DuoLingo and memrise). For the number of features they offer and their sheer convenience of existing and having years of coding in them, there is little reason why people would use Eb.
+
+For me however, there were some reasons. Some were not SRS-specific, like my desire to further develop my Java (and, more recently, Kotlin) programming skills and to freely experiment with error-handling, documentation and debugging techniques (which is harder in my regular commercial work), and because I love making things that work (or may even, one day, be cool). However, one important reason was that I saw lots of discussion in for example the language learning community on whether one should (for example) learn single words, or do SRS with entire sentences. Also, new research into things like "perceptual learning", learning with delayed response, and so on made me want to experiment with SRSes which I could mould into doing 'non-standard' things. Hence I chose the name "Eb", after Hans Ebbinghaus, perhaps the earliest scientific researcher of memory. Eb is being made to experiment and learn about learning! (though of course I hope I will also find out some useful settings so Eb can also enable people to learn non-learning-related things).
+
+The second reason is that, for all their advantages, SRSes can be depressing teachers sometimes. The little clocks in the version of Duolingo I used kept ticking down to "need to repeat", making it seem as if I had to run to stay on the same place, and progress was entirely outside my reach. And returning to study after a vacation can be daunting: too many cards to review, and you have forgotten so much and the forgotten cards being buried so deep in the 'to review' stack that their review feels like a waste of time, as you have forgotten them again by the time you are finally able to re-review them. There should be a more convenient, more efficient way to restart after a period of idleness.
+
+So enter Eb! One day I may make pull requests for Anki or such, but Eb is a very nice playing ground that I could adjust to the problems I encountered myself. And who knows- perhaps one day one or more of its features make its way to other SRSes!
+
