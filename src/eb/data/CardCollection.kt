@@ -29,6 +29,8 @@ class CardCollection : Serializable {
 
     fun getCards() = cards.toList()
 
+    fun getCardTexts(): List<Pair<String, String>> = cards.map { it.getFrontAndBack() }
+
     fun getTotal() = cards.size
 
     /**
@@ -56,9 +58,10 @@ class CardCollection : Serializable {
 
     fun addCard(card: Card) {
         // preconditions: card must be 'addable' (cannot be a duplicate of a card already present)
-        require(canAddCard(card)){
-                """LogicalDeck.addCard() error: the card that is intended to be added is invalid. The 'canAddCard'
-method has to be invoked first to check the possibility of the current method."""}
+        require(canAddCard(card)) {
+            """LogicalDeck.addCard() error: the card that is intended to be added is invalid. The 'canAddCard'
+method has to be invoked first to check the possibility of the current method."""
+        }
 
         cards.add(card)
         BlackBoard.post(Update(UpdateType.DECK_CHANGED))

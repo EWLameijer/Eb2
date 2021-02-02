@@ -29,17 +29,24 @@ class CardEditingWindow(
     private val autokill: Boolean
 ) : GenericCardEditingWindow(manager) {
 
-    private val defaultDocumentListener = DelegatingDocumentListener {
-        val doHighlight = Runnable {
-            updateFrontList()
+    private val cardTextListener = DelegatingDocumentListener {
+        val sideListUpdate = Runnable {
+            updateSideList()
         }
-        SwingUtilities.invokeLater(doHighlight)
+        SwingUtilities.invokeLater(sideListUpdate)
     }
 
-    private fun updateFrontList() {
+    override fun clear() {
+        cardFrontPane.text = ""
+        cardBackPane.text = ""
+    }
+
+    private fun updateSideList() {
         cardFronts.clear()
-        val allCardFronts = DeckManager.currentDeck().getFronts()
-        cardFronts.addAll(allCardFronts.filter { it.startsWith(cardFrontPane.text) }.sorted())
+        val allCardTexts = DeckManager.currentDeck().getCardTexts()
+        val allRelevantCardTexts =
+            allCardTexts.filter { it.first.startsWith(cardFrontPane.text) && it.second.contains(cardBackPane.text) }
+        cardFronts.addAll(allRelevantCardTexts.map { it.first }.sorted())
     }
 
     // Create the panel to edit the front of the card, and make enter
@@ -48,7 +55,7 @@ class CardEditingWindow(
     // NewCardWindow
     private val cardFrontPane = JTextPane().apply {
         text = frontText
-        document.addDocumentListener(defaultDocumentListener)
+        document.addDocumentListener(cardTextListener)
         Utilities.makeTabAndEnterTransferFocus(this)
         addKeyListener(escapeKeyListener)
         addFocusListener(CleaningFocusListener())
@@ -61,6 +68,7 @@ class CardEditingWindow(
     // transferring the focus back to the front-TextArea.
     private val cardBackPane = JTextPane().apply {
         text = backText
+        document.addDocumentListener(cardTextListener)
         Utilities.makeTabTransferFocus(this)
         addKeyListener(enterKeyListener)
         addKeyListener(escapeKeyListener)
@@ -134,7 +142,7 @@ class CardEditingWindow(
 
     private fun addListPanel() {
         listBox.addListSelectionListener(::copyCardFromList)
-        cardFronts.addAll(DeckManager.currentDeck().getFronts().filter { it >= cardFrontPane.text }.sorted())
+        updateSideList()
         val listPanel = JPanel().apply {
             add(listBox)
             minimumSize = Dimension(100, 200)

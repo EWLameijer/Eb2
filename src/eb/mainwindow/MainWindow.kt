@@ -44,29 +44,7 @@ import eb.utilities.log
 import java.awt.event.KeyEvent.getExtendedKeyCodeForChar
 import kotlin.system.exitProcess
 
-// FUTURE PLANS:
-// show history of card in side window!!! (want to know tough cases, so can adapt)
-// enable pictures to be shown with cards
-// better sorting of repeated cards [what does that mean?]
-// ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
-// 2.1.6: Added overview panel so you can see when you are creating a duplicate card before you have fully created it
-// 2.1.5: Solved bug where a failed review was not shown properly in the statistics window if it had been reviewed multiple times during a session.
-// 2.1.4: Prioritize reviewing of already-reviewed cards (so only new cards skipped if needed). Sorting algorithm should work properly now
-// 2.1.3: Solved problems when starting up on other computer, partly due to decimal point differences
-// 2.1.2: Ensure that after merging cards in triple mode, the separate merging window is disposed of after it has fulfilled its purpose
-// 2.1.1: Prioritize reviewing of known cards. Not yet prioritized for relative delay.
-// 2.1.0: Ensure that 'delete this card' works properly with the 3-sided creation window. Also shows card merging more clearly.
-// 2.0.9: Fix to make it impossible to open duplicate Eb instances (not sure how it works, though... Possibly a var? not optimized away by compiler).
-// .....: ALSO allow multi-line-input to shift focus to the last card, so Ctrl-V Tab Enter should do the trick
-// 2.0.8: Makes the 'duplicate card insertion' error more clear, and allows multiline input (copy-pasted text with newline)
-// 2.0.7: creates log file so one can check score even if one forgot to write it down...
-// 2.0.6. Extra feature: now properly inserts spacing around ,
-// 2.0.5: Extra feature: three-sided cards. ALSO: better font
-// 2.0.4. Bugfix: should accumulate percentages over one run, not reset score without a deckswap or quit
-// 2.0.3. QoL improvement: show current score of reviewing process
-// 2.0.2. QoL-improvement: show percentage of cards successfully remembered
-// 2.0.1. Bugfix: was able to add cards with the same front
 
 // The name of the program.
 private const val PROGRAM_NAME = "Eb"

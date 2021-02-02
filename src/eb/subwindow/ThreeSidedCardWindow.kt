@@ -27,6 +27,12 @@ class ThreeSidedCardWindow(manager: CardEditingManager) : GenericCardEditingWind
 
     private val cardBottomPane = JTextPane()
 
+    override fun clear() {
+        cardTopPane.text = ""
+        cardMiddlePane.text = ""
+        cardBottomPane.text = ""
+    }
+
     // The button to cancel creating this card, and return to the calling window.
 
     override val cardPanes = listOf(cardTopPane, cardMiddlePane, cardBottomPane)

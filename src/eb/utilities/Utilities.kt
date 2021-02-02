@@ -10,6 +10,8 @@ import java.text.DecimalFormat
 import java.text.NumberFormat
 import java.text.ParsePosition
 import java.time.Duration
+import java.time.LocalDateTime
+import java.time.temporal.ChronoField
 import java.util.HashSet
 import java.util.logging.Logger
 import java.util.regex.Pattern
@@ -53,7 +55,7 @@ class Hint(rawContents: String) : Comparable<Hint>, Serializable {
     }
 
     companion object {
-        fun isValid(candidateContents: String) = !candidateContents.isBlank()
+        fun isValid(candidateContents: String) = candidateContents.isNotBlank()
         private const val serialVersionUID = -6526056675010032709L // to prevent updates from breaking Eb
     }
 }
@@ -63,9 +65,25 @@ val doNothing = Unit
 const val EMPTY_STRING = ""
 
 val String.isValidIdentifier
-    get() = !this.isBlank()
+    get() = this.isNotBlank()
 
 fun log(text: String) = Logger.getGlobal().info(text)
+
+// ensures 1, 2, 3 are printed as "01", "02" and "03" etc.
+fun asTwoDigitString(number: Int): String {
+    val twoDigitFormat = "%02d"
+    return twoDigitFormat.format(number)
+}
+
+fun getDateString(): String {
+    val now = LocalDateTime.now()
+    return asTwoDigitString(now[ChronoField.YEAR] % 100) +
+            asTwoDigitString(now[ChronoField.MONTH_OF_YEAR]) +
+            asTwoDigitString(now[ChronoField.DAY_OF_MONTH]) +
+            "_" +
+            asTwoDigitString(now[ChronoField.HOUR_OF_DAY]) +
+            asTwoDigitString(now[ChronoField.MINUTE_OF_HOUR])
+}
 
 object Utilities {
     // Line separator that, unlike '\n', consistently works when producing output
@@ -144,8 +162,8 @@ object Utilities {
     // returns whether the given string is fully filled with a valid integer (...-2,-1,0,1,2,...).
     // Note that this method does not accept leading or trailing whitespace, nor a '+' sign.
     fun representsInteger(string: String, maxSize: Int? = null) =
-            if (maxSize != null && string.length > maxSize) false
-            else Pattern.matches("-?\\d+", string)
+        if (maxSize != null && string.length > maxSize) false
+        else Pattern.matches("-?\\d+", string)
 
     /**
      * Whether the given string is fully filled with a valid fractional
@@ -181,8 +199,8 @@ object Utilities {
      * positive integer, that is also formally a rational number)
      */
     fun representsPositiveFractionalNumber(string: String, maxPrecision: Int) =
-            if (string.startsWith("-")) false
-            else representsFractionalNumber(string, maxPrecision)
+        if (string.startsWith("-")) false
+        else representsFractionalNumber(string, maxPrecision)
 
     fun stringToInt(string: String): Int? {
         // Get a numberFormat object. Note that the number it returns will be Long
@@ -279,16 +297,16 @@ object Utilities {
     fun pluralize(word: String, number: Int) = word + if (number == 1) EMPTY_STRING else "s"
 
     private fun createKeyPressSensitiveButton(text: String, actionKey: KeyStroke, action: () -> Unit): JButton =
-            JButton(text).apply {
-                val actionOnKeyPressId = "actionOnKeyPress"
-                mnemonic = KeyEvent.getExtendedKeyCodeForChar(actionKey.keyChar.toInt())
-                getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(actionKey, actionOnKeyPressId)
-                actionMap.put(actionOnKeyPressId, ProgrammableAction { action() })
-                addActionListener { action() }
-            }
+        JButton(text).apply {
+            val actionOnKeyPressId = "actionOnKeyPress"
+            mnemonic = KeyEvent.getExtendedKeyCodeForChar(actionKey.keyChar.toInt())
+            getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(actionKey, actionOnKeyPressId)
+            actionMap.put(actionOnKeyPressId, ProgrammableAction { action() })
+            addActionListener { action() }
+        }
 
-    fun createKeyPressSensitiveButton(text: String, key: Char, action: () -> Unit): JButton  =
-        createKeyPressSensitiveButton(text,  KeyStroke.getKeyStroke(key), action)
+    fun createKeyPressSensitiveButton(text: String, key: Char, action: () -> Unit): JButton =
+        createKeyPressSensitiveButton(text, KeyStroke.getKeyStroke(key), action)
 
     fun createKeyPressSensitiveButton(text: String, key: String, action: () -> Unit): JButton =
         createKeyPressSensitiveButton(text, KeyStroke.getKeyStroke(key), action)

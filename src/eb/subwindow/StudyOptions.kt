@@ -42,10 +42,10 @@ class StudyOptions(
         private const val serialVersionUID = -5967297039338080285L
 
         // how long Eb waits after a card is created to do its first review
-        private val DEFAULT_INITIAL_INTERVAL = TimeInterval(10.0, TimeUnit.MINUTE)
+        private val DEFAULT_INITIAL_INTERVAL = TimeInterval(14.0, TimeUnit.HOUR)
 
-        private val DEFAULT_REMEMBERED_INTERVAL = TimeInterval(1.0, TimeUnit.DAY)
-        private val DEFAULT_FORGOTTEN_INTERVAL = TimeInterval(1.0, TimeUnit.HOUR)
+        private val DEFAULT_REMEMBERED_INTERVAL = TimeInterval(3.0, TimeUnit.DAY)
+        private val DEFAULT_FORGOTTEN_INTERVAL = TimeInterval(14.0, TimeUnit.HOUR)
 
         // the default number of cards to be reviewed in a single reviewing session
         private const val DEFAULT_REVIEW_SESSION_SIZE = 20

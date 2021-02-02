@@ -7,8 +7,6 @@ import java.io.OutputStreamWriter
 import java.io.Serializable
 import java.time.Duration
 import java.time.Instant
-import java.time.LocalDateTime
-import java.time.temporal.ChronoField
 
 import eb.Eb
 import eb.writer.CardConverter
@@ -21,6 +19,8 @@ import eb.utilities.isValidIdentifier
 import java.time.temporal.Temporal
 
 import com.google.gson.GsonBuilder
+import eb.analysis.Analyzer
+import eb.utilities.getDateString
 import kotlin.math.pow
 
 
@@ -57,23 +57,17 @@ class Deck(val name: String) : Serializable {
         return cardCollection.getCards().map { getTimeUntilNextReview(it) }.min()!!
     }
 
+
     //Saves the deck to a text file (helpful for recovery), though it deletes all repetition data...
     fun saveDeckToTextFiles() {
-        val now = LocalDateTime.now()
+
         val nameOfArchivingDirectory = archivingSettings.directoryName()
         val textFileDirectory =
             if (nameOfArchivingDirectory == null) EMPTY_STRING
             else nameOfArchivingDirectory + File.separator
-        val twoDigitFormat = "%02d" // format numbers as 01, 02...99
 
-        val baseFileName = (textFileDirectory + name + "_"
-                + String.format(twoDigitFormat, now.get(ChronoField.YEAR) % 100)
-                + String.format(twoDigitFormat, now.get(ChronoField.MONTH_OF_YEAR))
-                + String.format(twoDigitFormat, now.get(ChronoField.DAY_OF_MONTH))
-                + "_"
-                + String.format(twoDigitFormat, now.get(ChronoField.HOUR_OF_DAY))
-                + String.format(twoDigitFormat, now.get(ChronoField.MINUTE_OF_HOUR)))
 
+        val baseFileName = textFileDirectory + name + "_" + getDateString()
         val textFileName = "$baseFileName.txt"
         val reviewFileName = "${baseFileName}_reviews.txt"
         val jsonFileName = "$baseFileName.json"
@@ -108,25 +102,30 @@ class Deck(val name: String) : Serializable {
 
     // Returns the time till the next review of the given card. The time can be negative, as that information can help
     // deprioritize 'over-ripe' cards which likely have to be learned anew anyway.
-    fun getTimeUntilNextReview(card: Card): Duration =
-    // case 1: the card has never been reviewed yet.
-        // Take the creation instant and add the user-specified initial interval.
-        if (!card.hasBeenReviewed())
-            Duration.between(Instant.now(), studyOptions.initialInterval.asDuration().addTo(card.creationInstant))
-        else
-        // other cases: there have been previous reviews.
-            Duration.between(Instant.now(), getOfficialReviewInstant(card))
+    private fun getTimeUntilNextReview(card: Card): Duration =
+        Duration.between(Instant.now(), getNextReviewInstant(card))
 
+    private fun calculateIntervalDurationFromUserSettings(card: Card): Duration = when (val lastReview = card.lastReview()) {
+        null -> studyOptions.initialInterval.asDuration()
+        else -> {
+            if (lastReview.wasSuccess) getIntervalAfterSuccessfulReview(card)
+            else studyOptions.forgottenInterval.asDuration()
+        }
+    }
 
-    private fun getWaitTime(card: Card) =
-        if (card.lastReview()!!.wasSuccess) getIntervalAfterSuccessfulReview(card)
-        else studyOptions.forgottenInterval.asDuration()
+    private fun getPlannedIntervalDuration(card: Card): Duration {
+        val reviewPattern: String =
+            card.getReviews().map { if (it.wasSuccess) 'S' else 'F' }.joinToString(separator = "")
+        return recommendationsMap[reviewPattern] // calculate wait time from optimized settings
+            // else: not enough data to determine best settings; use user-provided defaults
+            ?: calculateIntervalDurationFromUserSettings(card)
+    }
 
-    private fun getOfficialReviewInstant(card: Card): Temporal {
-        val lastReview = card.lastReview()!!
-        val waitTime = getWaitTime(card)
+    private fun getNextReviewInstant(card: Card): Temporal {
+        val startOfCountingTime = if (card.hasBeenReviewed()) card.lastReview()!!.instant else card.creationInstant
+        val waitTime = getPlannedIntervalDuration(card)
 
-        return waitTime.addTo(lastReview.instant)
+        return waitTime.addTo(startOfCountingTime)
     }
 
     // Returns the time to wait for the next review (the previous review being a success).
@@ -143,7 +142,12 @@ class Deck(val name: String) : Serializable {
         return Utilities.multiplyDurationBy(waitTime, lengtheningFactor.pow(numberOfLengthenings.toDouble()))
     }
 
-    fun getFronts(): List<String> = cardCollection.getCards().map { it.front.contents }
+    fun getCardTexts(): List<Pair<String, String>> = cardCollection.getCardTexts()
+    private lateinit var recommendationsMap: Map<String, Duration?>
+
+    fun initRecommendations() {
+        recommendationsMap = Analyzer.getRecommendationsMap()
+    }
 
     companion object {
         // Automatically generated ID for serialization.

@@ -66,6 +66,7 @@ object DeckManager {
             if (loadedDeck != null) {
                 deck = loadedDeck
                 loadTime = Instant.now()
+                deck!!.initRecommendations()
                 BlackBoard.post(Update(UpdateType.DECK_SWAPPED))
             } else {
                 throw RuntimeException("Deck.loadDeck() error: the requested deck cannot be loaded.")

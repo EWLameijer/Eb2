@@ -15,17 +15,22 @@ import javax.swing.DefaultListModel
 abstract class GenericCardEditingWindow(protected val manager: CardEditingManager) : JFrame() {
 
     protected val cardFronts = DefaultListModel<String>()
+    protected abstract fun clear()
 
     protected val listBox = JList(cardFronts).apply {
         fixedCellWidth = 100
         selectionMode = ListSelectionModel.SINGLE_SELECTION
         visibleRowCount = -1 // to keep all values visible
-        preferredSize= Dimension(100,400)
+        preferredSize = Dimension(100, 400)
     }
 
     // The button to cancel creating this card, and return to the calling window.
     protected val cancelButton = JButton("Cancel").apply {
         addActionListener { manager.endEditing(this@GenericCardEditingWindow) }
+    }
+
+    private val clearButton = JButton("Clear").apply {
+        addActionListener { clear() }
     }
 
     // The button to press that requests the current deck to check whether this
@@ -84,6 +89,7 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
     protected fun addButtonPanel() {
         val buttonPane = JPanel().apply {
             add(cancelButton)
+            add(clearButton)
             add(okButton)
         }
         val buttonPaneConstraints = GridBagConstraints().apply {

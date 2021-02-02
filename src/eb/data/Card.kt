@@ -38,6 +38,8 @@ class Card(var front: Hint, var back: String) : Serializable {
 
     fun getReviews() = reviews.toList()
 
+    fun getFrontAndBack(): Pair<String, String> = front.contents to back
+
     fun getReviewsAfter(instant: Instant) = reviews.filter { it.instant > instant }
 
     companion object {

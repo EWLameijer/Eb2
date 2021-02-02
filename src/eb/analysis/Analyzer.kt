@@ -1,168 +1,141 @@
 package eb.analysis
 
-import eb.data.CardCollection
-import eb.data.DeckManager
-import eb.data.Review
+import eb.Eb
+import eb.data.*
+import eb.utilities.Utilities
+import eb.utilities.getDateString
+import java.io.BufferedWriter
+import java.io.FileOutputStream
+import java.io.OutputStreamWriter
 import java.time.Duration
-import java.time.LocalDateTime
-import java.time.ZoneId
-
-fun Number.toHours(): Duration = Duration.ofHours(this.toLong())
+import java.time.Instant
+import kotlin.math.roundToInt
 
 object Analyzer {
-    fun run() {
-        println("Starting deck analysis")
+    fun getRecommendationsMap(): Map<String, Duration?> {
         val cards = DeckManager.currentDeck().cardCollection
-        println("Number of cards: ${cards.getTotal()}")
-        val (failures, successes) = analyzeCards(cards)
-        val percentFirstSuccess = 100.0 * successes / (successes + failures)
-        println("$successes successes in the first round, $failures failures, success percentage $percentFirstSuccess%")
-        println("Ending deck analysis")
+        val categoryMap = getCategoryMap(cards)
+        return categoryMap.mapValues { getPossibleTimeRecommendation(it.key, it.value) }
     }
 
-
-    private fun analyzeCards(cards: CardCollection): Pair<Int, Int> {
-        var successes = 0
-        var failures = 0
-        // 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597
-        val borderTimes = listOf<Number>(0.5, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, 6765, 10946, 1000000.0).map { it.toHours() }.toTypedArray()
-        val histogramFirstReview = HistogramMaker("Success rates for the first review", *borderTimes)
-        val histogramAfterFailure = HistogramMaker("Success rates for the first review after failing the very first review", *borderTimes)
-        val histogramAfterSuccess = BiHistogramMaker("Success rates at the second review as a function of the time of the first review", *borderTimes)
-        val borderHours: Array<Int> = Array(24) { it + 1 }
-        val histogramCreationTime = HistogramMaker("Success rate of first review as function of time of learning", *borderHours)
-
-        val lastReviews = mutableListOf<Review>()
-
-        cards.getCards().forEach {
-            println("Datetime: ${LocalDateTime.ofInstant(it.creationInstant, ZoneId.of("Europe/Paris"))}")
-            val creationTime = LocalDateTime.ofInstant(it.creationInstant, ZoneId.of("Europe/Paris")).hour
-            println("Hour = $creationTime")
-            //println(it.getReviews().size)
-            val reviews = it.getReviews()
-            if (reviews.isNotEmpty()) {
-                lastReviews += reviews
-                val firstReview = reviews[0]
-                val creationTime = LocalDateTime.ofInstant(it.creationInstant, ZoneId.of("Europe/Paris")).hour
-                histogramCreationTime.addDataPoint(creationTime, firstReview.wasSuccess)
-                val timeBetweenCreationAndFirstReview = Duration.between(it.creationInstant, firstReview.instant)
-                //println(timeBetweenCreationAndFirstReview)
-                histogramFirstReview.addDataPoint(timeBetweenCreationAndFirstReview, firstReview.wasSuccess)
-                if (!firstReview.wasSuccess) {
-                    if (reviews.size > 1) {
-                        val secondReview = reviews[1]
-                        val timeBetweenFirstAndSecondReview = Duration.between(firstReview.instant, secondReview.instant)
-                        histogramAfterFailure.addDataPoint(timeBetweenFirstAndSecondReview, secondReview.wasSuccess)
-                    }
-                } else { // firstReview WAS a success
-                    if (reviews.size > 1) {
-                        val secondReview = reviews[1]
-                        val timeBetweenFirstAndSecondReview = Duration.between(firstReview.instant, secondReview.instant)
-                        histogramAfterSuccess.addDataPoint(timeBetweenCreationAndFirstReview, timeBetweenFirstAndSecondReview, secondReview.wasSuccess)
-                    }
-
-
-                }
-                if (firstReview.wasSuccess) successes++ else failures++
+    private fun getCategoryMap(cards: CardCollection): Map<String, List<Card>> {
+        val categoryMap = mutableMapOf<String, List<Card>>()
+        cards.getCards().forEach { card ->
+            val reviews = card.getReviews()
+            var currentPattern = ""
+            while (currentPattern.length < reviews.size) {
+                categoryMap[currentPattern] = (categoryMap[currentPattern] ?: listOf()) + card
+                val indexOfReviewToCheck = currentPattern.length
+                currentPattern += if (reviews[indexOfReviewToCheck].wasSuccess) 'S' else 'F'
             }
         }
-
-
-        histogramFirstReview.displayResults()
-        histogramAfterFailure.displayResults()
-        histogramAfterSuccess.displayResults()
-        lastReviews.sortBy { it.instant }
-
-        //lastReviews.forEach {println(it)}
-        showAverage(100, lastReviews)
-        showAverage(1000, lastReviews)
-        showAverage(10000, lastReviews)
-        showAverage(100000, lastReviews)
-        histogramCreationTime.displayResults()
-        return Pair(failures, successes)
-
-    }
-}
-
-fun showAverage(n: Int, reviews: List<Review>) {
-    val average = reviews.takeLast(n).map { if (it.wasSuccess) 1 else 0 }.average() * 100
-    val averageAsString = String.format("%.2f", average)
-    println("Of the last $n reviews, the average score was $averageAsString%")
-
-}
-
-class HistogramMaker<T : Comparable<T>>(private val description: String, vararg boxValues: T) {
-    val boxes = boxValues.map { HistogramBox(it) }.toList()
-    private var accumulatedSuccesses = 0
-    private var accumulatedFailures = 0
-
-    fun addDataPoint(value: T, result: Boolean) {
-        if (result) accumulatedSuccesses++ else accumulatedFailures++
-        boxes.first { it.canAssign(value, result) }
+        return categoryMap
     }
 
-    fun displayResults() {
-        println(description)
-        boxes.forEach { it.showResult() }
-        println("-----")
-        val percentFirstSuccess = 100.0 * accumulatedSuccesses / (accumulatedSuccesses + accumulatedFailures)
-        println("On average: $accumulatedSuccesses successes, $accumulatedFailures failures, success percentage $percentFirstSuccess%")
-    }
-}
-
-class BiHistogramMaker(private val description: String, vararg elapsedDuration: Duration) {
-    val boxes: List<BiDurationTimeBox> = elapsedDuration.flatMap { firstDuration ->
-        elapsedDuration.map { secondDuration -> BiDurationTimeBox(firstDuration, secondDuration) }
-    }
-    private var accumulatedSuccesses = 0
-    private var accumulatedFailures = 0
-
-    fun addDataPoint(firstDuration: Duration, secondDuration: Duration, result: Boolean) {
-        if (result) accumulatedSuccesses++ else accumulatedFailures++
-        boxes.first { it.canAssign(firstDuration, secondDuration, result) }
+    private fun getPossibleTimeRecommendation(pattern: String, cards: List<Card>): Duration? {
+        val patternLength = pattern.length
+        val reliabilityCutoff = 60 // less than 60 cards? Not too reliable
+        val totalCards = cards.size
+        val numSucceededCards = cards.count { it.getReviews()[patternLength].wasSuccess }
+        val reviewingTimes = cards.map { it.waitingTimeBeforeRelevantReview(patternLength) }
+        val avgReviewingTime = reviewingTimes.average()
+        val successPercentage = numSucceededCards * 100.0 / totalCards
+        return if (cards.size >= reliabilityCutoff)
+            Duration.ofMinutes(improvedTime(avgReviewingTime, successPercentage).toLong()) else null
     }
 
-    fun displayResults() {
-        println(description)
-        boxes.forEach { it.showResult() }
-        println("-----")
-        val percentFirstSuccess = 100.0 * accumulatedSuccesses / (accumulatedSuccesses + accumulatedFailures)
-        println("On average: $accumulatedSuccesses successes, $accumulatedFailures failures, success percentage $percentFirstSuccess%")
-    }
-}
+    private fun Card.waitingTimeBeforeRelevantReview(reviewIndex: Int) =
+        Duration.between(reviewInstant(reviewIndex - 1), reviewInstant(reviewIndex)).toMinutes()
 
-class HistogramBox<T : Comparable<T>>(private val maxValue: T) {
-    private var successes = 0
-    private var failures = 0
+    private fun Card.reviewInstant(reviewIndex: Int): Instant =
+        if (reviewIndex >= 0) getReviews()[reviewIndex].instant else creationInstant
 
-    fun canAssign(value: T, result: Boolean): Boolean {
-        if (value <= maxValue) {
-            if (result) successes++ else failures++
-            return true
+    fun run() {
+        val deckName = DeckManager.currentDeck().name
+        val fileName = "log-$deckName-${getDateString()}.txt"
+        val outputStreamWriter = OutputStreamWriter(FileOutputStream(fileName), "UTF-8")
+        BufferedWriter(outputStreamWriter).use { writer ->
+            writeAnalysisFile(writer)
         }
-        return false
     }
 
-    fun showResult() {
-        val percentFirstSuccess = 100.0 * successes / (successes + failures)
-        println("Until $maxValue: $successes successes in the first round, $failures failures, success percentage $percentFirstSuccess%")
-    }
-}
+    private fun writeAnalysisFile(writer: BufferedWriter) {
+        val cards = DeckManager.currentDeck().cardCollection
+        val categoryMap = getCategoryMap(cards)
+        writer.apply {
+            writeHeader(cards)
 
-class BiDurationTimeBox(private val firstMaxTime: Duration, private val secondMaxTime: Duration) {
-    private var successes = 0
-    private var failures = 0
-
-    fun canAssign(firstDuration: Duration, secondDuration: Duration, result: Boolean): Boolean {
-        if (firstDuration <= firstMaxTime && secondDuration <= secondMaxTime) {
-            if (result) successes++ else failures++
-            return true
+            // write the data per 'review history' (like SSF, ='success, success, failure)
+            categoryMap.keys.sorted().forEach {
+                write(PatternReporter(it, categoryMap[it]!!).report())
+                write(Utilities.EOL)
+            }
         }
-        return false
     }
 
-    fun showResult() {
-        val percentFirstSuccess = 100.0 * successes / (successes + failures)
-        println("For before time $firstMaxTime and then $secondMaxTime: $successes successes in the first round, $failures failures, success percentage $percentFirstSuccess%")
+    private fun BufferedWriter.writeHeader(cards: CardCollection) {
+        val numReviews = cards.getCards().sumBy { it.getReviews().size }
+        val numCorrect = cards.getCards().sumBy { it.getReviews().count { review -> review.wasSuccess } }
+        val numIncorrect = numReviews - numCorrect
+        val successPercentage = 100.0 * numCorrect / numReviews
+        write("Eb version ${Eb.VERSION_STRING}${Utilities.EOL}")
+        write("Number of cards is: ${cards.getTotal()}${Utilities.EOL}")
+        write("Number of reviews: $numReviews, success percentage ")
+        write("%.1f".format(successPercentage))
+        write("% ($numCorrect correct, $numIncorrect incorrect)${Utilities.EOL}")
+        write(Utilities.EOL)
+    }
+
+    private fun getMedianValue(collection: List<Long>): Long? =
+        if (collection.isEmpty()) null
+        else collection.sorted()[collection.size / 2]
+
+    class PatternReporter(private val pattern: String, cards: List<Card>) {
+        private fun Int?.toHourText() = convertToHourText(this?.toLong())
+        private fun Long?.toHourText() = convertToHourText(this)
+        private fun convertToHourText(timeInMinutes: Long?) =
+            if (timeInMinutes != null) (timeInMinutes / 60.0).roundToInt().toString() else "unknown"
+
+        private val patternLength = pattern.length
+        private val totalCards = cards.size
+        private val succeededCards = cards.filter { it.getReviews()[patternLength].wasSuccess }
+        private val failedCards = cards.filter { !it.getReviews()[patternLength].wasSuccess }
+        private val reviewingTimes = cards.map { it.waitingTimeBeforeRelevantReview(patternLength) }
+        private val avgReviewingTime = reviewingTimes.average()
+        private val numSuccesses = succeededCards.size
+        private val medianSuccessReviewTime =
+            getMedianValue(succeededCards.map { it.waitingTimeBeforeRelevantReview(patternLength) }).toHourText()
+        private val numFailures = failedCards.size
+        private val medianFailureReviewTime =
+            getMedianValue(failedCards.map { it.waitingTimeBeforeRelevantReview(patternLength) }).toHourText()
+        private val successPercentage = succeededCards.size * 100.0 / totalCards
+        private val betterIntervalDurationInMin = improvedTime(avgReviewingTime, successPercentage)
+        private val betterIntervalDurationInH = betterIntervalDurationInMin.roundToInt().toHourText()
+
+        fun report() = buildString {
+            append("$pattern: $totalCards ")
+            append("%.1f".format(successPercentage))
+            append("% correct ")
+            append("($numSuccesses successes, $numFailures failures) - ")
+            append("average review time ${avgReviewingTime.roundToInt().toHourText()} h")
+            append(", aiming for $betterIntervalDurationInH h; ")
+            append("median review times $medianSuccessReviewTime h for successful reviews, ")
+            append("$medianFailureReviewTime h for failed reviews.")
+        }
+    }
+
+    private fun improvedTime(averageReviewingTime: Double, currentSuccessPercentage: Double): Double {
+        val idealSuccessPercentage = 85.0
+        val percentageDifference = currentSuccessPercentage - idealSuccessPercentage
+        var workingDifference = percentageDifference
+        var multiplicationFactor = 1.0
+        if (workingDifference < 0) {
+            if (workingDifference < -10.0) workingDifference = -10.0
+            multiplicationFactor = (100 - 0.5 * workingDifference * workingDifference) * 0.01 // minimum 50/100 = 0.5
+        } else if (workingDifference > 0) {
+            if (workingDifference > 10.0) workingDifference = 10.0
+            multiplicationFactor = (100 + 0.5 * workingDifference * workingDifference) * 0.01 // maximum 150/100 = 1.5
+        }
+        return averageReviewingTime * multiplicationFactor
     }
 }
