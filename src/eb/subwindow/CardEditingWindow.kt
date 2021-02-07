@@ -154,8 +154,9 @@ class CardEditingWindow(
         val list = e.source as JList<*>
         val newFrontText = list.selectedValue as String?
         if (newFrontText != null) {
+            copiedCard = DeckManager.currentDeck().cardCollection.getCardWithFront(Hint(newFrontText))!!
             cardFrontPane.text = newFrontText
-            cardBackPane.text = DeckManager.currentDeck().cardCollection.getCardWithFront(Hint(newFrontText))?.back
+            cardBackPane.text = copiedCard!!.back
         }
     }
 

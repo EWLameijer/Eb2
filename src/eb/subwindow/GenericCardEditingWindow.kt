@@ -1,5 +1,6 @@
 package eb.subwindow
 
+import eb.data.Card
 import eb.utilities.SpecificKeyListener
 import eb.utilities.doNothing
 import java.awt.Dimension
@@ -16,6 +17,7 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
 
     protected val cardFronts = DefaultListModel<String>()
     protected abstract fun clear()
+    var copiedCard: Card? = null
 
     protected val listBox = JList(cardFronts).apply {
         fixedCellWidth = 100

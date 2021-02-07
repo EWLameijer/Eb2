@@ -28,30 +28,24 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
     }
 
     private fun currentFront() =
-            if (card == null) EMPTY_STRING
-            else card!!.front.contents
+        if (card == null) EMPTY_STRING
+        else card!!.front.contents
 
     private fun closeOptionPane() = JOptionPane.getRootFrame().dispose()
 
     fun inCardCreatingMode() = card == null
 
-    fun processProposedContents(frontText: String, backText: String, shouldClearCardWindow: Boolean, callingWindow: GenericCardEditingWindow) {
+    fun processProposedContents(
+        frontText: String,
+        backText: String,
+        shouldClearCardWindow: Boolean,
+        callingWindow: GenericCardEditingWindow
+    ) {
         // Case 1 of 3: there are empty fields. Or at least: the front is empty.
-        // Investigate the exact problem.
         if (!Hint.isValid(frontText)) {
-            // if back is empty, then this is just a hasty return. Is okay.
-            if (backText.isEmpty()) {
-                endEditing(callingWindow)
-            } else {
-                // back is filled: so there is an error
-                val verb = if (inCardCreatingMode()) "add" else "modify"
-                JOptionPane.showMessageDialog(null,
-                        "Cannot $verb card: the front of a card cannot be blank.",
-                        "Cannot $verb card", JOptionPane.ERROR_MESSAGE)
-            }
+            handleEmptyFront(backText, callingWindow)
         } else {
             // front text is not empty. Now, this can either be problematic or not.
-
             // Case 2 of 3: the front of the card is new or the front is the same as the old front (when editing).
             //  Add the card and be done with it (well, when adding cards one should not close the new card window).
             val frontHint = Hint(frontText)
@@ -66,11 +60,44 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
         }
     }
 
-    private fun handleCardBeingDuplicate(frontText: Hint, backText: String, duplicate: Card, callingWindow: GenericCardEditingWindow) {
+    private fun handleEmptyFront(backText: String, callingWindow: GenericCardEditingWindow) {
+        // if back is empty, then this is just a hasty return. Is okay.
+        if (backText.isEmpty()) {
+            endEditing(callingWindow)
+        } else {
+            // back is filled: so there is an error
+            val verb = if (inCardCreatingMode()) "add" else "modify"
+            JOptionPane.showMessageDialog(
+                null,
+                "Cannot $verb card: the front of a card cannot be blank.",
+                "Cannot $verb card", JOptionPane.ERROR_MESSAGE
+            )
+        }
+    }
+
+    private fun handleCardBeingDuplicate(
+        frontText: Hint,
+        backText: String,
+        duplicate: Card,
+        callingWindow: GenericCardEditingWindow
+    ) {
+        val cardCopiedFromSideList = callingWindow.copiedCard
+        if (cardCopiedFromSideList != null && cardCopiedFromSideList.front == frontText) {
+            showModifyListChosenCardPopup(duplicate, frontText, backText, callingWindow)
+        } else {
+            showDuplicateFrontPopup(duplicate, backText, frontText, callingWindow)
+        }
+    }
+
+    private fun showDuplicateFrontPopup(
+        duplicate: Card,
+        backText: String,
+        frontText: Hint,
+        callingWindow: GenericCardEditingWindow
+    ) {
         val reeditButton = JButton("Re-edit card").apply {
             addActionListener { closeOptionPane() }
         }
-
         val mergeButton = JButton("Merge backs of cards").apply {
             addActionListener { mergeBacks(duplicate, backText, frontText) }
         }
@@ -81,13 +108,41 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
             addActionListener { deleteOtherCard(duplicate, frontText, backText, callingWindow) }
         }
         val buttons = arrayOf(reeditButton, mergeButton, deleteThisButton, deleteOtherButton)
-        JOptionPane.showOptionDialog(null,
-                "A card with the front '$frontText' already exists; on the back is the text '${duplicate.back}', replace with '$backText'?",
-                "A card with this front already exists. What do you want to do?", 0,
-                JOptionPane.QUESTION_MESSAGE, null, buttons, null)
+        JOptionPane.showOptionDialog(
+            null,
+            "A card with the front '$frontText' already exists; on the back is the text '${duplicate.back}', replace with '$backText'?",
+            "A card with this front already exists. What do you want to do?", 0,
+            JOptionPane.QUESTION_MESSAGE, null, buttons, null
+        )
     }
 
-    private fun deleteOtherCard(duplicate: Card, frontText: Hint, backText: String, callingWindow: GenericCardEditingWindow) {
+    private fun showModifyListChosenCardPopup(
+        duplicate: Card,
+        frontText: Hint,
+        backText: String,
+        callingWindow: GenericCardEditingWindow
+    ) {
+        val confirmChangeButton = JButton("OK").apply {
+            addActionListener { deleteOtherCard(duplicate, frontText, backText, callingWindow) }
+        }
+        val cancelButton = JButton("Cancel").apply {
+            addActionListener { closeOptionPane() }
+        }
+        val buttons = arrayOf(confirmChangeButton, cancelButton)
+        JOptionPane.showOptionDialog(
+            null,
+            "Replace '${duplicate.back}' with '$backText'?",
+            "A card with this front already exists. What do you want to do?", 0,
+            JOptionPane.QUESTION_MESSAGE, null, buttons, null
+        )
+    }
+
+    private fun deleteOtherCard(
+        duplicate: Card,
+        frontText: Hint,
+        backText: String,
+        callingWindow: GenericCardEditingWindow
+    ) {
         DeckManager.currentDeck().cardCollection.removeCard(duplicate)
         closeOptionPane()
         submitCardContents(frontText, backText, true, callingWindow)
@@ -116,7 +171,12 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
     }
 
     // Submits these contents to the deck, and closes the editing window if appropriate.
-    private fun submitCardContents(frontText: Hint, backText: String, shouldClearCardWindow: Boolean, callingWindow: GenericCardEditingWindow) {
+    private fun submitCardContents(
+        frontText: Hint,
+        backText: String,
+        shouldClearCardWindow: Boolean,
+        callingWindow: GenericCardEditingWindow
+    ) {
         if (inCardCreatingMode()) {
             val candidateCard = Card(frontText, backText)
             DeckManager.currentDeck().cardCollection.addCard(candidateCard)

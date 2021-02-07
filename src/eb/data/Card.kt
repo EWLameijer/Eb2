@@ -17,7 +17,7 @@ class Card(var front: Hint, var back: String) : Serializable {
     internal val creationInstant = Instant.now()
     private val reviews = mutableListOf<Review>()
 
-    fun lastReview(): Review? = reviews.last()
+    fun lastReview(): Review? = if (reviews.isEmpty()) null else reviews.last()
 
     fun history() = reviews.joinToString(prefix = "[", postfix = "]")
 

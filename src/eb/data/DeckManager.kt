@@ -107,6 +107,7 @@ object DeckManager {
         // Save the current deck to disk before creating the new deck
         save()
         deck = Deck(name)
+        deck!!.initRecommendations()
         loadTime = Instant.now()
         // postconditions: the deck should exist (deck.save handles any errors occurring during saving the deck).
         require(deckHasBeenLoaded()) { "Deck.createDeckWithName() error: problem creating and/or writing the new deck." }

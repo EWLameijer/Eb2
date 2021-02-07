@@ -5,7 +5,7 @@ v1.0, 2021-02-02
 :toc-title: Contents
 :imagesdir: ./asciidoc_images
 
-image::normal_mode.jpg[Basic Layout,800,550]
+image::normal_mode.jpg[Basic Layout,800,500]
 
 == 1. Why Spaced Repetition Systems?
 
@@ -13,7 +13,7 @@ If you look at research into effective learning, how not just to learn for the n
 
 . reading things is not a very effective way of learning, testing yourself works much better. "Practice testing", as is is called.
 
-. cramming is very inefficient, mostly because it is not effective brain training (if you cram, you are basically like someone who tries to become a weightlifter by lifting a piece of paper over and over; it has to do with 'retrieval strength' vs 'storage strength', see https://www.wired.com/2008/04/ff-wozniak/[this article on for more explanation]. Ideally, you need to 'space out' repetition in increasing intervals. Of course, you can use Leitner boxes for that, but really that is quite a lot of administrative hassle that a computer can conveniently do for you. This method is called "Distributed Practice".
+. cramming is very inefficient, mostly because it is not effective brain training (if you cram, you are basically like someone who tries to become a weightlifter by lifting a piece of paper over and over; it has to do with 'retrieval strength' vs 'storage strength', see https://www.wired.com/2008/04/ff-wozniak/[this article for more explanation]. Ideally, you need to 'space out' repetition in increasing intervals. Of course, you can use Leitner boxes for that, but really that is quite a lot of administrative hassle that a computer can conveniently do for you. This method is called "Distributed Practice".
 
 A good Spaced Repetition Sytem (SRS) automatically combines both of these - self-testing and distributed practice. So they are ideal if you want to learn things like the vocabulary of a field, or language. They may even work for things like learning to troubleshoot (though to be fair, in such cases a SRS that can deal with pictures and sounds may be necessary; Eb isn't one of those yet). But for learning natural or programming languages or jargon or random things that can easily be written, SRSes are extremely useful!
 
