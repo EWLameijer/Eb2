@@ -7,6 +7,7 @@ import eb.utilities.getDateString
 import java.io.BufferedWriter
 import java.io.FileOutputStream
 import java.io.OutputStreamWriter
+import java.lang.IllegalArgumentException
 import java.time.Duration
 import java.time.Instant
 import kotlin.math.roundToInt
@@ -34,7 +35,7 @@ object Analyzer {
         return categoryMap
     }
 
-    fun List<Long>.median() : Long? = when {
+    fun List<Long>.median(): Long? = when {
         isEmpty() -> null
         size % 2 != 0 -> this[(size - 1) / 2]
         else -> {
@@ -51,22 +52,15 @@ object Analyzer {
     account
      */
     private fun getPossibleTimeRecommendation(pattern: String, cards: List<Card>): Duration? {
-        val patternLength = pattern.length
-        val reliabilityCutoff = 60 // less than 60 cards? Not too reliable
-        val totalCards = cards.size
-        val succeededCards = cards.filter { it.getReviews()[patternLength].wasSuccess }
-        val numSucceededCards = succeededCards.size
-        val succeededReviewTimes = succeededCards.map { it.waitingTimeBeforeRelevantReview(patternLength) }
-        val medianSucceededReviewingTime = succeededReviewTimes.median()!!.toDouble()
-        val successPercentage = numSucceededCards * 100.0 / totalCards
-        val correctedImprovedTime = getCorrectedImprovedTime(medianSucceededReviewingTime, successPercentage)
+        val reliabilityCutoff = 60 // less than 60 cards? Not reliable enough
+        val correctedImprovedTime = getCorrectedImprovedTime(pattern, cards)
 
         return if (cards.size >= reliabilityCutoff)
             Duration.ofMinutes(correctedImprovedTime.toLong()) else null
     }
 
-    private fun getCorrectedImprovedTime(medianSucceededReviewingTime: Double, successPercentage: Double): Double {
-        val basicImprovedTime = improvedTime(medianSucceededReviewingTime, successPercentage)
+    private fun getCorrectedImprovedTime(pattern: String, cards: List<Card>): Double {
+        val basicImprovedTime = improvedTime(pattern, cards)
         // start possible reviews 20% sooner as you probably won't be able to review immediately anyway
         val correctingForLaterReviewDiscount = 0.80
         return basicImprovedTime * correctingForLaterReviewDiscount
@@ -127,14 +121,18 @@ object Analyzer {
         private val reviewingTimesInMin = cards.map { it.waitingTimeBeforeRelevantReview(patternLength) }
         private val avgReviewingTimeInMin = reviewingTimesInMin.average()
         private val numSuccesses = succeededCards.size
-        private val medianSuccessReviewTime =
+
+        // NOTE: prefer the median of the successful reviews; fall back to median of all reviews if there are no
+        // successes.
+        private val succeededMedianReviewTime =
             succeededCards.map { it.waitingTimeBeforeRelevantReview(patternLength) }.median()
-        private val medianSuccessReviewTimeStr = medianSuccessReviewTime.toHourText()
+        private val medianSuccessReviewTimeStr = succeededMedianReviewTime.toHourText()
         private val numFailures = failedCards.size
         private val medianFailureReviewTimeStr =
             failedCards.map { it.waitingTimeBeforeRelevantReview(patternLength) }.median().toHourText()
         private val successPercentage = succeededCards.size * 100.0 / totalCards
-        private val betterIntervalDurationInMin = getCorrectedImprovedTime(avgReviewingTimeInMin, successPercentage)
+        private val betterIntervalDurationInMin =
+            getCorrectedImprovedTime(pattern, cards)
         private val betterIntervalDurationInH = betterIntervalDurationInMin.roundToInt().toHourText()
 
         fun report() = buildString {
@@ -149,7 +147,22 @@ object Analyzer {
         }
     }
 
-    private fun improvedTime(averageReviewingTime: Double, currentSuccessPercentage: Double): Double {
+    private fun getSuccessPercentage(pattern: String, cards: List<Card>): Double {
+        val succeededCards = cards.filter { it.getReviews()[pattern.length].wasSuccess }
+        return succeededCards.size * 100.0 / cards.size
+    }
+
+    private fun getReviewTimeToTweak(pattern: String, cards: List<Card>): Long {
+        if (cards.isEmpty()) throw IllegalArgumentException()
+        val patternLength = pattern.length
+        val succeededCards = cards.filter { it.getReviews()[patternLength].wasSuccess }
+        return if (succeededCards.isNotEmpty())
+            succeededCards.map { it.waitingTimeBeforeRelevantReview(patternLength) }.median()!!
+        else cards.map { it.waitingTimeBeforeRelevantReview(patternLength) }.median()!!
+    }
+
+    private fun improvedTime(pattern: String, cards: List<Card>): Double {
+        val currentSuccessPercentage = getSuccessPercentage(pattern, cards)
         val idealSuccessPercentage = DeckManager.currentDeck().studyOptions.idealSuccessPercentage
         val percentageDifference = currentSuccessPercentage - idealSuccessPercentage
         var workingDifference = percentageDifference
@@ -161,6 +174,6 @@ object Analyzer {
             if (workingDifference > 10.0) workingDifference = 10.0
             multiplicationFactor = (100 + 0.5 * workingDifference * workingDifference) * 0.01 // maximum 150/100 = 1.5
         }
-        return averageReviewingTime * multiplicationFactor
+        return getReviewTimeToTweak(pattern, cards) * multiplicationFactor
     }
 }
