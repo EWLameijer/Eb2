@@ -35,13 +35,16 @@ object Analyzer {
         return categoryMap
     }
 
-    fun List<Long>.median(): Long? = when {
-        isEmpty() -> null
-        size % 2 != 0 -> this[(size - 1) / 2]
-        else -> {
-            val afterCenterIndex = size / 2 // list size 4 has elements 0, 1, 2, 3; 4/2=2
-            val beforeCenterIndex = afterCenterIndex - 1
-            (this[beforeCenterIndex] + this[afterCenterIndex]) / 2
+    fun List<Long>.median(): Long?  {
+        val sortedList = sorted()
+        return when {
+            isEmpty() -> null
+            size % 2 != 0 -> sortedList[(size - 1) / 2]
+            else -> {
+                val afterCenterIndex = size / 2 // list size 4 has elements 0, 1, 2, 3; 4/2=2
+                val beforeCenterIndex = afterCenterIndex - 1
+                (sortedList[beforeCenterIndex] + sortedList[afterCenterIndex]) / 2
+            }
         }
     }
 
