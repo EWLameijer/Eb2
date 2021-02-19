@@ -2,7 +2,6 @@ package eb.analysis
 
 import eb.Eb
 import eb.data.*
-import eb.subwindow.StudyOptions
 import eb.utilities.Utilities
 import eb.utilities.getDateString
 import java.io.BufferedWriter
@@ -13,6 +12,8 @@ import java.time.Instant
 import kotlin.math.roundToInt
 
 object Analyzer {
+
+
     fun getRecommendationsMap(): Map<String, Duration?> {
         val cards = DeckManager.currentDeck().cardCollection
         val categoryMap = getCategoryMap(cards)
@@ -33,16 +34,42 @@ object Analyzer {
         return categoryMap
     }
 
+    fun List<Long>.median() : Long? = when {
+        isEmpty() -> null
+        size % 2 != 0 -> this[(size - 1) / 2]
+        else -> {
+            val afterCenterIndex = size / 2 // list size 4 has elements 0, 1, 2, 3; 4/2=2
+            val beforeCenterIndex = afterCenterIndex - 1
+            (this[beforeCenterIndex] + this[afterCenterIndex]) / 2
+        }
+    }
+
+    /*
+    Working with average times did not work very well; I suspect especially for the low intervals, the average is
+    too much skewed by late reviews (after a weekend or so)
+    20210219 (2.2.1) try setting the time to the MEDIAN of the SUCCEEDED reviews - 20% (to take delays in reviewing into
+    account
+     */
     private fun getPossibleTimeRecommendation(pattern: String, cards: List<Card>): Duration? {
         val patternLength = pattern.length
         val reliabilityCutoff = 60 // less than 60 cards? Not too reliable
         val totalCards = cards.size
-        val numSucceededCards = cards.count { it.getReviews()[patternLength].wasSuccess }
-        val reviewingTimes = cards.map { it.waitingTimeBeforeRelevantReview(patternLength) }
-        val avgReviewingTime = reviewingTimes.average()
+        val succeededCards = cards.filter { it.getReviews()[patternLength].wasSuccess }
+        val numSucceededCards = succeededCards.size
+        val succeededReviewTimes = succeededCards.map { it.waitingTimeBeforeRelevantReview(patternLength) }
+        val medianSucceededReviewingTime = succeededReviewTimes.median()!!.toDouble()
         val successPercentage = numSucceededCards * 100.0 / totalCards
+        val correctedImprovedTime = getCorrectedImprovedTime(medianSucceededReviewingTime, successPercentage)
+
         return if (cards.size >= reliabilityCutoff)
-            Duration.ofMinutes(improvedTime(avgReviewingTime, successPercentage).toLong()) else null
+            Duration.ofMinutes(correctedImprovedTime.toLong()) else null
+    }
+
+    private fun getCorrectedImprovedTime(medianSucceededReviewingTime: Double, successPercentage: Double): Double {
+        val basicImprovedTime = improvedTime(medianSucceededReviewingTime, successPercentage)
+        // start possible reviews 20% sooner as you probably won't be able to review immediately anyway
+        val correctingForLaterReviewDiscount = 0.80
+        return basicImprovedTime * correctingForLaterReviewDiscount
     }
 
     private fun Card.waitingTimeBeforeRelevantReview(reviewIndex: Int) =
@@ -87,10 +114,6 @@ object Analyzer {
         write(Utilities.EOL)
     }
 
-    private fun getMedianValue(collection: List<Long>): Long? =
-        if (collection.isEmpty()) null
-        else collection.sorted()[collection.size / 2]
-
     class PatternReporter(private val pattern: String, cards: List<Card>) {
         private fun Int?.toHourText() = convertToHourText(this?.toLong())
         private fun Long?.toHourText() = convertToHourText(this)
@@ -101,16 +124,17 @@ object Analyzer {
         private val totalCards = cards.size
         private val succeededCards = cards.filter { it.getReviews()[patternLength].wasSuccess }
         private val failedCards = cards.filter { !it.getReviews()[patternLength].wasSuccess }
-        private val reviewingTimes = cards.map { it.waitingTimeBeforeRelevantReview(patternLength) }
-        private val avgReviewingTime = reviewingTimes.average()
+        private val reviewingTimesInMin = cards.map { it.waitingTimeBeforeRelevantReview(patternLength) }
+        private val avgReviewingTimeInMin = reviewingTimesInMin.average()
         private val numSuccesses = succeededCards.size
         private val medianSuccessReviewTime =
-            getMedianValue(succeededCards.map { it.waitingTimeBeforeRelevantReview(patternLength) }).toHourText()
+            succeededCards.map { it.waitingTimeBeforeRelevantReview(patternLength) }.median()
+        private val medianSuccessReviewTimeStr = medianSuccessReviewTime.toHourText()
         private val numFailures = failedCards.size
-        private val medianFailureReviewTime =
-            getMedianValue(failedCards.map { it.waitingTimeBeforeRelevantReview(patternLength) }).toHourText()
+        private val medianFailureReviewTimeStr =
+            failedCards.map { it.waitingTimeBeforeRelevantReview(patternLength) }.median().toHourText()
         private val successPercentage = succeededCards.size * 100.0 / totalCards
-        private val betterIntervalDurationInMin = improvedTime(avgReviewingTime, successPercentage)
+        private val betterIntervalDurationInMin = getCorrectedImprovedTime(avgReviewingTimeInMin, successPercentage)
         private val betterIntervalDurationInH = betterIntervalDurationInMin.roundToInt().toHourText()
 
         fun report() = buildString {
@@ -118,10 +142,10 @@ object Analyzer {
             append("%.1f".format(successPercentage))
             append("% correct ")
             append("($numSuccesses successes, $numFailures failures) - ")
-            append("average review time ${avgReviewingTime.roundToInt().toHourText()} h")
+            append("average review time ${avgReviewingTimeInMin.roundToInt().toHourText()} h")
             append(", aiming for $betterIntervalDurationInH h; ")
-            append("median review times $medianSuccessReviewTime h for successful reviews, ")
-            append("$medianFailureReviewTime h for failed reviews.")
+            append("median review times $medianSuccessReviewTimeStr h for successful reviews, ")
+            append("$medianFailureReviewTimeStr h for failed reviews.")
         }
     }
 

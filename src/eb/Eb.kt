@@ -14,6 +14,7 @@ import kotlin.system.exitProcess
 // better sorting of repeated cards [what does that mean?]
 // ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
+// 2.2.1: Making the reviews follow median instead of average times, as especially on short time scales the average was much higher than the median.
 // 2.2.0: Changing/adjusting a card loaded from the menu is now more convenient: two options instead of one. Also solved two bugs/exceptions.
 // 2.1.9: Now also adds an option in the study options menu to set the desired success percentage.
 // 2.1.8: Added the ability to tweak the reviewing times automatically based on successes and failures.
@@ -44,7 +45,7 @@ import kotlin.system.exitProcess
 
 object Eb {
 
-    const val VERSION_STRING = "2.2.0"
+    const val VERSION_STRING = "2.2.1"
     private var ss: ServerSocket? = null
 
     @JvmStatic
