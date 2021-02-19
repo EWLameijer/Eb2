@@ -1,6 +1,7 @@
 package eb.subwindow
 
 import eb.data.Card
+import eb.utilities.ProgrammableAction
 import eb.utilities.SpecificKeyListener
 import eb.utilities.doNothing
 import java.awt.Dimension
@@ -44,7 +45,6 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
 
     protected abstract fun submitCandidateCardToDeck()
 
-    protected val escapeKeyListener = SpecificKeyListener(KeyEvent.VK_ESCAPE) { cancelButton.doClick() }
     protected val enterKeyListener = SpecificKeyListener(KeyEvent.VK_ENTER) { okButton.doClick() }
 
     protected abstract val cardPanes: List<JTextPane>
@@ -101,6 +101,9 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
             weighty = 0.0
             insets = Insets(10, 10, 10, 10)
         }
+        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
+            .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "Cancel") //$NON-NLS-1$
+        getRootPane().actionMap.put("Cancel", ProgrammableAction { cancelButton.doClick() })
         add(buttonPane, buttonPaneConstraints)
     }
 

@@ -57,7 +57,6 @@ class CardEditingWindow(
         text = frontText
         document.addDocumentListener(cardTextListener)
         Utilities.makeTabAndEnterTransferFocus(this)
-        addKeyListener(escapeKeyListener)
         addFocusListener(CleaningFocusListener())
     }
 
@@ -71,7 +70,6 @@ class CardEditingWindow(
         document.addDocumentListener(cardTextListener)
         Utilities.makeTabTransferFocus(this)
         addKeyListener(enterKeyListener)
-        addKeyListener(escapeKeyListener)
         addFocusListener(CleaningFocusListener())
     }
 

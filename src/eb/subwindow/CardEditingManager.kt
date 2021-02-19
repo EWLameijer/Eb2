@@ -122,6 +122,10 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
         backText: String,
         callingWindow: GenericCardEditingWindow
     ) {
+        if (duplicate.back == backText) {
+            closeOptionPane()
+            return
+        }
         val confirmChangeButton = JButton("OK").apply {
             addActionListener { deleteOtherCard(duplicate, frontText, backText, callingWindow) }
         }

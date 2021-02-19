@@ -50,7 +50,6 @@ class ThreeSidedCardWindow(manager: CardEditingManager) : GenericCardEditingWind
 
         cardPanes.forEach {
             it.text = EMPTY_STRING
-            it.addKeyListener(escapeKeyListener)
             it.addFocusListener(CleaningFocusListener())
             if (it != cardBottomPane) {
                 Utilities.makeTabAndEnterTransferFocus(it)
