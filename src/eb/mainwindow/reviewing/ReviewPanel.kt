@@ -1,5 +1,6 @@
 package eb.mainwindow.reviewing
 
+import eb.data.Card
 import java.awt.CardLayout
 import java.awt.Color
 import java.awt.FlowLayout
@@ -11,13 +12,22 @@ import java.awt.event.KeyEvent
 import java.beans.EventHandler
 
 import eb.data.DeckManager
+import eb.data.Review
 import eb.eventhandling.BlackBoard
 import eb.eventhandling.Update
 import eb.eventhandling.UpdateType
 import eb.mainwindow.MainWindowState
 import eb.subwindow.CardEditingManager
+import eb.utilities.Hint
 import eb.utilities.ProgrammableAction
 import eb.utilities.Utilities.createKeyPressSensitiveButton
+import eb.utilities.asTwoDigitString
+import java.time.Duration
+import java.time.Instant
+import java.time.Year
+import java.time.ZoneOffset
+import java.time.temporal.TemporalField
+import java.util.Calendar.YEAR
 import javax.swing.*
 
 /**
@@ -32,11 +42,16 @@ class ReviewPanel : JPanel() {
     private val backOfCardPanel = CardPanel()
     private val situationalButtonPanel = JPanel()
     private val fixedButtonPanel = JPanel()
+    private val reviewHistoryArea = JTextArea("test")
 
     init {
         this.isFocusable = true
-        addComponentListener(EventHandler.create(ComponentListener::class.java, this,
-                "requestFocusInWindow", null, "componentShown"))
+        addComponentListener(
+            EventHandler.create(
+                ComponentListener::class.java, this,
+                "requestFocusInWindow", null, "componentShown"
+            )
+        )
 
         layout = GridBagLayout()
 
@@ -137,6 +152,8 @@ class ReviewPanel : JPanel() {
             weighty = 5.0
         }
         val sidePanel = JPanel()
+
+        sidePanel.add(reviewHistoryArea)
         sidePanel.background = Color.RED
         add(sidePanel, sidePanelConstraints)
     }
@@ -144,8 +161,10 @@ class ReviewPanel : JPanel() {
     private fun editCard() = CardEditingManager(false, ReviewManager.currentCard())
 
     private fun deleteCard() {
-        val choice = JOptionPane.showConfirmDialog(backOfCardPanel,
-                "Delete this card?", "Delete this card?", JOptionPane.OK_CANCEL_OPTION)
+        val choice = JOptionPane.showConfirmDialog(
+            backOfCardPanel,
+            "Delete this card?", "Delete this card?", JOptionPane.OK_CANCEL_OPTION
+        )
         if (choice == JOptionPane.OK_OPTION)
             DeckManager.currentDeck().cardCollection.removeCard(ReviewManager.currentCard()!!)
     }
@@ -178,6 +197,48 @@ class ReviewPanel : JPanel() {
         frontOfCardPanel.setText(frontText)
         backOfCardPanel.setText(backText)
         showPanel(if (showAnswer) SHOWN_ANSWER else HIDDEN_ANSWER)
+        updateSidePanel(frontText, showAnswer)
+
+    }
+
+    private fun Instant.getDateTimeString(): String {
+        val zonedDateTime = this.atZone(ZoneOffset.UTC)
+        val year = zonedDateTime.year
+        val month = zonedDateTime.monthValue.asTwoDigitString()
+        val day = zonedDateTime.dayOfMonth.asTwoDigitString()
+        val hour = zonedDateTime.hour.asTwoDigitString()
+        val minute = zonedDateTime.minute.asTwoDigitString()
+        return "$year-$month-$day $hour:$minute"
+    }
+
+    private fun Card.waitingTimeBeforeRelevantReview(reviewIndex: Int) =
+        Duration.between(reviewInstant(reviewIndex - 1), reviewInstant(reviewIndex)).toHours()
+
+    private fun Card.reviewInstant(reviewIndex: Int): Instant =
+        if (reviewIndex >= 0) getReviews()[reviewIndex].instant else creationInstant
+
+    private fun updateSidePanel(frontText: String, showAnswer: Boolean) {
+        reviewHistoryArea.isVisible = showAnswer
+        val card = DeckManager.currentDeck().cardCollection.getCardWithFront(Hint(frontText))!!
+        reviewHistoryArea.text = buildString {
+            val createdDateTime = card.creationInstant.getDateTimeString()
+            append("Card created: $createdDateTime\n")
+            for (index in card.getReviews().indices)
+                append(getReviewDataAsString(index, card))
+        }
+    }
+
+    private fun getReviewDataAsString(index: Int, card: Card) = buildString {
+        val review = card.getReviews()[index]
+        append("${index + 1}: ")
+        val reviewDateTime = review.instant.getDateTimeString()
+        append("$reviewDateTime ")
+        append(if (review.wasSuccess) "S" else "F")
+        val durationInHours = card.waitingTimeBeforeRelevantReview(index)
+        val durationDays = durationInHours / 24
+        val durationHours = durationInHours % 24
+        append(" ($durationDays d, $durationHours h)")
+        append("\n")
     }
 
     companion object {

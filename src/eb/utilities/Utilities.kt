@@ -70,19 +70,19 @@ val String.isValidIdentifier
 fun log(text: String) = Logger.getGlobal().info(text)
 
 // ensures 1, 2, 3 are printed as "01", "02" and "03" etc.
-fun asTwoDigitString(number: Int): String {
+fun Int.asTwoDigitString(): String {
     val twoDigitFormat = "%02d"
-    return twoDigitFormat.format(number)
+    return twoDigitFormat.format(this)
 }
 
 fun getDateString(): String {
     val now = LocalDateTime.now()
-    return asTwoDigitString(now[ChronoField.YEAR] % 100) +
-            asTwoDigitString(now[ChronoField.MONTH_OF_YEAR]) +
-            asTwoDigitString(now[ChronoField.DAY_OF_MONTH]) +
+    return (now[ChronoField.YEAR] % 100).asTwoDigitString() +
+            now[ChronoField.MONTH_OF_YEAR].asTwoDigitString() +
+            (now[ChronoField.DAY_OF_MONTH]).asTwoDigitString() +
             "_" +
-            asTwoDigitString(now[ChronoField.HOUR_OF_DAY]) +
-            asTwoDigitString(now[ChronoField.MINUTE_OF_HOUR])
+            now[ChronoField.HOUR_OF_DAY].asTwoDigitString() +
+            now[ChronoField.MINUTE_OF_HOUR].asTwoDigitString()
 }
 
 object Utilities {

@@ -14,6 +14,7 @@ import kotlin.system.exitProcess
 // better sorting of repeated cards [what does that mean?]
 // ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
+// 2.2.5: Now makes the review history visible after review, so one can see how well the study of this particular card has been going
 // 2.2.4: Solved small annoyances: that Escape key did not always work anymore when editing, and that clicking OK on a loaded (but unmodified) card showed the default dialogue of 'do you want to overwrite this'
 // 2.2.3: Solving bugs discovered in 2.2.2 (should sort a list before trying to get median!)
 // 2.2.2: Solving bugs discovered in 2.2.1 (don't fail adjusting time when there are no successful reviews)
@@ -48,7 +49,7 @@ import kotlin.system.exitProcess
 
 object Eb {
 
-    const val VERSION_STRING = "2.2.4"
+    const val VERSION_STRING = "2.2.5"
     private var ss: ServerSocket? = null
 
     @JvmStatic
