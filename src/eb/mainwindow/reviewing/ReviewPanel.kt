@@ -225,7 +225,22 @@ class ReviewPanel : JPanel() {
             append("Card created: $createdDateTime\n")
             for (index in card.getReviews().indices)
                 append(getReviewDataAsString(index, card))
+            val hoursSinceLastView = getHoursSinceLastView(card)
+            val hoursAndDays = toDayHourString(hoursSinceLastView)
+            append("$hoursAndDays since last view")
         }
+    }
+
+    private fun getHoursSinceLastView(card: Card): Long {
+        val indexOfLastView = card.getReviews().size - 1 // -1 if no reviews have taken place
+        val lastViewInstant = card.reviewInstant(indexOfLastView)
+        return Duration.between(lastViewInstant, Instant.now()).toHours()
+    }
+
+    private fun toDayHourString(durationInHours: Long) : String {
+        val durationDays = durationInHours / 24
+        val durationHours = durationInHours % 24
+        return "$durationDays d, $durationHours h"
     }
 
     private fun getReviewDataAsString(index: Int, card: Card) = buildString {
@@ -235,10 +250,8 @@ class ReviewPanel : JPanel() {
         append("$reviewDateTime ")
         append(if (review.wasSuccess) "S" else "F")
         val durationInHours = card.waitingTimeBeforeRelevantReview(index)
-        val durationDays = durationInHours / 24
-        val durationHours = durationInHours % 24
-        append(" ($durationDays d, $durationHours h)")
-        append("\n")
+        val dayHourString = toDayHourString(durationInHours)
+        append(" ($dayHourString)\n")
     }
 
     companion object {
