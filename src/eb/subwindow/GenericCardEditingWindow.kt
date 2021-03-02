@@ -21,10 +21,10 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
     var copiedCard: Card? = null
 
     protected val listBox = JList(cardFronts).apply {
-        fixedCellWidth = 100
+        fixedCellWidth = 150
         selectionMode = ListSelectionModel.SINGLE_SELECTION
         visibleRowCount = -1 // to keep all values visible
-        preferredSize = Dimension(100, 400)
+        // don't set preferred size as it limits the number of items visible
     }
 
     // The button to cancel creating this card, and return to the calling window.

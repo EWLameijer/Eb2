@@ -41,12 +41,16 @@ class CardEditingWindow(
         cardBackPane.text = ""
     }
 
+
     private fun updateSideList() {
         cardFronts.clear()
         val allCardTexts = DeckManager.currentDeck().getCardTexts()
         val allRelevantCardTexts =
             allCardTexts.filter { it.first.startsWith(cardFrontPane.text) && it.second.contains(cardBackPane.text) }
-        cardFronts.addAll(allRelevantCardTexts.map { it.first }.sorted())
+        // not using cardFronts.addAll since it does not work on JVM < 9
+        allRelevantCardTexts.map { it.first }.sorted().forEach {
+            cardFronts.addElement(it)
+        }
     }
 
     // Create the panel to edit the front of the card, and make enter
@@ -132,7 +136,7 @@ class CardEditingWindow(
     private val listPanelConstraints = GridBagConstraints().apply {
         gridx = 1
         gridy = 0
-        weightx = 0.1
+        weightx = 0.5
         weighty = 1.0
         insets = Insets(0, 0, 5, 0)
         fill = GridBagConstraints.BOTH
@@ -143,9 +147,9 @@ class CardEditingWindow(
         updateSideList()
         val listPanel = JPanel().apply {
             add(listBox)
-            minimumSize = Dimension(100, 200)
+            minimumSize = Dimension(150, 200)
         }
-        add(listPanel, listPanelConstraints)
+        add(JScrollPane(listPanel), listPanelConstraints)
     }
 
     private fun copyCardFromList(e: ListSelectionEvent) {
