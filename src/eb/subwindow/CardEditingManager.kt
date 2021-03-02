@@ -110,7 +110,7 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
         val buttons = arrayOf(reeditButton, mergeButton, deleteThisButton, deleteOtherButton)
         JOptionPane.showOptionDialog(
             null,
-            "A card with the front '$frontText' already exists; on the back is the text '${duplicate.back}', replace with '$backText'?",
+            "A card with the front '$frontText' already exists; on the back is the text\n'${duplicate.back}'\nreplace with\n'$backText'?",
             "A card with this front already exists. What do you want to do?", 0,
             JOptionPane.QUESTION_MESSAGE, null, buttons, null
         )
@@ -135,7 +135,7 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
         val buttons = arrayOf(confirmChangeButton, cancelButton)
         JOptionPane.showOptionDialog(
             null,
-            "Replace '${duplicate.back}' with '$backText'?",
+            "Replace\n'${duplicate.back}'\n with\n'$backText'?",
             "A card with this front already exists. What do you want to do?", 0,
             JOptionPane.QUESTION_MESSAGE, null, buttons, null
         )
