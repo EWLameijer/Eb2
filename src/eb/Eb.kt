@@ -14,6 +14,7 @@ import kotlin.system.exitProcess
 // better sorting of repeated cards [what does that mean?]
 // ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
+// 2.2.8.DEBUG Try check why Arabic Eb can take such a long time...
 // 2.2.8: Make Eb run under Java 8 as well, and make list of terms on side of edit window scrollable.
 // 2.2.7: Make it easier to compare card backs while replacing by putting them below each other
 // 2.2.6: Now also reports how much time has passed since the last view (being the last review, or card creation if no review has yet taken place)
@@ -52,7 +53,7 @@ import kotlin.system.exitProcess
 
 object Eb {
 
-    const val VERSION_STRING = "2.2.8"
+    const val VERSION_STRING = "2.2.8.DEBUG"
     private var ss: ServerSocket? = null
 
     @JvmStatic

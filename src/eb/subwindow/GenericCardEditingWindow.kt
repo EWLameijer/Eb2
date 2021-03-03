@@ -16,12 +16,10 @@ import javax.swing.DefaultListModel
 
 abstract class GenericCardEditingWindow(protected val manager: CardEditingManager) : JFrame() {
 
-    protected val cardFronts = DefaultListModel<String>()
     protected abstract fun clear()
     var copiedCard: Card? = null
 
-    protected val listBox = JList(cardFronts).apply {
-        fixedCellWidth = 150
+    protected val listBox = JList(DefaultListModel<String>()).apply {
         selectionMode = ListSelectionModel.SINGLE_SELECTION
         visibleRowCount = -1 // to keep all values visible
         // don't set preferred size as it limits the number of items visible
@@ -70,15 +68,24 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
                 }
             }
         }
-        pane.text = lines[0]
-
-        pane.text = pane.text.standardizeSeparator(' ', " ")
-        pane.text = pane.text.standardizeSeparator(',', ", ")
+        if (pane.text != lines[0]) pane.text = lines[0]
+        val oldText = pane.text
+        val newText = oldText.standardizeSeparator(' ', " ").standardizeSeparator(',', ", ")
+        if (newText != oldText) pane.text = newText
+        /*pane.text = pane.text.cleanRange('"','"')
+        pane.text = pane.text.cleanRange('\'','\'')
+        pane.text = pane.text.cleanRange('(',')')
+        pane.text = pane.text.cleanRange('[',']')*/
     }
 
     private fun String.standardizeSeparator(separator: Char, whatItShouldLookLike: String): String {
         val words = this.split(separator).map { it.trim() }.filter { it != "" }
         return words.joinToString(separator = whatItShouldLookLike)
+    }
+
+    private fun String.cleanRange(startingSeparator: Char, endingSeparator: Char): String {
+        val rangesCanNest = startingSeparator != endingSeparator
+        return this
     }
 
     fun focusFront() = cardPanes[0].requestFocusInWindow()

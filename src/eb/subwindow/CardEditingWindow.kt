@@ -1,9 +1,5 @@
 package eb.subwindow
 
-import java.awt.GridBagConstraints
-import java.awt.GridBagLayout
-import java.awt.Insets
-import java.awt.Dimension
 import javax.swing.*
 import javax.swing.event.ListSelectionEvent
 
@@ -11,6 +7,8 @@ import eb.data.DeckManager
 import eb.eventhandling.DelegatingDocumentListener
 import eb.utilities.Hint
 import eb.utilities.Utilities
+import java.awt.*
+import kotlin.system.measureTimeMillis
 
 
 /**
@@ -33,24 +31,41 @@ class CardEditingWindow(
         val sideListUpdate = Runnable {
             updateSideList()
         }
+        println("Invoking cardTextListener")
         SwingUtilities.invokeLater(sideListUpdate)
+        println("Done invoking cardTextListener ${getFrontText()}")
     }
 
+    fun getFrontText() : String = cardFrontPane.text
+
     override fun clear() {
-        cardFrontPane.text = ""
-        cardBackPane.text = ""
+        efficientCardTextUpdate("","")
     }
 
 
     private fun updateSideList() {
-        cardFronts.clear()
+        println("start updateSL")
+        //cardFronts.clear()
+        println("updateSL:after clear")
         val allCardTexts = DeckManager.currentDeck().getCardTexts()
+        println("updateSL:after cardTexts")
         val allRelevantCardTexts =
             allCardTexts.filter { it.first.startsWith(cardFrontPane.text) && it.second.contains(cardBackPane.text) }
         // not using cardFronts.addAll since it does not work on JVM < 9
-        allRelevantCardTexts.map { it.first }.sorted().forEach {
-            cardFronts.addElement(it)
+        println("updateSL:after relevantCT")
+        val newCardFronts = DefaultListModel<String>()
+        val time = measureTimeMillis {
+            // occasionally this is EXTREMELY slow (5 s or such)
+            allRelevantCardTexts.map { it.first }.sorted().forEach {
+                newCardFronts.addElement(it)
+            }
         }
+        println("time: $time ms")
+        val time2 = measureTimeMillis {
+            listBox.model = newCardFronts
+        }
+        println("time2: $time2 ms")
+        println("updateSL: end")
     }
 
     // Create the panel to edit the front of the card, and make enter
@@ -157,9 +172,24 @@ class CardEditingWindow(
         val newFrontText = list.selectedValue as String?
         if (newFrontText != null) {
             copiedCard = DeckManager.currentDeck().cardCollection.getCardWithFront(Hint(newFrontText))!!
-            cardFrontPane.text = newFrontText
-            cardBackPane.text = copiedCard!!.back
+            efficientCardTextUpdate(newFrontText, copiedCard!!.back)
+
         }
+    }
+
+    private fun efficientCardTextUpdate(newFrontText: String, newBackText: String) {
+        println("statring")
+        cardFrontPane.document.removeDocumentListener(cardTextListener)
+        cardBackPane.document.removeDocumentListener(cardTextListener)
+        println("set texts")
+        cardFrontPane.text = newFrontText
+        cardBackPane.text = newBackText
+        println("Start sidelist update")
+        updateSideList()
+        println("End sidelist update")
+        cardFrontPane.document.addDocumentListener(cardTextListener)
+        cardBackPane.document.addDocumentListener(cardTextListener)
+        println("ending")
     }
 
     companion object {
