@@ -4,7 +4,6 @@ import eb.data.Card
 import eb.utilities.ProgrammableAction
 import eb.utilities.SpecificKeyListener
 import eb.utilities.doNothing
-import java.awt.Dimension
 import java.awt.GridBagConstraints
 import java.awt.Insets
 import java.awt.event.FocusEvent
@@ -70,12 +69,8 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
         }
         if (pane.text != lines[0]) pane.text = lines[0]
         val oldText = pane.text
-        val newText = oldText.standardizeSeparator(' ', " ").standardizeSeparator(',', ", ")
+        val newText = oldText.standardizeSeparator(' ', " ").standardizeSeparator(',', ", ").cleanDoubleQuotes()
         if (newText != oldText) pane.text = newText
-        /*pane.text = pane.text.cleanRange('"','"')
-        pane.text = pane.text.cleanRange('\'','\'')
-        pane.text = pane.text.cleanRange('(',')')
-        pane.text = pane.text.cleanRange('[',']')*/
     }
 
     private fun String.standardizeSeparator(separator: Char, whatItShouldLookLike: String): String {
@@ -83,10 +78,23 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
         return words.joinToString(separator = whatItShouldLookLike)
     }
 
-    private fun String.cleanRange(startingSeparator: Char, endingSeparator: Char): String {
-        val rangesCanNest = startingSeparator != endingSeparator
-        return this
+    private fun String.cleanDoubleQuotes(): String {
+        var currentPartIsQuote = false
+        var currentPartStart = 0
+        var result = ""
+        for (index in indices) {
+            if (this[index] == '"') {
+                result += cleanedQuotePart(substring(currentPartStart, index), currentPartIsQuote) + '"'
+                currentPartIsQuote = !currentPartIsQuote
+                currentPartStart = index + 1
+            }
+        }
+        return result + substring(currentPartStart)
     }
+
+    private fun cleanedQuotePart(text: String, isQuote: Boolean): String =
+        text.trim() + if (!isQuote && !text.last().isOpeningChar()) " " else ""
+
 
     fun focusFront() = cardPanes[0].requestFocusInWindow()
 
@@ -114,4 +122,9 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
         add(buttonPane, buttonPaneConstraints)
     }
 
+}
+
+private fun Char.isOpeningChar(): Boolean = when(this) {
+    '(', '[', '\'', '{' -> true
+    else -> false
 }
