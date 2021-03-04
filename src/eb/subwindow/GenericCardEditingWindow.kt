@@ -67,10 +67,8 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
                 }
             }
         }
-        if (pane.text != lines[0]) pane.text = lines[0]
-        val oldText = pane.text
-        val newText = oldText.standardizeSeparator(' ', " ").standardizeSeparator(',', ", ").cleanDoubleQuotes()
-        if (newText != oldText) pane.text = newText
+        val newText = lines[0].standardizeSeparator(' ', " ").standardizeSeparator(',', ", ").cleanDoubleQuotes()
+        if (newText != pane.text) pane.text = newText
     }
 
     private fun String.standardizeSeparator(separator: Char, whatItShouldLookLike: String): String {
@@ -89,12 +87,23 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
                 currentPartStart = index + 1
             }
         }
-        return result + substring(currentPartStart)
+        return (result + cleanedQuotePart(substring(currentPartStart), currentPartIsQuote)).trim()
     }
 
     private fun cleanedQuotePart(text: String, isQuote: Boolean): String =
-        text.trim() + if (!isQuote && !text.last().isOpeningChar()) " " else ""
+        if (isQuote) {
+            text.trim()
+        } else {
+            val trimmedText = text.trim()
+            spaceBetweenEndQuoteAndNonClosingChar(trimmedText) + trimmedText +
+                    spaceBetweenNonOpeningCharAndStartQuote(trimmedText)
+        }
 
+    private fun spaceBetweenNonOpeningCharAndStartQuote(trimmedText: String) =
+        if (!trimmedText.last().isOpeningChar()) " " else ""
+
+    private fun spaceBetweenEndQuoteAndNonClosingChar(trimmedText: String) =
+        if (!trimmedText.first().isClosingChar()) " " else ""
 
     fun focusFront() = cardPanes[0].requestFocusInWindow()
 
@@ -124,7 +133,12 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
 
 }
 
-private fun Char.isOpeningChar(): Boolean = when(this) {
+private fun Char.isOpeningChar(): Boolean = when (this) {
     '(', '[', '\'', '{' -> true
+    else -> false
+}
+
+private fun Char.isClosingChar(): Boolean = when (this) {
+    ')', ']', '\'', '}' -> true
     else -> false
 }
