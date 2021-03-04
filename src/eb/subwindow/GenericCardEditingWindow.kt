@@ -99,11 +99,14 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
                     spaceBetweenNonOpeningCharAndStartQuote(trimmedText)
         }
 
-    private fun spaceBetweenNonOpeningCharAndStartQuote(trimmedText: String) =
-        if (!trimmedText.last().isOpeningChar()) " " else ""
+    private fun spaceBetweenNonOpeningCharAndStartQuote(text: String) =
+        spaceIf(text) { !it.last().isOpeningChar() }
 
-    private fun spaceBetweenEndQuoteAndNonClosingChar(trimmedText: String) =
-        if (!trimmedText.first().isClosingChar()) " " else ""
+    private fun spaceBetweenEndQuoteAndNonClosingChar(text: String) =
+        spaceIf(text) { !it.first().isClosingChar() }
+
+    private fun spaceIf(text: String, condition: (String) -> Boolean) =
+        if (text.isNotBlank() && condition(text)) " " else ""
 
     fun focusFront() = cardPanes[0].requestFocusInWindow()
 

@@ -14,6 +14,7 @@ import kotlin.system.exitProcess
 // better sorting of repeated cards [what does that mean?]
 // ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
+// 2.3.1.DEBUG: removed small error in the quote correction based on testing
 // 2.3.0.DEBUG: slightly better auto-correction of quotes, also with their interaction with ) and such...
 // 2.2.9.DEBUG: now auto-corrects quote formats (so a" b  " -> a "b")
 // 2.2.8.DEBUG Try check why Arabic Eb can take such a long time...
@@ -55,7 +56,7 @@ import kotlin.system.exitProcess
 
 object Eb {
 
-    const val VERSION_STRING = "2.3.0.DEBUG"
+    const val VERSION_STRING = "2.3.1.DEBUG"
     private var ss: ServerSocket? = null
 
     @JvmStatic
