@@ -8,6 +8,7 @@ import javax.swing.JOptionPane
 import eb.data.Card
 import eb.data.DeckManager
 import eb.eventhandling.BlackBoard
+import eb.eventhandling.Listener
 import eb.eventhandling.Update
 import eb.eventhandling.UpdateType
 import eb.utilities.EMPTY_STRING
@@ -19,7 +20,7 @@ import eb.utilities.Hint
  *
  * @author Eric-Wubbo Lameijer
  */
-class CardEditingManager(private val tripleModus: Boolean = false, private var card: Card? = null) {
+class CardEditingManager(private val tripleModus: Boolean = false, private var card: Card? = null) : Listener {
 
     private val cardEditingWindow: GenericCardEditingWindow? = when (card) {
         null -> if (tripleModus) ThreeSidedCardWindow.display(this) else CardEditingWindow.display("", "", this, false)
@@ -30,6 +31,10 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
     private fun currentFront() =
         if (card == null) EMPTY_STRING
         else card!!.front.contents
+
+    init {
+        BlackBoard.register(this, UpdateType.DECK_SWAPPED)
+    }
 
     private fun closeOptionPane() = JOptionPane.getRootFrame().dispose()
 
@@ -182,5 +187,11 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
     companion object {
         // prevent a card from being edited in two windows at the same time.
         private val c_cardsBeingEdited = HashSet<Card>()
+    }
+
+    override fun respondToUpdate(update: Update) {
+        if (update.type == UpdateType.DECK_SWAPPED && cardEditingWindow != null) {
+            endEditing(cardEditingWindow)
+        }
     }
 }
