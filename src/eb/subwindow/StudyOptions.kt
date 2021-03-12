@@ -23,7 +23,6 @@ class StudyOptions(
     var idealSuccessPercentage: Double = DEFAULT_SUCCESS_TARGET
 ) : Serializable {
 
-
     override fun equals(other: Any?) = when {
         this === other -> true
         other == null -> false

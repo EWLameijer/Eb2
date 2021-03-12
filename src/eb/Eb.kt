@@ -14,6 +14,7 @@ import kotlin.system.exitProcess
 // better sorting of repeated cards [what does that mean?]
 // ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
+// 2.3.2: Made life a bit easier when modifying a card selected via the side list
 // 2.3.1.DEBUG: removed small error in the quote correction based on testing
 // 2.3.0.DEBUG: slightly better auto-correction of quotes, also with their interaction with ) and such...
 // 2.2.9.DEBUG: now auto-corrects quote formats (so a" b  " -> a "b")
@@ -56,7 +57,7 @@ import kotlin.system.exitProcess
 
 object Eb {
 
-    const val VERSION_STRING = "2.3.1.DEBUG"
+    const val VERSION_STRING = "2.3.2"
     private var ss: ServerSocket? = null
 
     @JvmStatic

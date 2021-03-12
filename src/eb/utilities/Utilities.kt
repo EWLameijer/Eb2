@@ -94,6 +94,7 @@ object Utilities {
     fun stringToDouble(string: String): Double? {
         // Get a numberFormat object. Note that the number it returns will be Long
         // if possible, otherwise a Double.
+        println("stringToDouble: '$string'")
         val numberFormat = NumberFormat.getNumberInstance()
         val parsePosition = ParsePosition(0)
         val number = numberFormat.parse(string, parsePosition)

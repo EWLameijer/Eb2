@@ -83,7 +83,9 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
     ) {
         val cardCopiedFromSideList = callingWindow.copiedCard
         if (cardCopiedFromSideList != null && cardCopiedFromSideList.front == frontText) {
-            showModifyListChosenCardPopup(duplicate, frontText, backText, callingWindow)
+            // while I first made a menu here, it is more convenient to assume, like with normal editing,
+            // that the user simply wants to change the back of the card.
+            deleteOtherCard(duplicate, frontText, backText, callingWindow)
         } else {
             showDuplicateFrontPopup(duplicate, backText, frontText, callingWindow)
         }
@@ -111,31 +113,6 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
         JOptionPane.showOptionDialog(
             null,
             "A card with the front '$frontText' already exists; on the back is the text\n'${duplicate.back}'\nreplace with\n'$backText'?",
-            "A card with this front already exists. What do you want to do?", 0,
-            JOptionPane.QUESTION_MESSAGE, null, buttons, null
-        )
-    }
-
-    private fun showModifyListChosenCardPopup(
-        duplicate: Card,
-        frontText: Hint,
-        backText: String,
-        callingWindow: GenericCardEditingWindow
-    ) {
-        if (duplicate.back == backText) {
-            closeOptionPane()
-            return
-        }
-        val confirmChangeButton = JButton("OK").apply {
-            addActionListener { deleteOtherCard(duplicate, frontText, backText, callingWindow) }
-        }
-        val cancelButton = JButton("Cancel").apply {
-            addActionListener { closeOptionPane() }
-        }
-        val buttons = arrayOf(confirmChangeButton, cancelButton)
-        JOptionPane.showOptionDialog(
-            null,
-            "Replace\n'${duplicate.back}'\n with\n'$backText'?",
             "A card with this front already exists. What do you want to do?", 0,
             JOptionPane.QUESTION_MESSAGE, null, buttons, null
         )
