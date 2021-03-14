@@ -26,7 +26,11 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
 
     // The button to cancel creating this card, and return to the calling window.
     protected val cancelButton = JButton("Cancel").apply {
-        addActionListener { manager.endEditing(this@GenericCardEditingWindow) }
+        addActionListener { closeWindow() }
+    }
+
+    private fun closeWindow() {
+        manager.endEditing(this@GenericCardEditingWindow)
     }
 
     private val clearButton = JButton("Clear").apply {
@@ -130,8 +134,12 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
         }
         getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
             .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "Cancel") //$NON-NLS-1$
-        getRootPane().actionMap.put("Cancel", ProgrammableAction { cancelButton.doClick() })
+        getRootPane().actionMap.put("Cancel", ProgrammableAction { cleanOrExit() })
         add(buttonPane, buttonPaneConstraints)
+    }
+
+    private fun cleanOrExit() {
+        if (cardPanes.any { it.text.isNotBlank() }) clearContents() else closeWindow()
     }
 
 }
