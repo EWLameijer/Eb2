@@ -14,6 +14,7 @@ import kotlin.system.exitProcess
 // better sorting of repeated cards [what does that mean?]
 // ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
+// 2.3.5: In the edit window, tab does not rotate to the clear button and the side list anymore, making editing more convenient
 // 2.3.4: If the edit window has contents, escape clears it. If the edit window is empty, it is closed.
 // 2.3.3: Automatically close edit windows when swapping a deck.
 // 2.3.2: Made life a bit easier when modifying a card selected via the side list
@@ -59,7 +60,7 @@ import kotlin.system.exitProcess
 
 object Eb {
 
-    const val VERSION_STRING = "2.3.4"
+    const val VERSION_STRING = "2.3.5"
     private var ss: ServerSocket? = null
 
     @JvmStatic

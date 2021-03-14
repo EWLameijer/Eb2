@@ -78,11 +78,6 @@ class CardEditingWindow(
     init {
         val operation = if (manager.inCardCreatingMode()) "add" else "edit"
         this.title = "${DeckManager.currentDeck().name}: $operation card"
-
-        // we just want tab to cycle from the front to the back of the card,
-        // and vice versa, and not hit the buttons
-        cancelButton.isFocusable = false
-        okButton.isFocusable = false
     }
 
     /**

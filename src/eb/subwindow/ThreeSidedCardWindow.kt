@@ -60,11 +60,6 @@ class ThreeSidedCardWindow(manager: CardEditingManager) : GenericCardEditingWind
             }
         }
 
-        // we just want tab to cycle from the front to the back of the card,
-        // and vice versa, and not hit the buttons
-        cancelButton.isFocusable = false
-        okButton.isFocusable = false
-
         // postconditions: none. The window exists and should henceforth handle
         // its own business using the appropriate GUI elements.
     }

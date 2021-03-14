@@ -21,12 +21,14 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
     protected val listBox = JList(DefaultListModel<String>()).apply {
         selectionMode = ListSelectionModel.SINGLE_SELECTION
         visibleRowCount = -1 // to keep all values visible
+        isFocusable = false
         // don't set preferred size as it limits the number of items visible
     }
 
     // The button to cancel creating this card, and return to the calling window.
     protected val cancelButton = JButton("Cancel").apply {
         addActionListener { closeWindow() }
+        isFocusable = false
     }
 
     private fun closeWindow() {
@@ -35,6 +37,7 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
 
     private val clearButton = JButton("Clear").apply {
         addActionListener { clear() }
+        isFocusable = false
     }
 
     // The button to press that requests the current deck to check whether this
@@ -42,6 +45,7 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
     // example) and if so, to add it.
     protected val okButton = JButton("Ok").apply {
         addActionListener { submitCandidateCardToDeck() }
+        isFocusable = false
     }
 
     protected abstract fun submitCandidateCardToDeck()
