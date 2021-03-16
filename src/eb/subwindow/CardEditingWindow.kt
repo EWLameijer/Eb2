@@ -47,6 +47,8 @@ class CardEditingWindow(
             newCardFronts.addElement(it)
         }
         listBox.model = newCardFronts
+        val existingCardWithThisFront = DeckManager.currentDeck().cardCollection.getCardWithFront(cardFrontPane.text)
+        deleteButton.isEnabled = existingCardWithThisFront != null
     }
 
     // Create the panel to edit the front of the card, and make enter

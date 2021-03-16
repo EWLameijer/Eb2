@@ -1,6 +1,8 @@
 package eb.subwindow
 
 import eb.data.Card
+import eb.data.DeckManager
+import eb.popups.deleteCard
 import eb.utilities.ProgrammableAction
 import eb.utilities.SpecificKeyListener
 import eb.utilities.doNothing
@@ -40,10 +42,22 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
         isFocusable = false
     }
 
+    protected val deleteButton = JButton("Delete").apply {
+        addActionListener { deleteCardWithCurrentFront() }
+        isFocusable = false
+    }
+
+    private fun deleteCardWithCurrentFront() {
+        val existingCardWithThisFront = DeckManager.currentDeck().cardCollection.getCardWithFront(cardPanes[0].text)
+        deleteCard(this, existingCardWithThisFront!!)
+        clear()
+    }
+
+
     // The button to press that requests the current deck to check whether this
     // card is a valid/usable card (so no duplicate of an existing card, for
     // example) and if so, to add it.
-    protected val okButton = JButton("Ok").apply {
+    private val okButton = JButton("Ok").apply {
         addActionListener { submitCandidateCardToDeck() }
         isFocusable = false
     }
@@ -126,6 +140,7 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
     protected fun addButtonPanel() {
         val buttonPane = JPanel().apply {
             add(cancelButton)
+            add(deleteButton)
             add(clearButton)
             add(okButton)
         }

@@ -70,6 +70,9 @@ method has to be invoked first to check the possibility of the current method.""
     // Returns the card with the given front text - if such a card exists in the collection, otherwise returns null.
     fun getCardWithFront(frontText: Hint): Card? = cards.find { it.front == frontText }
 
+    fun getCardWithFront(frontText: String): Card? =
+        if (frontText.isBlank()) null else cards.find { it.front == Hint(frontText) }
+
     fun removeCard(card: Card) {
         val collectionContainedCard = cards.remove(card)
         if (collectionContainedCard)

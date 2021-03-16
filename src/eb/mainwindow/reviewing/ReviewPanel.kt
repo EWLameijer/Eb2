@@ -17,6 +17,7 @@ import eb.eventhandling.BlackBoard
 import eb.eventhandling.Update
 import eb.eventhandling.UpdateType
 import eb.mainwindow.MainWindowState
+import eb.popups.*
 import eb.subwindow.CardEditingManager
 import eb.utilities.Hint
 import eb.utilities.ProgrammableAction
@@ -29,6 +30,7 @@ import java.time.ZoneOffset
 import java.time.temporal.TemporalField
 import java.util.Calendar.YEAR
 import javax.swing.*
+
 
 /**
  * The panel used to review cards (shows front, on clicking "Show Answer" the answer is shown, after which the user
@@ -74,7 +76,7 @@ class ReviewPanel : JPanel() {
             fill = GridBagConstraints.BOTH
         }
         fixedButtonPanel.add(createKeyPressSensitiveButton("Edit card", 'e') { editCard() })
-        fixedButtonPanel.add(createKeyPressSensitiveButton("Delete card", 'd', ::deleteCard))
+        fixedButtonPanel.add(createKeyPressSensitiveButton("Delete card", 'd') { deleteCard(backOfCardPanel, ReviewManager.currentCard()!!) })
         fixedButtonPanel.add(createKeyPressSensitiveButton("View score", 'v', ::showScore))
         add(fixedButtonPanel, fixedButtonPanelConstraints)
     }
@@ -160,14 +162,6 @@ class ReviewPanel : JPanel() {
 
     private fun editCard() = CardEditingManager(false, ReviewManager.currentCard())
 
-    private fun deleteCard() {
-        val choice = JOptionPane.showConfirmDialog(
-            backOfCardPanel,
-            "Delete this card?", "Delete this card?", JOptionPane.OK_CANCEL_OPTION
-        )
-        if (choice == JOptionPane.OK_OPTION)
-            DeckManager.currentDeck().cardCollection.removeCard(ReviewManager.currentCard()!!)
-    }
 
     private fun registerAnswer(wasRemembered: Boolean) {
         showPanel(HIDDEN_ANSWER)
@@ -237,7 +231,7 @@ class ReviewPanel : JPanel() {
         return Duration.between(lastViewInstant, Instant.now()).toHours()
     }
 
-    private fun toDayHourString(durationInHours: Long) : String {
+    private fun toDayHourString(durationInHours: Long): String {
         val durationDays = durationInHours / 24
         val durationHours = durationInHours % 24
         return "$durationDays d, $durationHours h"
