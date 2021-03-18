@@ -2,7 +2,6 @@ package eb.popups
 
 import eb.data.Card
 import eb.data.DeckManager
-import eb.mainwindow.reviewing.ReviewManager
 import java.awt.Component
 import javax.swing.JOptionPane
 

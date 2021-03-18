@@ -1,4 +1,4 @@
-package eb.subwindow
+package eb.subwindow.archivingsettings
 
 import java.io.File
 import java.io.Serializable

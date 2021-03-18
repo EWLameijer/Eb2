@@ -8,27 +8,21 @@ import java.awt.Graphics
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout
 import java.awt.event.ComponentListener
-import java.awt.event.KeyEvent
 import java.beans.EventHandler
 
 import eb.data.DeckManager
-import eb.data.Review
 import eb.eventhandling.BlackBoard
 import eb.eventhandling.Update
 import eb.eventhandling.UpdateType
 import eb.mainwindow.MainWindowState
 import eb.popups.*
-import eb.subwindow.CardEditingManager
+import eb.subwindow.cardediting.CardEditingManager
 import eb.utilities.Hint
-import eb.utilities.ProgrammableAction
 import eb.utilities.Utilities.createKeyPressSensitiveButton
 import eb.utilities.asTwoDigitString
 import java.time.Duration
 import java.time.Instant
-import java.time.Year
 import java.time.ZoneOffset
-import java.time.temporal.TemporalField
-import java.util.Calendar.YEAR
 import javax.swing.*
 
 

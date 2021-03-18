@@ -1,4 +1,4 @@
-package eb.subwindow
+package eb.subwindow.archivingsettings
 
 import java.awt.event.KeyEvent
 

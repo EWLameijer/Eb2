@@ -1,4 +1,4 @@
-package eb.subwindow
+package eb.subwindow.cardediting
 
 import java.awt.GridBagConstraints
 import java.awt.GridBagLayout

@@ -1,4 +1,4 @@
-package eb.subwindow
+package eb.subwindow.cardediting
 
 import javax.swing.*
 import javax.swing.event.ListSelectionEvent

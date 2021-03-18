@@ -11,7 +11,6 @@ import java.io.IOException
 import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Paths
-import java.util.ArrayList
 
 import javax.swing.JButton
 import javax.swing.JFileChooser
@@ -33,9 +32,10 @@ import eb.eventhandling.Update
 import eb.eventhandling.UpdateType
 import eb.mainwindow.reviewing.ReviewManager
 import eb.mainwindow.reviewing.ReviewPanel
-import eb.subwindow.ArchivingSettingsWindow
-import eb.subwindow.CardEditingManager
-import eb.subwindow.StudyOptionsWindow
+import eb.popups.DeckShortcutsPopup
+import eb.subwindow.archivingsettings.ArchivingSettingsWindow
+import eb.subwindow.cardediting.CardEditingManager
+import eb.subwindow.studyoptions.StudyOptionsWindow
 import eb.utilities.*
 import java.awt.event.KeyEvent.getExtendedKeyCodeForChar
 import kotlin.system.exitProcess
@@ -61,6 +61,7 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
     private val messageLabel = JLabel()
 
     private val deckShortcuts = loadDeckShortcuts()
+    private var deckShortcutKeys = deckShortcuts.keys.sorted()
 
     // the initial state of the main window
     private var state = MainWindowState.REACTIVE
@@ -150,8 +151,16 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
 
     // Gives the message label its correct (possibly updated) value.
     private fun updateOnScreenInformation() {
+        updateMenuIfNeeded()
         updateMessageLabel()
         updateWindowTitle()
+    }
+
+    private fun updateMenuIfNeeded() {
+        if (deckShortcutKeys != deckShortcuts.keys.sorted()) {
+            deckShortcutKeys = deckShortcuts.keys.sorted()
+            createMenu()
+        }
     }
 
     private fun showCorrectPanel() =
@@ -273,7 +282,8 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
     }
 
     private fun addDeckLoadingMenuItems(fileMenu: JMenu) {
-        if (deckShortcuts.isNotEmpty()) fileMenu.addSeparator()
+        fileMenu.addSeparator()
+        fileMenu.add(createMenuItem("Manage deck-shortcuts",'0', ::manageDeckShortcuts))
         (1..9).filter { deckShortcuts[it] != null }.forEach { digit ->
             val deckName = deckShortcuts[digit]
             fileMenu.add(
@@ -284,7 +294,9 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         }
     }
 
-    private fun loadDeckShortcuts(): Map<Int, String> {
+    private fun manageDeckShortcuts() =  DeckShortcutsPopup(deckShortcuts).updateShortcuts()
+
+    private fun loadDeckShortcuts(): MutableMap<Int, String> {
         val statusFilePath = Paths.get(EB_STATUS_FILE)
         val shortCuts = mutableMapOf<Int, String>()
         try {

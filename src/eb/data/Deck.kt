@@ -10,8 +10,8 @@ import java.time.Instant
 
 import eb.Eb
 import eb.writer.CardConverter
-import eb.subwindow.ArchivingSettings
-import eb.subwindow.StudyOptions
+import eb.subwindow.archivingsettings.ArchivingSettings
+import eb.subwindow.studyoptions.StudyOptions
 import eb.utilities.EMPTY_STRING
 import eb.utilities.Utilities
 import eb.utilities.Utilities.EOL

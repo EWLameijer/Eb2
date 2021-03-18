@@ -1,11 +1,10 @@
-package eb.subwindow
+package eb.subwindow.cardediting
 
 import eb.data.Card
 import eb.data.DeckManager
 import eb.popups.deleteCard
-import eb.utilities.ProgrammableAction
-import eb.utilities.SpecificKeyListener
-import eb.utilities.doNothing
+import eb.subwindow.cardediting.CardEditingManager
+import eb.utilities.*
 import java.awt.GridBagConstraints
 import java.awt.Insets
 import java.awt.event.FocusEvent
@@ -28,7 +27,7 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
     }
 
     // The button to cancel creating this card, and return to the calling window.
-    protected val cancelButton = JButton("Cancel").apply {
+    private val cancelButton = JButton("Cancel").apply {
         addActionListener { closeWindow() }
         isFocusable = false
     }
@@ -68,13 +67,8 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
 
     protected abstract val cardPanes: List<JTextPane>
 
-    //Listens for a specific key and consumes it (and performs the appropriate action) when it is pressed
-
-
     internal inner class CleaningFocusListener : FocusListener {
-
         override fun focusGained(arg0: FocusEvent) = doNothing
-
         override fun focusLost(arg0: FocusEvent) = standardizeFields()
     }
 
@@ -92,43 +86,6 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
         val newText = lines[0].standardizeSeparator(' ', " ").standardizeSeparator(',', ", ").cleanDoubleQuotes()
         if (newText != pane.text) pane.text = newText
     }
-
-    private fun String.standardizeSeparator(separator: Char, whatItShouldLookLike: String): String {
-        val words = this.split(separator).map { it.trim() }.filter { it != "" }
-        return words.joinToString(separator = whatItShouldLookLike)
-    }
-
-    private fun String.cleanDoubleQuotes(): String {
-        var currentPartIsQuote = false
-        var currentPartStart = 0
-        var result = ""
-        for (index in indices) {
-            if (this[index] == '"') {
-                result += cleanedQuotePart(substring(currentPartStart, index), currentPartIsQuote) + '"'
-                currentPartIsQuote = !currentPartIsQuote
-                currentPartStart = index + 1
-            }
-        }
-        return (result + cleanedQuotePart(substring(currentPartStart), currentPartIsQuote)).trim()
-    }
-
-    private fun cleanedQuotePart(text: String, isQuote: Boolean): String =
-        if (isQuote) {
-            text.trim()
-        } else {
-            val trimmedText = text.trim()
-            spaceBetweenEndQuoteAndNonClosingChar(trimmedText) + trimmedText +
-                    spaceBetweenNonOpeningCharAndStartQuote(trimmedText)
-        }
-
-    private fun spaceBetweenNonOpeningCharAndStartQuote(text: String) =
-        spaceIf(text) { !it.last().isOpeningChar() }
-
-    private fun spaceBetweenEndQuoteAndNonClosingChar(text: String) =
-        spaceIf(text) { !it.first().isClosingChar() }
-
-    private fun spaceIf(text: String, condition: (String) -> Boolean) =
-        if (text.isNotBlank() && condition(text)) " " else ""
 
     fun focusFront() = cardPanes[0].requestFocusInWindow()
 
@@ -160,15 +117,5 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
     private fun cleanOrExit() {
         if (cardPanes.any { it.text.isNotBlank() }) clearContents() else closeWindow()
     }
-
 }
 
-private fun Char.isOpeningChar(): Boolean = when (this) {
-    '(', '[', '\'', '{' -> true
-    else -> false
-}
-
-private fun Char.isClosingChar(): Boolean = when (this) {
-    ')', ']', '\'', '}' -> true
-    else -> false
-}

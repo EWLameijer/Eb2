@@ -1,4 +1,4 @@
-package eb.subwindow
+package eb.subwindow.studyoptions
 
 import java.awt.BorderLayout
 import java.awt.GridLayout

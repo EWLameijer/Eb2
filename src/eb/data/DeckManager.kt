@@ -10,7 +10,7 @@ import eb.writer.CardConverter
 import eb.eventhandling.BlackBoard
 import eb.eventhandling.Update
 import eb.eventhandling.UpdateType
-import eb.subwindow.StudyOptions
+import eb.subwindow.studyoptions.StudyOptions
 import eb.utilities.isValidIdentifier
 import eb.utilities.log
 import java.lang.RuntimeException

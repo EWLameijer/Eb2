@@ -1,4 +1,4 @@
-package eb.subwindow
+package eb.subwindow.studyoptions
 
 import java.io.Serializable
 import java.util.Objects
