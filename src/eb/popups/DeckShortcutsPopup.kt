@@ -23,13 +23,12 @@ class DeckShortcutsPopup(private val shortcuts: MutableMap<Int, String>) {
         )
     }
 
-    private fun createCancelButton() {
+    private fun createCancelButton() =
         JButton("Cancel").apply {
             addActionListener { closeOptionPane() }
         }
-    }
 
-    private fun createRemoveShortcutButton(currentDeckIndex: Int?) {
+    private fun createRemoveShortcutButton(currentDeckIndex: Int?) =
         JButton("Remove shortcut").apply {
             isEnabled = if (currentDeckIndex != null) {
                 addActionListener {
@@ -39,9 +38,8 @@ class DeckShortcutsPopup(private val shortcuts: MutableMap<Int, String>) {
                 true
             } else false
         }
-    }
 
-    private fun createAddShortcutButton(currentDeckIndex: Int?, currentDeckName: String) {
+    private fun createAddShortcutButton(currentDeckIndex: Int?, currentDeckName: String) =
         JButton("Add shortcut").apply {
             isEnabled = if (currentDeckIndex == null) {
                 val firstFreeIndex = getFirstFreeIndex(shortcuts)
@@ -52,7 +50,6 @@ class DeckShortcutsPopup(private val shortcuts: MutableMap<Int, String>) {
                 true
             } else false
         }
-    }
 
     private fun getFirstFreeIndex(shortcuts: MutableMap<Int, String>) =
         (1..9).first { shortcuts[it] == null }
