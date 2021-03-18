@@ -69,6 +69,8 @@ val String.isValidIdentifier
 
 fun log(text: String) = Logger.getGlobal().info(text)
 
+fun Int.toLiteralChar(): Char = (this + '0'.toInt()).toChar()
+
 // ensures 1, 2, 3 are printed as "01", "02" and "03" etc.
 fun Int.asTwoDigitString(): String {
     val twoDigitFormat = "%02d"
