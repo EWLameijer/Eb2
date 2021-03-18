@@ -31,6 +31,8 @@ class TimeInputElement(name: String, inputTimeInterval: TimeInterval) : JPanel()
     // initial study interval. Contains the hours of "3 hours".
     private val unitComboBox = JComboBox<String>()
 
+    private val documentListener = DelegatingDocumentListener { notifyDataFieldChangeListeners() }
+
     // Returns the time interval encapsulated by this TimeInputElement.
     var interval: TimeInterval
         get() {
@@ -46,10 +48,10 @@ class TimeInputElement(name: String, inputTimeInterval: TimeInterval) : JPanel()
 
     init {
         scalarField.document = FixedSizeNumberDocument(scalarField, 5, 2)
-        scalarField.document.addDocumentListener( DelegatingDocumentListener { notifyDataFieldChangeListeners() })
+        scalarField.document.addDocumentListener(documentListener)
 
         scalarField.preferredSize = Dimension(40, 20)
-        unitComboBox.model = DefaultComboBoxModel<String>(TimeUnit.unitNames())
+        unitComboBox.model = DefaultComboBoxModel(TimeUnit.unitNames())
         unitComboBox.addActionListener { notifyDataFieldChangeListeners() }
         interval = inputTimeInterval
         add(label)

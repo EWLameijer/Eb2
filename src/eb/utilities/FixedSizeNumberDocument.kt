@@ -41,7 +41,6 @@ class FixedSizeNumberDocument (
     //Inserts a new string into this document, unless the string is invalid or would give other problems.
     @Throws(BadLocationException::class)
     override fun insertString(offs: Int, str: String?, a: AttributeSet?) {
-        println("inserting string '$offs' '$str', '$a'")
         val originalText = owner.text
 
         // first test: if the original string is long enough, you cannot insert.

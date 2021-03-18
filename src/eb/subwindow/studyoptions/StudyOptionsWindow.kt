@@ -54,6 +54,8 @@ class StudyOptionsWindow : JFrame(), Listener {
 
     private val timeToWaitAfterIncorrectReview: TimeInputElement
 
+    private val textFields: List<LabelledTextField>
+
     init {
         val studyOptions = DeckManager.currentDeck().studyOptions
         initialIntervalBox = TimeInputElement("Initial review after", studyOptions.initialInterval)
@@ -75,6 +77,7 @@ class StudyOptionsWindow : JFrame(), Listener {
             "Strive for this percentage successful reviews (between 80% and 90% likely best)",
             Utilities.toRegionalString(studyOptions.idealSuccessPercentage.toString()), 5, 2
         )
+        textFields = listOf(sizeOfReview, lengtheningFactor, targetedSuccessPercentage)
     }
 
     // Updates the title of the frame in response to changes to indicate to the user whether there are unsaved changes.
@@ -89,13 +92,20 @@ class StudyOptionsWindow : JFrame(), Listener {
     }
 
     private fun loadSettings(settings: StudyOptions) {
+        deactivateListeners()
         initialIntervalBox.interval = settings.initialInterval
         sizeOfReview.setContents(settings.reviewSessionSize)
         timeToWaitAfterCorrectReview.interval = settings.rememberedInterval
         lengtheningFactor.setContents(settings.lengtheningFactor)
         timeToWaitAfterIncorrectReview.interval = settings.forgottenInterval
         targetedSuccessPercentage.setContents(settings.idealSuccessPercentage)
+        reactivateListeners()
+        updateFrame()
     }
+
+    private fun deactivateListeners() = textFields.forEach { it.deactivateListener() }
+
+    private fun reactivateListeners() = textFields.forEach { it.activateListener() }
 
     private fun loadEbDefaults() = loadSettings(StudyOptions())
 
@@ -166,17 +176,15 @@ class StudyOptionsWindow : JFrame(), Listener {
         return settingsPane
     }
 
-    private fun initButtonsPane(): JPanel {
-        val buttonsPane = JPanel().apply {
-            add(cancelButton)
-            add(loadEbDefaultsButton)
-            add(loadCurrentDeckSettingsButton)
-            add(setToTheseValuesButton)
+    private fun initButtonsPane() = JPanel().apply {
+        add(cancelButton)
+        add(loadEbDefaultsButton)
+        add(loadCurrentDeckSettingsButton)
+        add(setToTheseValuesButton)
 
-            layout = GridLayout(2, 2)
-        }
-        return buttonsPane
+        layout = GridLayout(2, 2)
     }
+
 
     override fun respondToUpdate(update: Update) =
         if (update.type == UpdateType.INPUTFIELD_CHANGED) updateFrame()

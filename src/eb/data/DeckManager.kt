@@ -169,7 +169,7 @@ object DeckManager {
 
         val gson = builder.create()
         try {
-            val fr = FileReader(jsonFile, Charset.forName("UTF-8")) 
+            val fr = FileReader(jsonFile, Charset.forName("UTF-8"))
 
             val stringBuilder = StringBuilder()
             while (true) {

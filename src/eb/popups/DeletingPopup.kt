@@ -12,7 +12,6 @@ fun deleteCard(parent: Component, card: Card) {
         "Delete this card?", "Delete this card?", JOptionPane.OK_CANCEL_OPTION
     )
     if (choice == JOptionPane.OK_OPTION) {
-        println("Starting deletion")
         DeckManager.currentDeck().cardCollection.removeCard(card)
     }
 }
