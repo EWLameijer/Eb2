@@ -139,7 +139,7 @@ object Analyzer {
         private val betterIntervalDurationInH = betterIntervalDurationInMin.roundToInt().toHourText()
 
         fun report() = buildString {
-            append("$pattern: $totalCards ")
+            append("-$pattern: $totalCards ")
             append("%.1f".format(successPercentage))
             append("% correct ")
             append("($numSuccesses successes, $numFailures failures) - ")

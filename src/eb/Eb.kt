@@ -14,6 +14,7 @@ import kotlin.system.exitProcess
 // better sorting of repeated cards [what does that mean?]
 // ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
+// 2.3.9: added '-' to front of patterns in analysis file, making them easier to search
 // 2.3.8: Small bugfix allowing default settings to be loaded again into options pane
 // 2.3.7: Enables the creation of deck shortcuts to load much-used decks easily
 // 2.3.6: Now also allows deletion of cards in edit window.
@@ -63,7 +64,7 @@ import kotlin.system.exitProcess
 
 object Eb {
 
-    const val VERSION_STRING = "2.3.8"
+    const val VERSION_STRING = "2.3.9"
     private var ss: ServerSocket? = null
 
     @JvmStatic
