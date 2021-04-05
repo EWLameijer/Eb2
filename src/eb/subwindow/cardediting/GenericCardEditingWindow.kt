@@ -83,7 +83,7 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
                 }
             }
         }
-        val newText = lines[0].standardizeSeparator(' ', " ").standardizeSeparator(',', ", ").cleanDoubleQuotes()
+        val newText = lines[0].cleanLayout()
         if (newText != pane.text) pane.text = newText
     }
 

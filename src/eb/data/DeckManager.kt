@@ -1,11 +1,5 @@
 package eb.data
 
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.io.ObjectInputStream
-import java.io.ObjectOutputStream
-
 import eb.writer.CardConverter
 import eb.eventhandling.BlackBoard
 import eb.eventhandling.Update
@@ -14,9 +8,8 @@ import eb.subwindow.studyoptions.StudyOptions
 import eb.utilities.isValidIdentifier
 import eb.utilities.log
 import java.lang.RuntimeException
-import java.io.IOException
-import java.io.FileReader
 import com.google.gson.GsonBuilder
+import java.io.*
 import java.nio.charset.Charset
 import java.time.Instant
 
@@ -30,7 +23,7 @@ import java.time.Instant
 object DeckManager {
     // The deck managed by the DeckManager.
     private var deck: Deck? = null
-    private var loadTime : Instant = Instant.now()
+    private var loadTime: Instant = Instant.now()
     fun deckLoadTime() = loadTime
 
     private var nameOfLastReviewedDeck = ""
@@ -169,7 +162,7 @@ object DeckManager {
 
         val gson = builder.create()
         try {
-            val fr = FileReader(jsonFile, Charset.forName("UTF-8"))
+            val fr = InputStreamReader(FileInputStream(jsonFile), Charset.forName("UTF-8"))
 
             val stringBuilder = StringBuilder()
             while (true) {

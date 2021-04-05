@@ -9,11 +9,13 @@ import eb.mainwindow.MainWindow
 import kotlin.system.exitProcess
 
 // FUTURE PLANS:
+// ?Possibly faster adaptation (set lower limit on #rep needed, or intelligent add?)
 // show history of card in side window!!! (want to know tough cases, so can adapt)
 // enable pictures to be shown with cards
 // better sorting of repeated cards [what does that mean?]
 // ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
+// 2.4.0: improved formatting of (),[] and {} in card texts
 // 2.3.9: added '-' to front of patterns in analysis file, making them easier to search
 // 2.3.8: Small bugfix allowing default settings to be loaded again into options pane
 // 2.3.7: Enables the creation of deck shortcuts to load much-used decks easily
@@ -64,7 +66,7 @@ import kotlin.system.exitProcess
 
 object Eb {
 
-    const val VERSION_STRING = "2.3.9"
+    const val VERSION_STRING = "2.4.0"
     private var ss: ServerSocket? = null
 
     @JvmStatic
