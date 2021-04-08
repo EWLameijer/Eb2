@@ -1,6 +1,7 @@
 package eb.mainwindow
 
 import eb.Eb
+import eb.Eb.EB_STATUS_FILE
 import eb.analysis.Analyzer
 import java.awt.BorderLayout
 import java.awt.CardLayout
@@ -33,6 +34,7 @@ import eb.eventhandling.UpdateType
 import eb.mainwindow.reviewing.ReviewManager
 import eb.mainwindow.reviewing.ReviewPanel
 import eb.popups.DeckShortcutsPopup
+import eb.subwindow.archivingsettings.ArchivingManager
 import eb.subwindow.archivingsettings.ArchivingSettingsWindow
 import eb.subwindow.cardediting.CardEditingManager
 import eb.subwindow.studyoptions.StudyOptionsWindow
@@ -50,8 +52,6 @@ private const val PROGRAM_NAME = "Eb"
  * @author Eric-Wubbo Lameijer
  */
 class MainWindow : JFrame(PROGRAM_NAME), Listener {
-
-    private val EB_STATUS_FILE = "eb_status.txt"
     private val REVIEW_PANEL_ID = "REVIEWING_PANEL"
     private val INFORMATION_PANEL_ID = "INFORMATION_PANEL"
     private val SUMMARIZING_PANEL_ID = "SUMMARIZING_PANEL"
@@ -62,6 +62,7 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
 
     private val deckShortcuts = loadDeckShortcuts()
     private var deckShortcutKeys = deckShortcuts.keys.sorted()
+
 
     // the initial state of the main window
     private var state = MainWindowState.REACTIVE
@@ -314,6 +315,8 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         return shortCuts
     }
 
+
+
     private fun deckShortcuts() = (1..9).joinToString("<br>") {
         val deckName = deckShortcuts[it]
         if (deckName != null) "Ctrl+$it: load deck '$deckName'" else ""
@@ -430,6 +433,9 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         (1..9).forEach {
             val deckName = deckShortcuts[it]
             if (deckName != null) lines.add("$it: $deckName")
+        }
+        ArchivingManager.deckDirectories.forEach { (deckName, deckDirectory) ->
+            lines.add("@$deckName: $deckDirectory")
         }
         val statusFilePath = Paths.get(EB_STATUS_FILE)
         try {

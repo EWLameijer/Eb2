@@ -9,11 +9,12 @@ import javax.swing.*
 object ArchivingSettingsWindow : JFrame("Deck archiving settings") {
 
     private const val START_OF_LABEL = "Location for archive files: "
-    private var archivingLocation = JLabel(getLabelText())
+    private var archivingLocation = JLabel()
     private var changeLocationButton = JButton("Change location for archive files")
 
     fun display() {
         changeLocationButton.addActionListener { changeArchivingLocation() }
+        archivingLocation.text = getLabelText()
         val box = Box.createHorizontalBox().apply {
             add(archivingLocation)
             add(Box.createHorizontalStrut(10))

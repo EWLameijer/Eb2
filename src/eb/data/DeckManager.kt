@@ -9,6 +9,7 @@ import eb.utilities.isValidIdentifier
 import eb.utilities.log
 import java.lang.RuntimeException
 import com.google.gson.GsonBuilder
+import eb.subwindow.archivingsettings.ArchivingManager
 import java.io.*
 import java.nio.charset.Charset
 import java.time.Instant
@@ -145,12 +146,12 @@ object DeckManager {
 
     fun setArchivingDirectory(directory: File) {
         ensureDeckExists()
-        deck!!.archivingSettings.setDirectory(directory)
+        ArchivingManager.setDirectory(deck!!.name, directory)
     }
 
     fun archivingDirectoryName(): String? {
         ensureDeckExists()
-        return deck!!.archivingSettings.directoryName()
+        return ArchivingManager.getDirectory(deck!!.name)
     }
 
     private fun createDeckFromJson(jsonFile: File) {

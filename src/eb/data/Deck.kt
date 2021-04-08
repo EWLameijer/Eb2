@@ -10,7 +10,6 @@ import java.time.Instant
 
 import eb.Eb
 import eb.writer.CardConverter
-import eb.subwindow.archivingsettings.ArchivingSettings
 import eb.subwindow.studyoptions.StudyOptions
 import eb.utilities.EMPTY_STRING
 import eb.utilities.Utilities
@@ -20,6 +19,7 @@ import java.time.temporal.Temporal
 
 import com.google.gson.GsonBuilder
 import eb.analysis.Analyzer
+import eb.subwindow.archivingsettings.ArchivingManager
 import eb.utilities.getDateString
 import kotlin.math.pow
 
@@ -44,8 +44,6 @@ class Deck(val name: String) : Serializable {
     //Returns the handle (File object) to the file in which this deck is stored.
     internal val fileHandle = getDeckFileHandle(name)
 
-    internal val archivingSettings: ArchivingSettings = ArchivingSettings()
-
     // Returns a list of all the cards which should be reviewed at the current moment and study settings.
     fun reviewableCardList(): List<Card> =
         cardCollection.getCards().filter { getTimeUntilNextReview(it).isNegative }
@@ -61,7 +59,7 @@ class Deck(val name: String) : Serializable {
     //Saves the deck to a text file (helpful for recovery), though it deletes all repetition data...
     fun saveDeckToTextFiles() {
 
-        val nameOfArchivingDirectory = archivingSettings.directoryName()
+        val nameOfArchivingDirectory = ArchivingManager.getDirectory(name)
         val textFileDirectory =
             if (nameOfArchivingDirectory == null) EMPTY_STRING
             else nameOfArchivingDirectory + File.separator
