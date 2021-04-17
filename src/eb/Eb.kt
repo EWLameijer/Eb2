@@ -15,6 +15,8 @@ import kotlin.system.exitProcess
 // better sorting of repeated cards [what does that mean?]
 // ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
+// 2.4.3: Now also displays WHEN the next review will take place (so the date and time)
+// 2.4.2: Now correctly turns ") ," into "), "
 // 2.4.1: Make it easier to move decks between computers without having to reset all archiving directories.
 // 2.4.0: improved formatting of (),[] and {} in card texts
 // 2.3.9: added '-' to front of patterns in analysis file, making them easier to search
@@ -67,7 +69,7 @@ import kotlin.system.exitProcess
 
 object Eb {
 
-    const val VERSION_STRING = "2.4.1"
+    const val VERSION_STRING = "2.4.3"
     const val EB_STATUS_FILE = "eb_status.txt"
     private var ss: ServerSocket? = null
 

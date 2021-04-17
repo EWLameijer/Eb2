@@ -53,6 +53,10 @@ object ReviewManager : Listener {
         return cardsReviewed.flatMap { it.getReviewsAfter(DeckManager.deckLoadTime()) }
     }
 
+    fun reportTime() {
+
+    }
+
     fun reviewedCards(): List<Card> {
         ensureReviewSessionIsValid()
         return cardsReviewed.toList()
@@ -72,7 +76,7 @@ object ReviewManager : Listener {
             for (index in 0 until reversedReviews.lastIndex) { // for each review EXCEPT the 'first review'
                 val review = reversedReviews[index]
                 if (review.instant > DeckManager.deckLoadTime()) {
-                    if (reversedReviews[index+1].wasSuccess) previouslySucceeded += review else previouslyFailed += review
+                    if (reversedReviews[index + 1].wasSuccess) previouslySucceeded += review else previouslyFailed += review
                 } else break
             }
         }
@@ -81,8 +85,8 @@ object ReviewManager : Listener {
 
 
     fun currentCard(): Card? =
-            if (cardsToBeReviewed.isEmpty() || counter >= cardsToBeReviewed.size) null
-            else cardsToBeReviewed[counter]
+        if (cardsToBeReviewed.isEmpty() || counter >= cardsToBeReviewed.size) null
+        else cardsToBeReviewed[counter]
 
     fun currentFront(): String {
         ensureReviewSessionIsValid()
@@ -110,9 +114,11 @@ object ReviewManager : Listener {
     fun wasRemembered(wasRemembered: Boolean) {
         ensureReviewSessionIsValid()
         val duration = Duration.between(startTimer.instant(), stopTimer.instant())
+        startTimer.reset()
         val durationInSeconds = duration.nano / 1000_000_000.0 + duration.seconds
         log("$counter $durationInSeconds")
         currentCard()!!.addReview(Review(duration, wasRemembered))
+        DeckManager.currentDeck().addStudyTime(duration.seconds)
         cardsReviewed.add(currentCard()!!)
         moveToNextReviewOrEnd()
     }
@@ -151,8 +157,8 @@ object ReviewManager : Listener {
         val totalNumberOfReviewableCards = reviewableCards.size
         log("Number of reviewable cards is $totalNumberOfReviewableCards")
         val numCardsToBeReviewed =
-                if (maxNumReviews == null) totalNumberOfReviewableCards
-                else min(maxNumReviews, totalNumberOfReviewableCards)
+            if (maxNumReviews == null) totalNumberOfReviewableCards
+            else min(maxNumReviews, totalNumberOfReviewableCards)
         // now, for best effect, those cards which have expired more recently should
         // be rehearsed first, as other cards probably need to be relearned anyway,
         // and we should try to contain the damage.
@@ -166,14 +172,18 @@ object ReviewManager : Listener {
         cardsToBeReviewed.shuffle()
 
         counter = 0
+        stopTimer.reset()
         startCardReview()
     }
 
     private fun startCardReview() {
         showAnswer = false
-        startTimer.reset()
-        stopTimer.reset()
         startTimer.press()
+        if (!stopTimer.isEmpty()) {
+            val duration = Duration.between(stopTimer.instant(), startTimer.instant()).seconds
+            DeckManager.currentDeck().addStudyTime(duration)
+        }
+        stopTimer.reset()
         updatePanels()
     }
 
@@ -205,7 +215,9 @@ object ReviewManager : Listener {
             return
         }
         val deletingCurrentCard = !deckContainsCardWithThisFront(cardsToBeReviewed[counter].front)
-        val deletedIndices = cardsToBeReviewed.withIndex().filter { !deckContainsCardWithThisFront(cardsToBeReviewed[it.index].front) }.map { it.index }
+        val deletedIndices =
+            cardsToBeReviewed.withIndex().filter { !deckContainsCardWithThisFront(cardsToBeReviewed[it.index].front) }
+                .map { it.index }
         cardsToBeReviewed = cardsToBeReviewed.filter { deckContainsCardWithThisFront(it.front) }.toMutableList()
         deletedIndices.forEach { if (it <= counter) counter-- }
 
@@ -220,7 +232,7 @@ object ReviewManager : Listener {
     // contains a card, but since by definition each card in a deck has a unique front,
     // just checking fronts simplifies things.
     private fun deckContainsCardWithThisFront(front: Hint) =
-            DeckManager.currentDeck().cardCollection.getCardWithFront(front) != null
+        DeckManager.currentDeck().cardCollection.getCardWithFront(front) != null
 
     // Allows the GUI to initialize the panel that displays the reviews
     fun setPanel(inputReviewPanel: ReviewPanel) {

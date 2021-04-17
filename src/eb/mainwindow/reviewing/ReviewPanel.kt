@@ -76,6 +76,7 @@ class ReviewPanel : JPanel() {
     }
 
     private fun showScore() {
+        ReviewManager.reportTime()
         BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, MainWindowState.SUMMARIZING.name))
     }
 

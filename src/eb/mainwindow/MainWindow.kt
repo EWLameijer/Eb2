@@ -2,6 +2,7 @@ package eb.mainwindow
 
 import eb.Eb
 import eb.Eb.EB_STATUS_FILE
+import eb.Personalisation
 import eb.analysis.Analyzer
 import java.awt.BorderLayout
 import java.awt.CardLayout
@@ -33,13 +34,16 @@ import eb.eventhandling.Update
 import eb.eventhandling.UpdateType
 import eb.mainwindow.reviewing.ReviewManager
 import eb.mainwindow.reviewing.ReviewPanel
-import eb.popups.DeckShortcutsPopup
-import eb.subwindow.archivingsettings.ArchivingManager
-import eb.subwindow.archivingsettings.ArchivingSettingsWindow
 import eb.subwindow.cardediting.CardEditingManager
+
+import eb.popups.DeckShortcutsPopup
+import eb.subwindow.archivingsettings.ArchivingSettingsWindow
 import eb.subwindow.studyoptions.StudyOptionsWindow
 import eb.utilities.*
 import java.awt.event.KeyEvent.getExtendedKeyCodeForChar
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import kotlin.system.exitProcess
 
 
@@ -59,9 +63,6 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
     // The label that has to be shown if there is no card that needs to be reviewed currently, or if there is an error.
     // Is the alternative to the regular "reviewing" window, which should be active most of the time.
     private val messageLabel = JLabel()
-
-    private val deckShortcuts = loadDeckShortcuts()
-    private var deckShortcutKeys = deckShortcuts.keys.sorted()
 
 
     // the initial state of the main window
@@ -103,6 +104,9 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
     private fun deckSizeMessage() =
         "The current deck contains ${"card".pluralize(DeckManager.currentDeck().cardCollection.getTotal())}."
 
+    private fun totalReviewTimeMessage() =
+        "Reviewing has taken a total time of ${Utilities.durationToString(DeckManager.currentDeck().totalStudyTime())}"
+    
     //Returns text indicating how long it will be to the next review
     private fun timeToNextReviewMessage() = buildString {
         val currentDeck = DeckManager.currentDeck()
@@ -112,6 +116,10 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
             val timeUntilNextReviewAsDuration = currentDeck.timeUntilNextReview()
             val timeUntilNextReviewAsText = Utilities.durationToString(timeUntilNextReviewAsDuration)
             append(timeUntilNextReviewAsText)
+            val nextReviewInstant = LocalDateTime.now() + timeUntilNextReviewAsDuration
+            val formatter = DateTimeFormatter.ofPattern(" (yyyy-MM-dd HH:mm:ss)")
+            val formattedNextReviewInstant = nextReviewInstant.format(formatter)
+            append(formattedNextReviewInstant)
             append("<br>")
             startReviewingButton.isVisible = timeUntilNextReviewAsDuration.isNegative
         } else {
@@ -125,10 +133,12 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
             append("<html>")
             append(deckSizeMessage())
             append("<br>")
+            append(totalReviewTimeMessage())
+            append("<br>")
             append(timeToNextReviewMessage())
             append(uiCommands)
             append("<br>")
-            append(deckShortcuts())
+            append(Personalisation.deckShortcuts())
             append("</html>")
         }
     }
@@ -158,8 +168,8 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
     }
 
     private fun updateMenuIfNeeded() {
-        if (deckShortcutKeys != deckShortcuts.keys.sorted()) {
-            deckShortcutKeys = deckShortcuts.keys.sorted()
+        if (Personalisation.shortcutsHaveChanged()) {
+            Personalisation.updateShortcuts()
             createMenu()
         }
     }
@@ -284,9 +294,9 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
 
     private fun addDeckLoadingMenuItems(fileMenu: JMenu) {
         fileMenu.addSeparator()
-        fileMenu.add(createMenuItem("Manage deck-shortcuts",'0', ::manageDeckShortcuts))
-        (1..9).filter { deckShortcuts[it] != null }.forEach { digit ->
-            val deckName = deckShortcuts[digit]
+        fileMenu.add(createMenuItem("Manage deck-shortcuts", '0', ::manageDeckShortcuts))
+        (1..9).filter { Personalisation.deckShortcuts[it] != null }.forEach { digit ->
+            val deckName = Personalisation.deckShortcuts[digit]
             fileMenu.add(
                 createMenuItem(
                     "Load deck '$deckName'",
@@ -295,32 +305,7 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         }
     }
 
-    private fun manageDeckShortcuts() =  DeckShortcutsPopup(deckShortcuts).updateShortcuts()
-
-    private fun loadDeckShortcuts(): MutableMap<Int, String> {
-        val statusFilePath = Paths.get(EB_STATUS_FILE)
-        val shortCuts = mutableMapOf<Int, String>()
-        try {
-            val lines = Files.readAllLines(statusFilePath, Charset.forName("UTF-8"))
-            lines.filter { it.isNotBlank() && it.trim().length > 2 }.forEach { line ->
-                val startChar = line[0]
-                if (startChar.isDigit() && line[1] == ':') {
-                    val deckName = line.drop(2).trim()
-                    if (deckName.isNotBlank()) shortCuts[startChar - '0'] = deckName
-                }
-            }
-        } catch (e: IOException) {
-            log("$e")
-        }
-        return shortCuts
-    }
-
-
-
-    private fun deckShortcuts() = (1..9).joinToString("<br>") {
-        val deckName = deckShortcuts[it]
-        if (deckName != null) "Ctrl+$it: load deck '$deckName'" else ""
-    }
+    private fun manageDeckShortcuts() = DeckShortcutsPopup(Personalisation.deckShortcuts).updateShortcuts()
 
     private fun analyzeDeck() {
         Analyzer.run()
@@ -370,7 +355,7 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
 
     private fun loadDeckIfPossible(deckName: String): Boolean {
         if (canDeckBeLoaded(deckName)) {
-            changeDeck { DeckManager.loadDeck(deckName) }
+            changeDeck { DeckManager.loadDeckGroup(deckName) }
             return true
         }
         return false
@@ -421,30 +406,12 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
     // Saves the current deck and its status, and quits Eb.
 // NOTE: CANNOT BE MADE PRIVATE DESPITE COMPILER COMPLAINING DUE TO addWindowListener CALL
     fun saveAndQuit() {
-        saveEbStatus()
+        Personalisation.saveEbStatus()
         DeckManager.save()
         dispose()
         exitProcess(0)
     }
 
-    private fun saveEbStatus() {
-        val lines = mutableListOf<String>()
-        lines.add("most_recently_reviewed_deck: " + DeckManager.currentDeck().name)
-        (1..9).forEach {
-            val deckName = deckShortcuts[it]
-            if (deckName != null) lines.add("$it: $deckName")
-        }
-        ArchivingManager.deckDirectories.forEach { (deckName, deckDirectory) ->
-            lines.add("@$deckName: $deckDirectory")
-        }
-        val statusFilePath = Paths.get(EB_STATUS_FILE)
-        try {
-            Files.write(statusFilePath, lines, Charset.forName("UTF-8"))
-        } catch (e: IOException) {
-            log("$e")
-        }
-
-    }
 
     private fun switchToPanel(panelId: String) {
         val cardLayout = modesContainer.layout as CardLayout

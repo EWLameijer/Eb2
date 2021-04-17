@@ -20,7 +20,8 @@ class StudyOptions(
     var rememberedInterval: TimeInterval = DEFAULT_REMEMBERED_INTERVAL,
     var forgottenInterval: TimeInterval = DEFAULT_FORGOTTEN_INTERVAL,
     var lengtheningFactor: Double = DEFAULT_LENGTHENING_FACTOR,
-    var idealSuccessPercentage: Double = DEFAULT_SUCCESS_TARGET
+    var idealSuccessPercentage: Double = DEFAULT_SUCCESS_TARGET,
+    var totalTimingMode: Boolean = DEFAULT_TOTAL_TIMING_MODE
 ) : Serializable {
 
     override fun equals(other: Any?) = when {
@@ -34,12 +35,24 @@ class StudyOptions(
                     rememberedInterval == otherOptions.rememberedInterval &&
                     Utilities.doublesEqualWithinThousands(lengtheningFactor, otherOptions.lengtheningFactor) &&
                     forgottenInterval == otherOptions.forgottenInterval &&
-                    Utilities.doublesEqualWithinThousands(idealSuccessPercentage, otherOptions.idealSuccessPercentage))
+                    Utilities.doublesEqualWithinThousands(
+                        idealSuccessPercentage,
+                        otherOptions.idealSuccessPercentage
+                    ) &&
+                    totalTimingMode == otherOptions.totalTimingMode
+                    )
         }
     }
 
     override fun hashCode() =
-        Objects.hash(initialInterval, reviewSessionSize, rememberedInterval, forgottenInterval, idealSuccessPercentage)
+        Objects.hash(
+            initialInterval,
+            reviewSessionSize,
+            rememberedInterval,
+            forgottenInterval,
+            idealSuccessPercentage,
+            totalTimingMode
+        )
 
     companion object {
         // The serialization ID. Automatically generated, can be ignored.
@@ -56,5 +69,7 @@ class StudyOptions(
 
         private const val DEFAULT_LENGTHENING_FACTOR = 5.0
         private const val DEFAULT_SUCCESS_TARGET = 85.0
+
+        private const val DEFAULT_TOTAL_TIMING_MODE = false
     }
 }

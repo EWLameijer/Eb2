@@ -3,12 +3,12 @@ package eb.utilities
 import java.lang.IllegalArgumentException
 
 fun String.cleanLayout() =
-        standardizeSeparator(' ', " ")
-                .standardizeSeparator(',', ", ")
-                .cleanDoubleQuotes()
-                .cleanParentheses()
-                .cleanSquareBrackets()
-                .cleanAccolades()
+    standardizeSeparator(' ', " ")
+        .standardizeSeparator(',', ", ")
+        .cleanDoubleQuotes()
+        .cleanParentheses()
+        .cleanSquareBrackets()
+        .cleanAccolades()
 
 private fun String.cleanParentheses() = cleanTextEnclosings('(', ')')
 private fun String.cleanSquareBrackets() = cleanTextEnclosings('[', ']')
@@ -69,12 +69,20 @@ private fun analyzeParentheses(text: String, startChar: Char, endChar: Char): Pa
 private fun String.smartAdd(other: String): String {
     val firstPart = trim()
     val secondPart = other.trim()
+
     return when {
         firstPart == "" -> secondPart
-        firstPart.last().isOpeningChar() -> firstPart + secondPart
+        secondPart == "" -> firstPart
+        shouldNotHaveSpaceInBetween(firstPart.last(), secondPart.first()) -> firstPart + secondPart
         else -> "$firstPart $secondPart"
     }
 }
+
+private fun shouldNotHaveSpaceInBetween(preChar: Char, postChar: Char): Boolean =
+    (preChar.isOpeningChar()) ||
+            (preChar.isClosingChar() && postChar.isPunctuationChar())
+
+private fun Char.isPunctuationChar(): Boolean = this in listOf('.', ',', '!', '?', ':', ';')
 
 
 fun String.standardizeSeparator(separator: Char, whatItShouldLookLike: String): String {
@@ -97,22 +105,22 @@ fun String.cleanDoubleQuotes(): String {
 }
 
 private fun cleanedQuotePart(text: String, isQuote: Boolean): String =
-        if (isQuote) {
-            text.trim()
-        } else {
-            val trimmedText = text.trim()
-            spaceBetweenEndQuoteAndNonClosingChar(trimmedText) + trimmedText +
-                    spaceBetweenNonOpeningCharAndStartQuote(trimmedText)
-        }
+    if (isQuote) {
+        text.trim()
+    } else {
+        val trimmedText = text.trim()
+        spaceBetweenEndQuoteAndNonClosingChar(trimmedText) + trimmedText +
+                spaceBetweenNonOpeningCharAndStartQuote(trimmedText)
+    }
 
 private fun spaceBetweenNonOpeningCharAndStartQuote(text: String) =
-        spaceIf(text) { !it.last().isOpeningChar() }
+    spaceIf(text) { !it.last().isOpeningChar() }
 
 private fun spaceBetweenEndQuoteAndNonClosingChar(text: String) =
-        spaceIf(text) { !it.first().isClosingChar() }
+    spaceIf(text) { !it.first().isClosingChar() }
 
 private fun spaceIf(text: String, condition: (String) -> Boolean) =
-        if (text.isNotBlank() && condition(text)) " " else ""
+    if (text.isNotBlank() && condition(text)) " " else ""
 
 private fun Char.isOpeningChar(): Boolean = when (this) {
     '(', '[', '\'', '{' -> true

@@ -38,13 +38,17 @@ class CardEditingWindow(
     }
 
     private fun updateSideList() {
-        val allCardTexts = DeckManager.currentDeck().getCardTexts()
+        // TODO:
+        val allCardTexts = DeckManager.getAllCardTexts()
+        val mainDeckName = DeckManager.currentDeck().name
         val allRelevantCardTexts =
-            allCardTexts.filter { it.first.startsWith(cardFrontPane.text) && it.second.contains(cardBackPane.text) }
+            allCardTexts.filter { it.front.startsWith(cardFrontPane.text) && it.back.contains(cardBackPane.text) }
         // not using cardFronts.addAll since it does not work on JVM < 9
         val newCardFronts = DefaultListModel<String>()
-        allRelevantCardTexts.map { it.first }.sorted().forEach {
-            newCardFronts.addElement(it)
+        allRelevantCardTexts.sortedBy { it.front }.forEach {
+            val cardFront = it.front
+            val displayedText = if (it.deckName == mainDeckName) cardFront else "<html><i>$cardFront</i></html>"
+            newCardFronts.addElement(displayedText)
         }
         listBox.model = newCardFronts
         val existingCardWithThisFront = DeckManager.currentDeck().cardCollection.getCardWithFront(cardFrontPane.text)

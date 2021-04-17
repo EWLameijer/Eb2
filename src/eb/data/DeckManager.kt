@@ -9,6 +9,7 @@ import eb.utilities.isValidIdentifier
 import eb.utilities.log
 import java.lang.RuntimeException
 import com.google.gson.GsonBuilder
+import eb.Personalisation
 import eb.subwindow.archivingsettings.ArchivingManager
 import java.io.*
 import java.nio.charset.Charset
@@ -22,24 +23,23 @@ import java.time.Instant
  * @author Eric-Wubbo Lameijer
  */
 object DeckManager {
-    // The deck managed by the DeckManager.
-    private var deck: Deck? = null
+    // The deck managed by the DeckManager is deck[0]. deck[1..n] are for ' subordinate' linked decks
+    private val decks: MutableList<Deck> = mutableListOf()
     private var loadTime: Instant = Instant.now()
     fun deckLoadTime() = loadTime
-
     private var nameOfLastReviewedDeck = ""
 
     // The name of the default deck
     private const val DEFAULT_DECKNAME = "default"
 
-    private fun deckHasBeenLoaded() = deck != null
+    private fun deckHasBeenLoaded() = decks.isNotEmpty()
 
     // Returns whether the deck has been initialized, even if it is only with the default deck.
     private fun ensureDeckExists() {
         if (!deckHasBeenLoaded()) {
             // No deck has been loaded yet - try to load the default deck,
             // or else create it.
-            if (canLoadDeck(nameOfLastDeck())) loadDeck(nameOfLastDeck())
+            if (canLoadDeck(nameOfLastDeck())) loadDeckGroup(nameOfLastDeck())
             else createDeckWithName(DEFAULT_DECKNAME)
         }
         // postconditions: m_currentDeck cannot be null, but that is ensured by the Deck.createDeckWithName call,
@@ -50,25 +50,34 @@ object DeckManager {
     // Returns the name of the deck studied previously (ideal when starting a new session of Eb).
     private fun nameOfLastDeck() = if (nameOfLastReviewedDeck.isEmpty()) DEFAULT_DECKNAME else nameOfLastReviewedDeck
 
-    fun loadDeck(name: String) {
+    fun loadDeckGroup(name: String) {
         require(canLoadDeck(name)) { "Deck.loadDeck() error: deck cannot be loaded. Was canLoadDeck called?" }
-
         save()
+        val newMainDeck = loadDeck(name)
+            ?: throw RuntimeException("DeckManager.loadDeck() error: the requested deck cannot be loaded.")
+        println("Linked decks: ${Personalisation.deckLinks[name]}")
+
+        loadTime = Instant.now()
+        decks.clear()
+        decks += newMainDeck
+        decks[0].initRecommendedStudyIntervalDurations()
+        loadLinkedDecks(Personalisation.deckLinks[name])
+        BlackBoard.post(Update(UpdateType.DECK_SWAPPED))
+    }
+
+    private fun loadLinkedDecks(linkedDecks: Set<String>?) {
+        linkedDecks?.forEach { decks += loadDeck(it)!! }
+    }
+
+    private fun loadDeck(name: String): Deck? {
         val deckFile = Deck.getDeckFileHandle(name)
-        try {
+        return try {
             val objectInputStream = ObjectInputStream(FileInputStream(deckFile))
-            val loadedDeck = objectInputStream.readObject() as Deck?
-            if (loadedDeck != null) {
-                deck = loadedDeck
-                loadTime = Instant.now()
-                deck!!.initRecommendations()
-                BlackBoard.post(Update(UpdateType.DECK_SWAPPED))
-            } else {
-                throw RuntimeException("Deck.loadDeck() error: the requested deck cannot be loaded.")
-            }
+            objectInputStream.readObject() as Deck?
         } catch (e: Exception) {
             // something goes wrong with deserializing the deck; so you also can't read the file
-            log("$e Deck.loadDeck() error: could not load deck from file")
+            log("$e DeckManager.loadDeck() error: could not load deck from file")
+            null
         }
     }
 
@@ -101,8 +110,9 @@ object DeckManager {
 
         // Save the current deck to disk before creating the new deck
         save()
-        deck = Deck(name)
-        deck!!.initRecommendations()
+        decks.clear()
+        decks[0] = Deck(name)
+        decks[0].initRecommendedStudyIntervalDurations()
         loadTime = Instant.now()
         // postconditions: the deck should exist (deck.save handles any errors occurring during saving the deck).
         require(deckHasBeenLoaded()) { "Deck.createDeckWithName() error: problem creating and/or writing the new deck." }
@@ -122,10 +132,11 @@ object DeckManager {
             return
         }
         ensureDeckExists()
+        val mainDeck = decks[0]
         try {
-            val objectOutputStream = ObjectOutputStream(FileOutputStream(deck!!.fileHandle))
-            objectOutputStream.writeObject(deck)
-            deck!!.saveDeckToTextFiles()
+            val objectOutputStream = ObjectOutputStream(FileOutputStream(mainDeck.fileHandle))
+            objectOutputStream.writeObject(mainDeck)
+            mainDeck.saveDeckToTextFiles()
         } catch (e: Exception) {
             // Something goes wrong with serializing the deck; so you cannot create the file.
             log("$e")
@@ -137,7 +148,7 @@ object DeckManager {
 
     fun setStudyOptions(studyOptions: StudyOptions) {
         ensureDeckExists()
-        deck!!.studyOptions = studyOptions
+        decks[0].studyOptions = studyOptions
     }
 
     fun setNameOfLastReviewedDeck(nameOfLastReviewedDeck: String) {
@@ -146,12 +157,12 @@ object DeckManager {
 
     fun setArchivingDirectory(directory: File) {
         ensureDeckExists()
-        ArchivingManager.setDirectory(deck!!.name, directory)
+        ArchivingManager.setDirectory(decks[0].name, directory)
     }
 
     fun archivingDirectoryName(): String? {
         ensureDeckExists()
-        return ArchivingManager.getDirectory(deck!!.name)
+        return ArchivingManager.getDirectory(decks[0].name)
     }
 
     private fun createDeckFromJson(jsonFile: File) {
@@ -172,7 +183,7 @@ object DeckManager {
                 stringBuilder.append(i.toChar())
             }
             val json = stringBuilder.toString()
-            deck = gson.fromJson(json, Deck::class.java)
+            decks[0] = gson.fromJson(json, Deck::class.java)
 
             // postconditions: the deck should exist (deck.save handles any errors
             // occurring during saving the deck).
@@ -201,6 +212,11 @@ object DeckManager {
 
     fun currentDeck(): Deck {
         ensureDeckExists()
-        return deck!!
+        return decks[0]
     }
+
+    fun getAllCardTexts(): List<BaseCardData> = decks.flatMap { it.getCardTexts() }
+
+    fun getBaseCard(frontText: String): BaseCardData? =
+        decks.flatMap { it.getCardTexts() }.find { it.front == frontText }
 }

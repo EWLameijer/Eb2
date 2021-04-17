@@ -35,6 +35,13 @@ class Deck(val name: String) : Serializable {
         require(name.isValidIdentifier) { "LogicalDeck constructor error: deck has a bad name." }
     }
 
+    private var totalStudyTime = Duration.ofSeconds(0)
+    fun totalStudyTime() : Duration = totalStudyTime ?: Duration.ofSeconds(0)
+    fun addStudyTime(seconds: Long) {
+        println("Adding $seconds s to ${totalStudyTime().seconds}")
+        totalStudyTime = totalStudyTime().plusSeconds(seconds)
+    }
+
     val cardCollection = CardCollection()
 
     // Note that while intuitively a deck is just a collection of cards, in Eb a deck also has settings,
@@ -103,19 +110,20 @@ class Deck(val name: String) : Serializable {
     private fun getTimeUntilNextReview(card: Card): Duration =
         Duration.between(Instant.now(), getNextReviewInstant(card))
 
-    private fun calculateIntervalDurationFromUserSettings(card: Card): Duration = when (val lastReview = card.lastReview()) {
-        null -> studyOptions.initialInterval.asDuration()
-        else -> {
-            if (lastReview.wasSuccess) getIntervalAfterSuccessfulReview(card)
-            else studyOptions.forgottenInterval.asDuration()
+    private fun calculateIntervalDurationFromUserSettings(card: Card): Duration =
+        when (val lastReview = card.lastReview()) {
+            null -> studyOptions.initialInterval.asDuration()
+            else -> {
+                if (lastReview.wasSuccess) getIntervalAfterSuccessfulReview(card)
+                else studyOptions.forgottenInterval.asDuration()
+            }
         }
-    }
 
     private fun getPlannedIntervalDuration(card: Card): Duration {
         val reviewPattern: String =
             card.getReviews().map { if (it.wasSuccess) 'S' else 'F' }.joinToString(separator = "")
         return recommendationsMap[reviewPattern] // calculate wait time from optimized settings
-            // else: not enough data to determine best settings; use user-provided defaults
+        // else: not enough data to determine best settings; use user-provided defaults
             ?: calculateIntervalDurationFromUserSettings(card)
     }
 
@@ -140,10 +148,13 @@ class Deck(val name: String) : Serializable {
         return Utilities.multiplyDurationBy(waitTime, lengtheningFactor.pow(numberOfLengthenings.toDouble()))
     }
 
-    fun getCardTexts(): List<Pair<String, String>> = cardCollection.getCardTexts()
+
+    fun getCardTexts(): List<BaseCardData> =
+        cardCollection.getCardTexts().map { (front, back) -> BaseCardData(front, back, name) }
+
     private lateinit var recommendationsMap: Map<String, Duration?>
 
-    fun initRecommendations() {
+    fun initRecommendedStudyIntervalDurations() {
         recommendationsMap = Analyzer.getRecommendationsMap()
     }
 

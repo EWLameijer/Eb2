@@ -24,6 +24,8 @@ internal class FirstTimer {
     // press: if the FirstTimer object is not yet storing a time (Instant), it will store the current time
     fun press() = if (firstInstant == null) firstInstant = Instant.now() else doNothing
 
+    fun isEmpty() = firstInstant == null
+
     // reset: empties the FirstTimer object, so it can be reused to store a new time point (Instant)
     fun reset() {
         firstInstant = null

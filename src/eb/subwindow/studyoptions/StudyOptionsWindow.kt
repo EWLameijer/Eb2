@@ -13,6 +13,7 @@ import eb.mainwindow.MainWindowState
 import eb.utilities.ProgrammableAction
 import eb.utilities.Utilities
 import eb.utilities.doNothing
+import eb.utilities.uiElements.LabelledBoolField
 import eb.utilities.uiElements.LabelledTextField
 import eb.utilities.uiElements.TimeInputElement
 import javax.swing.*
@@ -56,6 +57,8 @@ class StudyOptionsWindow : JFrame(), Listener {
 
     private val textFields: List<LabelledTextField>
 
+    private val totalTimerMode: LabelledBoolField
+
     init {
         val studyOptions = DeckManager.currentDeck().studyOptions
         initialIntervalBox = TimeInputElement("Initial review after", studyOptions.initialInterval)
@@ -76,6 +79,10 @@ class StudyOptionsWindow : JFrame(), Listener {
         targetedSuccessPercentage = LabelledTextField(
             "Strive for this percentage successful reviews (between 80% and 90% likely best)",
             Utilities.toRegionalString(studyOptions.idealSuccessPercentage.toString()), 5, 2
+        )
+        totalTimerMode = LabelledBoolField(
+            "Fully time all rehearsals",
+            studyOptions.totalTimingMode
         )
         textFields = listOf(sizeOfReview, lengtheningFactor, targetedSuccessPercentage)
     }
@@ -118,7 +125,8 @@ class StudyOptionsWindow : JFrame(), Listener {
         timeToWaitAfterCorrectReview.interval,
         timeToWaitAfterIncorrectReview.interval,
         Utilities.stringToDouble(lengtheningFactor.contents())!!,
-        Utilities.stringToDouble(targetedSuccessPercentage.contents())!!
+        Utilities.stringToDouble(targetedSuccessPercentage.contents())!!,
+        totalTimerMode.contents()
     )
 
     private fun saveSettingsToDeck() {
@@ -171,6 +179,7 @@ class StudyOptionsWindow : JFrame(), Listener {
             add(lengtheningFactor)
             add(timeToWaitAfterIncorrectReview)
             add(targetedSuccessPercentage)
+            add(totalTimerMode)
         }
         settingsPane.add(settingsBox, BorderLayout.NORTH)
         return settingsPane

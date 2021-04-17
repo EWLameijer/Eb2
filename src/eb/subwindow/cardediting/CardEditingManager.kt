@@ -1,5 +1,6 @@
 package eb.subwindow.cardediting
 
+import eb.data.BaseCardData
 import java.util.HashSet
 
 import javax.swing.JButton
@@ -54,12 +55,12 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
             // Case 2 of 3: the front of the card is new or the front is the same as the old front (when editing).
             //  Add the card and be done with it (well, when adding cards one should not close the new card window).
             val frontHint = Hint(frontText)
-            val currentCardWithThisFront = DeckManager.currentDeck().cardCollection.getCardWithFront(frontHint)
-            if (frontText == currentFront() || currentCardWithThisFront == null) {
+            val baseCardWithThisFront = DeckManager.getBaseCard(frontText)
+            if (frontText == currentFront() || baseCardWithThisFront == null) {
                 submitCardContents(frontHint, backText, shouldClearCardWindow, callingWindow)
             } else {
                 // Case 3 of 3: there is a current (but different) card with the same front. Resolve this conflict.
-                handleCardBeingDuplicate(frontHint, backText, currentCardWithThisFront, callingWindow)
+                handleCardBeingDuplicate(frontHint, backText, baseCardWithThisFront, callingWindow)
                 if (shouldClearCardWindow) callingWindow.clearContents()
             }
         }
@@ -83,16 +84,26 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
     private fun handleCardBeingDuplicate(
         frontText: Hint,
         backText: String,
-        duplicate: Card,
+        duplicateBaseCard: BaseCardData,
         callingWindow: GenericCardEditingWindow
     ) {
-        val cardCopiedFromSideList = callingWindow.copiedCard
-        if (cardCopiedFromSideList != null && cardCopiedFromSideList.front == frontText) {
-            // while I first made a menu here, it is more convenient to assume, like with normal editing,
-            // that the user simply wants to change the back of the card.
-            deleteOtherCard(duplicate, frontText, backText, callingWindow)
+        if (duplicateBaseCard.deckName != DeckManager.currentDeck().name) {
+            val verb = if (inCardCreatingMode()) "add" else "modify"
+            JOptionPane.showMessageDialog(
+                null,
+                "Cannot $verb card: the card is already present in a linked deck.",
+                "Cannot $verb card", JOptionPane.ERROR_MESSAGE
+            )
         } else {
-            showDuplicateFrontPopup(duplicate, backText, frontText, callingWindow)
+            val cardCopiedFromSideList = callingWindow.copiedCard
+            val duplicate = DeckManager.currentDeck().cardCollection.getCardWithFront(frontText)!!
+            if (cardCopiedFromSideList != null && cardCopiedFromSideList.front == frontText) {
+                // while I first made a menu here, it is more convenient to assume, like with normal editing,
+                // that the user simply wants to change the back of the card.
+                deleteOtherCard(duplicate, frontText, backText, callingWindow)
+            } else {
+                showDuplicateFrontPopup(duplicate, backText, frontText, callingWindow)
+            }
         }
     }
 
