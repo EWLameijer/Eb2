@@ -1,4 +1,7 @@
-package eb.mainwindow
+package eb.mainwindow.panels
+
+import eb.mainwindow.MainWindowState
+
 
 import java.awt.CardLayout
 import java.awt.Graphics
@@ -21,26 +24,52 @@ class SummarizingPanel internal constructor() : JPanel() {
     private var stillReviewsToDoPanel = JPanel()
 
     private fun backToInformationMode() =
-            BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, MainWindowState.INFORMATIONAL.name))
+        BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, MainWindowState.INFORMATIONAL.name))
 
-    private fun backToReviewingMode() =
-            // REACTIVE ensures that a new review session is created.
-            BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, MainWindowState.REACTIVE.name))
+    private fun backToReviewingMode() {
+        val newState = if (DeckManager.currentDeck().studyOptions.timerSettings.totalTimingMode) MainWindowState.INFORMATIONAL
+        else MainWindowState.REACTIVE
+        BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, newState.name))
+    }
 
     init {
-        this.addComponentListener(EventHandler.create(ComponentListener::class.java, this,
-                "requestFocusInWindow", null, "componentShown"))
+        this.addComponentListener(
+            EventHandler.create(
+                ComponentListener::class.java, this,
+                "requestFocusInWindow", null, "componentShown"
+            )
+        )
 
-        reviewsCompletedPanel.addComponentListener(EventHandler.create(ComponentListener::class.java, this,
-                "requestFocusInWindow", null, "componentShown"))
+        reviewsCompletedPanel.addComponentListener(
+            EventHandler.create(
+                ComponentListener::class.java, this,
+                "requestFocusInWindow", null, "componentShown"
+            )
+        )
 
-        reviewsCompletedPanel.add(createKeyPressSensitiveButton("Back to information screen", "pressed ENTER") { toReactiveMode() })
+        reviewsCompletedPanel.add(
+            createKeyPressSensitiveButton(
+                "Back to information screen",
+                "pressed ENTER"
+            ) { toReactiveMode() })
 
-        stillReviewsToDoPanel.addComponentListener(EventHandler.create(ComponentListener::class.java, this,
-                "requestFocusInWindow", null, "componentShown"))
+        stillReviewsToDoPanel.addComponentListener(
+            EventHandler.create(
+                ComponentListener::class.java, this,
+                "requestFocusInWindow", null, "componentShown"
+            )
+        )
 
-        stillReviewsToDoPanel.add(createKeyPressSensitiveButton("Go to next round of reviews", 'g') { backToReviewingMode() })
-        stillReviewsToDoPanel.add(createKeyPressSensitiveButton("Back to information screen", 'b') { backToInformationMode() })
+        stillReviewsToDoPanel.add(
+            createKeyPressSensitiveButton(
+                "Go to next round of reviews",
+                'g'
+            ) { backToReviewingMode() })
+        stillReviewsToDoPanel.add(
+            createKeyPressSensitiveButton(
+                "Back to information screen",
+                'b'
+            ) { backToInformationMode() })
 
         buttonPanel.layout = CardLayout()
         buttonPanel.add(reviewsCompletedPanel, REVIEWS_COMPLETED_MODE)
@@ -50,15 +79,15 @@ class SummarizingPanel internal constructor() : JPanel() {
     }
 
     private fun toReactiveMode() =
-            BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, MainWindowState.REACTIVE.name))
+        BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, MainWindowState.REACTIVE.name))
 
     private fun optionalDoubleToString(d: Double?) =
-            if (d is Double) String.format("%.2f", d)
-            else "not applicable"
+        if (d is Double) String.format("%.2f", d)
+        else "not applicable"
 
     private fun List<Double>.averageOrNull() =
-            if (this.isEmpty()) null
-            else this.average()
+        if (this.isEmpty()) null
+        else this.average()
 
     private fun successStatistics(reviews: List<Review>, text: String) = buildString {
         append("$text<br>")
@@ -94,7 +123,8 @@ class SummarizingPanel internal constructor() : JPanel() {
         val allReviews = ReviewManager.reviewResults()
         append(successStatistics(allReviews, "Total reviews"))
 
-        val firstTimeReviews = ReviewManager.getNewFirstReviews() // reviewedCards.filter { it.getReviews().size == it.getReviewsAfter(DeckManager.deckLoadTime()).size }
+        val firstTimeReviews =
+            ReviewManager.getNewFirstReviews() // reviewedCards.filter { it.getReviews().size == it.getReviewsAfter(DeckManager.deckLoadTime()).size }
         val (previouslySucceededReviews, previouslyFailedReviews) = ReviewManager.getNonFirstReviews()
         append(successStatistics(previouslySucceededReviews, "Previously succeeded cards"))
         append(successStatistics(previouslyFailedReviews, "Previously failed cards"))

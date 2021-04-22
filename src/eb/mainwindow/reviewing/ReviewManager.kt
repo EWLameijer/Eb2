@@ -16,6 +16,7 @@ import eb.utilities.Hint
 import eb.utilities.EMPTY_STRING
 import eb.utilities.doNothing
 import eb.utilities.log
+import java.time.Instant
 import kotlin.math.min
 
 /**
@@ -54,7 +55,16 @@ object ReviewManager : Listener {
     }
 
     fun reportTime() {
+        val currentInstant = Instant.now()
+        val duration = Duration.between(startTimer.instant(), currentInstant)
+        DeckManager.currentDeck().addStudyTime(duration, "reportTime")
+        resetTimers()
+    }
 
+    fun resetTimers() {
+        println("Resetting timers")
+        startTimer.reset()
+        stopTimer.reset()
     }
 
     fun reviewedCards(): List<Card> {
@@ -115,10 +125,10 @@ object ReviewManager : Listener {
         ensureReviewSessionIsValid()
         val duration = Duration.between(startTimer.instant(), stopTimer.instant())
         startTimer.reset()
-        val durationInSeconds = duration.nano / 1000_000_000.0 + duration.seconds
-        log("$counter $durationInSeconds")
         currentCard()!!.addReview(Review(duration, wasRemembered))
-        DeckManager.currentDeck().addStudyTime(duration.seconds)
+        DeckManager.currentDeck().addStudyTime(duration, "front+back time, clicked Show")
+        val answerCheckDuration = Duration.between(stopTimer.instant(), Instant.now())
+        DeckManager.currentDeck().addStudyTime(answerCheckDuration, "answer-check time, clicked F/R")
         cardsReviewed.add(currentCard()!!)
         moveToNextReviewOrEnd()
     }
@@ -152,7 +162,7 @@ object ReviewManager : Listener {
     private fun continueReviewSession() {
         val currentDeck = DeckManager.currentDeck()
 
-        val maxNumReviews = currentDeck.studyOptions.reviewSessionSize
+        val maxNumReviews = currentDeck.studyOptions.otherSettings?.reviewSessionSize
         val reviewableCards = currentDeck.reviewableCardList()
         val totalNumberOfReviewableCards = reviewableCards.size
         log("Number of reviewable cards is $totalNumberOfReviewableCards")
@@ -179,10 +189,6 @@ object ReviewManager : Listener {
     private fun startCardReview() {
         showAnswer = false
         startTimer.press()
-        if (!stopTimer.isEmpty()) {
-            val duration = Duration.between(stopTimer.instant(), startTimer.instant()).seconds
-            DeckManager.currentDeck().addStudyTime(duration)
-        }
         stopTimer.reset()
         updatePanels()
     }

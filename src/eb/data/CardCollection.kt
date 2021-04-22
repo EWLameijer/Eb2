@@ -40,7 +40,7 @@ class CardCollection : Serializable {
      * reviews 200 points, failing a review would bring that back to 2x99=198
      * points, and so on.
      */
-    fun getReviewingPoints() = cards.map { it.streakSize() }.sum()
+    fun getReviewingPoints() = cards.map { it.getReviews().streakSize() }.sum()
 
     /**
      * Write the cards of this collection, in alphabetical order (well, the order

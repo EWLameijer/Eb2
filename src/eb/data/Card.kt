@@ -34,7 +34,7 @@ class Card(var front: Hint, var back: String) : Serializable {
 
     // Return the current number of consecutively successful reviews (2 uninterrupted successful reviews, 0
     // successful reviews (after a failure), and so on...)
-    fun streakSize() = reviews.takeLastWhile { it.wasSuccess }.size
+
 
     fun getReviews() = reviews.toList()
 
@@ -47,3 +47,5 @@ class Card(var front: Hint, var back: String) : Serializable {
         private const val serialVersionUID = -2746012998758766327L
     }
 }
+
+fun List<Review>.streakSize() = takeLastWhile { it.wasSuccess }.size

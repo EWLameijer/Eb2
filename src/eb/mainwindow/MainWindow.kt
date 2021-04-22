@@ -32,6 +32,8 @@ import eb.eventhandling.BlackBoard
 import eb.eventhandling.Listener
 import eb.eventhandling.Update
 import eb.eventhandling.UpdateType
+import eb.mainwindow.panels.InformationPanel
+import eb.mainwindow.panels.SummarizingPanel
 import eb.mainwindow.reviewing.ReviewManager
 import eb.mainwindow.reviewing.ReviewPanel
 import eb.subwindow.cardediting.CardEditingManager
@@ -62,23 +64,16 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
 
     // The label that has to be shown if there is no card that needs to be reviewed currently, or if there is an error.
     // Is the alternative to the regular "reviewing" window, which should be active most of the time.
-    private val messageLabel = JLabel()
+
 
 
     // the initial state of the main window
-    private var state = MainWindowState.REACTIVE
-
-    // button the user can press to start reviewing. Only visible if the user for some reason decides to not review
-    // cards yet (usually by having one rounds of review, and then stopping the reviewing)
-    private val startReviewingButton = JButton().apply {
-        isVisible = false
-        addActionListener {
-            BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, MainWindowState.REACTIVE.name))
-        }
-    }
+    private var state = MainWindowState.INFORMATIONAL
 
     // Contains the REVIEWING_PANEL and the INFORMATION_PANEL, using a CardLayout.
     private val modesContainer = JPanel()
+
+    private val informationPanel = InformationPanel()
 
     // The reviewing panel
     private val reviewPanel: ReviewPanel = ReviewPanel()
@@ -86,60 +81,33 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
     // To regularly update how long it is until the next reviewing session
     private var messageUpdater: Timer? = null
 
-    //Returns the commands of the user interface as a string, which can be used to instruct the user on Eb's use.
-    private val uiCommands = ("""<br>
-            Ctrl+N to add a card.<br>
-            Ctrl+Q to quit.<br>
-            Ctrl+K to create a deck.<br>
-            Ctrl+L to load a deck.<br>
-            Ctrl+T to view/edit the study options.<br>
-            Ctrl+R to view/edit the deck archiving options.<br>""".trimIndent())
+
 
     init {
         modesContainer.layout = CardLayout()
-        startReviewingButton.text = "Review now"
         init()
     }
 
-    private fun deckSizeMessage() =
-        "The current deck contains ${"card".pluralize(DeckManager.currentDeck().cardCollection.getTotal())}."
-
-    private fun totalReviewTimeMessage() =
-        "Reviewing has taken a total time of ${Utilities.durationToString(DeckManager.currentDeck().totalStudyTime())}"
-    
-    //Returns text indicating how long it will be to the next review
-    private fun timeToNextReviewMessage() = buildString {
-        val currentDeck = DeckManager.currentDeck()
-        val numCards = currentDeck.cardCollection.getTotal()
-        if (numCards > 0) {
-            append("Time till next review: ")
-            val timeUntilNextReviewAsDuration = currentDeck.timeUntilNextReview()
-            val timeUntilNextReviewAsText = Utilities.durationToString(timeUntilNextReviewAsDuration)
-            append(timeUntilNextReviewAsText)
-            val nextReviewInstant = LocalDateTime.now() + timeUntilNextReviewAsDuration
-            val formatter = DateTimeFormatter.ofPattern(" (yyyy-MM-dd HH:mm:ss)")
-            val formattedNextReviewInstant = nextReviewInstant.format(formatter)
-            append(formattedNextReviewInstant)
-            append("<br>")
-            startReviewingButton.isVisible = timeUntilNextReviewAsDuration.isNegative
-        } else {
-            startReviewingButton.isVisible = false
-        }
+    // Gives the message label its correct (possibly updated) value.
+    private fun updateOnScreenInformation() {
+        updateMenuIfNeeded()
+        informationPanel.updateMessageLabel()
+        updateWindowTitle()
     }
 
-    // Updates the message label (the information inside the main window, like time to next review)
-    private fun updateMessageLabel() {
-        messageLabel.text = buildString {
-            append("<html>")
-            append(deckSizeMessage())
-            append("<br>")
-            append(totalReviewTimeMessage())
-            append("<br>")
-            append(timeToNextReviewMessage())
-            append(uiCommands)
-            append("<br>")
-            append(Personalisation.deckShortcuts())
-            append("</html>")
+    private fun createMenu() {
+        val mainMenuBar = JMenuBar()
+        val fileMenu = createFileManagementMenu()
+        mainMenuBar.add(fileMenu)
+        val deckManagementMenu = createDeckManagementMenu()
+        mainMenuBar.add(deckManagementMenu)
+        jMenuBar = mainMenuBar
+    }
+
+    private fun updateMenuIfNeeded() {
+        if (Personalisation.shortcutsHaveChanged()) {
+            Personalisation.updateShortcuts()
+            createMenu()
         }
     }
 
@@ -158,20 +126,6 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         title += (", ${"card".pluralize(numCards)} in deck, ${"point".pluralize(numReviewingPoints)})")
 
         this.title = title
-    }
-
-    // Gives the message label its correct (possibly updated) value.
-    private fun updateOnScreenInformation() {
-        updateMenuIfNeeded()
-        updateMessageLabel()
-        updateWindowTitle()
-    }
-
-    private fun updateMenuIfNeeded() {
-        if (Personalisation.shortcutsHaveChanged()) {
-            Personalisation.updateShortcuts()
-            createMenu()
-        }
     }
 
     private fun showCorrectPanel() =
@@ -231,7 +185,7 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         createMenu()
 
         // add message label (or show cards-to-be-reviewed)
-        modesContainer.add(createInformationPanel(), INFORMATION_PANEL_ID)
+        modesContainer.add(informationPanel, INFORMATION_PANEL_ID)
         modesContainer.add(reviewPanel, REVIEW_PANEL_ID)
         ReviewManager.setPanel(reviewPanel)
         modesContainer.add(SummarizingPanel(), SUMMARIZING_PANEL_ID)
@@ -257,16 +211,10 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         messageUpdater = Timer(100) { showCorrectPanel() }
         messageUpdater!!.start()
         updateOnScreenInformation()
+        if (!DeckManager.currentDeck().studyOptions.timerSettings.totalTimingMode) showReactivePanel()
     }
 
-    private fun createMenu() {
-        val mainMenuBar = JMenuBar()
-        val fileMenu = createFileManagementMenu()
-        mainMenuBar.add(fileMenu)
-        val deckManagementMenu = createDeckManagementMenu()
-        mainMenuBar.add(deckManagementMenu)
-        jMenuBar = mainMenuBar
-    }
+
 
     private fun createDeckManagementMenu(): JMenu {
         val deckManagementMenu = JMenu("Manage Deck")
@@ -365,7 +313,8 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         messageUpdater!!.stop()
         deckProducer()
         // reset window
-        state = MainWindowState.REACTIVE
+        state = if (DeckManager.currentDeck().studyOptions.timerSettings.totalTimingMode) MainWindowState.INFORMATIONAL else MainWindowState.REACTIVE
+        ReviewManager.resetTimers()
         updateOnScreenInformation()
         messageUpdater!!.start()
     }
@@ -397,11 +346,7 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         return false
     }
 
-    private fun createInformationPanel() = JPanel().apply {
-        layout = BorderLayout()
-        add(messageLabel, BorderLayout.CENTER)
-        add(startReviewingButton, BorderLayout.SOUTH)
-    }
+
 
     // Saves the current deck and its status, and quits Eb.
 // NOTE: CANNOT BE MADE PRIVATE DESPITE COMPILER COMPLAINING DUE TO addWindowListener CALL

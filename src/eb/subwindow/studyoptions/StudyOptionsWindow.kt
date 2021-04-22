@@ -10,6 +10,9 @@ import eb.eventhandling.Listener
 import eb.eventhandling.Update
 import eb.eventhandling.UpdateType
 import eb.mainwindow.MainWindowState
+import eb.subwindow.studyoptions.settinggroups.IntervalSettings
+import eb.subwindow.studyoptions.settinggroups.OtherSettings
+import eb.subwindow.studyoptions.settinggroups.TimerSettings
 import eb.utilities.ProgrammableAction
 import eb.utilities.Utilities
 import eb.utilities.doNothing
@@ -61,28 +64,31 @@ class StudyOptionsWindow : JFrame(), Listener {
 
     init {
         val studyOptions = DeckManager.currentDeck().studyOptions
-        initialIntervalBox = TimeInputElement("Initial review after", studyOptions.initialInterval)
+        initialIntervalBox = TimeInputElement(
+            "Initial review after",
+            studyOptions.intervalSettings.initialInterval
+        )
         sizeOfReview = LabelledTextField(
             "number of cards per reviewing session",
-            studyOptions.reviewSessionSize.toString(), 3, 0
+            studyOptions.otherSettings.reviewSessionSize.toString(), 3, 0
         )
         timeToWaitAfterCorrectReview = TimeInputElement(
-            "Time to wait for re-reviewing remembered card:", studyOptions.rememberedInterval
+            "Time to wait for re-reviewing remembered card:", studyOptions.intervalSettings.rememberedInterval
         )
         lengtheningFactor = LabelledTextField(
             "after each successful review, increase review time by a factor",
-            Utilities.toRegionalString(studyOptions.lengtheningFactor.toString()), 5, 2
+            Utilities.toRegionalString(studyOptions.intervalSettings.lengtheningFactor.toString()), 5, 2
         )
         timeToWaitAfterIncorrectReview = TimeInputElement(
-            "Time to wait for re-reviewing forgotten card:", studyOptions.forgottenInterval
+            "Time to wait for re-reviewing forgotten card:", studyOptions.intervalSettings.forgottenInterval
         )
         targetedSuccessPercentage = LabelledTextField(
             "Strive for this percentage successful reviews (between 80% and 90% likely best)",
-            Utilities.toRegionalString(studyOptions.idealSuccessPercentage.toString()), 5, 2
+            Utilities.toRegionalString(studyOptions.otherSettings.idealSuccessPercentage.toString()), 5, 2
         )
         totalTimerMode = LabelledBoolField(
             "Fully time all rehearsals",
-            studyOptions.totalTimingMode
+            studyOptions.timerSettings.totalTimingMode
         )
         textFields = listOf(sizeOfReview, lengtheningFactor, targetedSuccessPercentage)
     }
@@ -100,12 +106,12 @@ class StudyOptionsWindow : JFrame(), Listener {
 
     private fun loadSettings(settings: StudyOptions) {
         deactivateListeners()
-        initialIntervalBox.interval = settings.initialInterval
-        sizeOfReview.setContents(settings.reviewSessionSize)
-        timeToWaitAfterCorrectReview.interval = settings.rememberedInterval
-        lengtheningFactor.setContents(settings.lengtheningFactor)
-        timeToWaitAfterIncorrectReview.interval = settings.forgottenInterval
-        targetedSuccessPercentage.setContents(settings.idealSuccessPercentage)
+        initialIntervalBox.interval = settings.intervalSettings.initialInterval
+        sizeOfReview.setContents(settings.otherSettings.reviewSessionSize)
+        timeToWaitAfterCorrectReview.interval = settings.intervalSettings.rememberedInterval
+        lengtheningFactor.setContents(settings.intervalSettings.lengtheningFactor)
+        timeToWaitAfterIncorrectReview.interval = settings.intervalSettings.forgottenInterval
+        targetedSuccessPercentage.setContents(settings.otherSettings.idealSuccessPercentage)
         reactivateListeners()
         updateFrame()
     }
@@ -120,13 +126,17 @@ class StudyOptionsWindow : JFrame(), Listener {
 
     //  Collects the data from the GUI, and packages it nicely into a StudyOptions object.
     private fun gatherUIDataIntoStudyOptionsObject() = StudyOptions(
-        initialIntervalBox.interval,
-        Utilities.stringToInt(sizeOfReview.contents()),
-        timeToWaitAfterCorrectReview.interval,
-        timeToWaitAfterIncorrectReview.interval,
-        Utilities.stringToDouble(lengtheningFactor.contents())!!,
-        Utilities.stringToDouble(targetedSuccessPercentage.contents())!!,
-        totalTimerMode.contents()
+        IntervalSettings(
+            initialIntervalBox.interval,
+            timeToWaitAfterCorrectReview.interval,
+            timeToWaitAfterIncorrectReview.interval,
+            Utilities.stringToDouble(lengtheningFactor.contents())!!
+        ),
+        TimerSettings(totalTimerMode.contents()),
+        OtherSettings(
+            Utilities.stringToInt(sizeOfReview.contents()),
+            Utilities.stringToDouble(targetedSuccessPercentage.contents())!!
+        )
     )
 
     private fun saveSettingsToDeck() {

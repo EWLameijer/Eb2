@@ -166,7 +166,7 @@ object Analyzer {
 
     private fun improvedTime(pattern: String, cards: List<Card>): Double {
         val currentSuccessPercentage = getSuccessPercentage(pattern, cards)
-        val idealSuccessPercentage = DeckManager.currentDeck().studyOptions.idealSuccessPercentage
+        val idealSuccessPercentage = DeckManager.currentDeck().studyOptions.otherSettings.idealSuccessPercentage
         val percentageDifference = currentSuccessPercentage - idealSuccessPercentage
         var workingDifference = percentageDifference
         var multiplicationFactor = 1.0

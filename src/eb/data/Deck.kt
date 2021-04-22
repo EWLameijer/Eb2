@@ -5,8 +5,8 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStreamWriter
 import java.io.Serializable
-import java.time.Duration
 import java.time.Instant
+import java.time.Duration
 
 import eb.Eb
 import eb.writer.CardConverter
@@ -37,9 +37,12 @@ class Deck(val name: String) : Serializable {
 
     private var totalStudyTime = Duration.ofSeconds(0)
     fun totalStudyTime() : Duration = totalStudyTime ?: Duration.ofSeconds(0)
-    fun addStudyTime(seconds: Long) {
-        println("Adding $seconds s to ${totalStudyTime().seconds}")
-        totalStudyTime = totalStudyTime().plusSeconds(seconds)
+    fun addStudyTime(duration: Duration, cause: String) {
+        val ms = duration.toMillis()
+        val seconds = ms / 1000
+        val niceDuration = String.format("%.2f", ms/1000.0)
+        println("$cause: adding $niceDuration s to ${totalStudyTime().seconds}")
+        totalStudyTime = totalStudyTime() + duration
     }
 
     val cardCollection = CardCollection()
@@ -111,13 +114,8 @@ class Deck(val name: String) : Serializable {
         Duration.between(Instant.now(), getNextReviewInstant(card))
 
     private fun calculateIntervalDurationFromUserSettings(card: Card): Duration =
-        when (val lastReview = card.lastReview()) {
-            null -> studyOptions.initialInterval.asDuration()
-            else -> {
-                if (lastReview.wasSuccess) getIntervalAfterSuccessfulReview(card)
-                else studyOptions.forgottenInterval.asDuration()
-            }
-        }
+        studyOptions.calculateIntervalDurationFromUserSettings(card.getReviews())
+
 
     private fun getPlannedIntervalDuration(card: Card): Duration {
         val reviewPattern: String =
@@ -134,19 +132,7 @@ class Deck(val name: String) : Serializable {
         return waitTime.addTo(startOfCountingTime)
     }
 
-    // Returns the time to wait for the next review (the previous review being a success).
-    private fun getIntervalAfterSuccessfulReview(card: Card): Duration {
-        // the default wait time after a single successful review is given by the study options
-        val waitTime = studyOptions.rememberedInterval.asDuration()
 
-        // However, if previous reviews also have been successful, the wait time
-        // should be longer (using exponential growth by default, though may want
-        // to do something more sophisticated in the future).
-        val lengtheningFactor = studyOptions.lengtheningFactor
-        val streakLength = card.streakSize()
-        val numberOfLengthenings = streakLength - 1 // 2 reviews = lengthen 1x.
-        return Utilities.multiplyDurationBy(waitTime, lengtheningFactor.pow(numberOfLengthenings.toDouble()))
-    }
 
 
     fun getCardTexts(): List<BaseCardData> =

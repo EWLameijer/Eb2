@@ -111,7 +111,7 @@ object DeckManager {
         // Save the current deck to disk before creating the new deck
         save()
         decks.clear()
-        decks[0] = Deck(name)
+        decks.add(Deck(name))
         decks[0].initRecommendedStudyIntervalDurations()
         loadTime = Instant.now()
         // postconditions: the deck should exist (deck.save handles any errors occurring during saving the deck).

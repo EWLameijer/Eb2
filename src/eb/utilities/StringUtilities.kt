@@ -84,7 +84,6 @@ private fun shouldNotHaveSpaceInBetween(preChar: Char, postChar: Char): Boolean 
 
 private fun Char.isPunctuationChar(): Boolean = this in listOf('.', ',', '!', '?', ':', ';')
 
-
 fun String.standardizeSeparator(separator: Char, whatItShouldLookLike: String): String {
     val words = this.split(separator).map { it.trim() }.filter { it != "" }
     return words.joinToString(separator = whatItShouldLookLike)
