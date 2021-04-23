@@ -47,7 +47,7 @@ class IntervalSettings(
 
 
     fun calculateNextIntervalDuration(reviews: List<Review>): Duration =
-        when (val lastReview = reviews.last()) {
+        when (val lastReview = reviews.lastOrNull()) {
             null -> initialInterval.asDuration()
             else -> {
                 if (lastReview.wasSuccess) getIntervalAfterSuccessfulReview(reviews)
