@@ -32,7 +32,7 @@ class InformationPanel : JPanel() {
         }
     }
 
-    init{
+    init {
         layout = BorderLayout()
         add(messageLabel, BorderLayout.CENTER)
         add(startReviewingButton, BorderLayout.SOUTH)
@@ -41,8 +41,12 @@ class InformationPanel : JPanel() {
     private fun deckSizeMessage() =
         "The current deck contains ${"card".pluralize(DeckManager.currentDeck().cardCollection.getTotal())}."
 
-    private fun totalReviewTimeMessage() =
-        "Reviewing has taken a total time of ${Utilities.durationToString(DeckManager.currentDeck().totalStudyTime())}"
+    private fun totalReviewTimeMessage() : String {
+        val currentDeck = DeckManager.currentDeck()
+        val totalStudyTime = Utilities.durationToString(currentDeck.totalStudyTime())
+        val totalMemoryTime = Utilities.durationToString(currentDeck.totalMemoryTime())
+        return "Reviewing has taken a total time of $totalStudyTime, the memorized worth is $totalMemoryTime"
+    }
 
     //Returns text indicating how long it will be to the next review
     private fun timeToNextReviewMessage() = buildString {
@@ -68,13 +72,10 @@ class InformationPanel : JPanel() {
     fun updateMessageLabel() {
         messageLabel.text = buildString {
             append("<html>")
-            append(deckSizeMessage())
-            append("<br>")
-            append(totalReviewTimeMessage())
-            append("<br>")
+            append(deckSizeMessage() + "<br>")
+            append(totalReviewTimeMessage() + "<br>")
             append(timeToNextReviewMessage())
-            append(uiCommands)
-            append("<br>")
+            append(uiCommands + "<br>")
             append(Personalisation.deckShortcuts())
             append("</html>")
         }
@@ -88,9 +89,6 @@ class InformationPanel : JPanel() {
             Ctrl+L to load a deck.<br>
             Ctrl+T to view/edit the study options.<br>
             Ctrl+R to view/edit the deck archiving options.<br>""".trimIndent())
-
-
-
 
 
 }

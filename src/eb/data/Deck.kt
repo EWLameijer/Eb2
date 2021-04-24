@@ -45,7 +45,18 @@ class Deck(val name: String) : Serializable {
         totalStudyTime = totalStudyTime() + duration
     }
 
+
+
     val cardCollection = CardCollection()
+
+    fun totalMemoryTime(): Duration {
+        val perCardMemoryTimes: List<Duration> = cardCollection.getCards().map { it.getMemoryTime() }
+        var totalTime = Duration.ofSeconds(0)
+        perCardMemoryTimes.forEach {
+            totalTime += it
+        }
+        return totalTime
+    }
 
     // Note that while intuitively a deck is just a collection of cards, in Eb a deck also has settings,
     // which are per convenience also part of the deck (or deck file)
