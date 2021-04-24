@@ -114,8 +114,7 @@ class Deck(val name: String) : Serializable {
         Duration.between(Instant.now(), getNextReviewInstant(card))
 
     private fun calculateIntervalDurationFromUserSettings(card: Card): Duration =
-        studyOptions.calculateIntervalDurationFromUserSettings(card.getReviews())
-
+        studyOptions.intervalSettings.calculateNextIntervalDuration(card.getReviews())
 
     private fun getPlannedIntervalDuration(card: Card): Duration {
         val reviewPattern: String =

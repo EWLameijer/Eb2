@@ -39,6 +39,8 @@ class ReviewPanel : JPanel() {
     private val situationalButtonPanel = JPanel()
     private val fixedButtonPanel = JPanel()
     private val reviewHistoryArea = JTextArea("test")
+    private val showButton = createKeyPressSensitiveButton("Show Answer", 's', ::showAnswer)
+    private val forgottenButton = createKeyPressSensitiveButton("Forgotten", 'f') { registerAnswer(false) }
 
     init {
         this.isFocusable = true
@@ -70,7 +72,12 @@ class ReviewPanel : JPanel() {
             fill = GridBagConstraints.BOTH
         }
         fixedButtonPanel.add(createKeyPressSensitiveButton("Edit card", 'e') { editCard() })
-        fixedButtonPanel.add(createKeyPressSensitiveButton("Delete card", 'd') { deleteCard(backOfCardPanel, ReviewManager.currentCard()!!) })
+        fixedButtonPanel.add(createKeyPressSensitiveButton("Delete card", 'd') {
+            deleteCard(
+                backOfCardPanel,
+                ReviewManager.currentCard()!!
+            )
+        })
         fixedButtonPanel.add(createKeyPressSensitiveButton("View score", 'v', ::showScore))
         add(fixedButtonPanel, fixedButtonPanelConstraints)
     }
@@ -85,12 +92,12 @@ class ReviewPanel : JPanel() {
         // is shown or when it is not yet shown.
         val buttonPanelForHiddenBack = JPanel().apply {
             layout = FlowLayout()
-            add(createKeyPressSensitiveButton("Show Answer", 's', ::showAnswer))
+            add(showButton)
         }
 
         val buttonPanelForShownBack = JPanel().apply {
             add(createKeyPressSensitiveButton("Remembered", 'r') { registerAnswer(true) })
-            add(createKeyPressSensitiveButton("Forgotten", 'f') { registerAnswer(false) })
+            add(forgottenButton)
         }
         val situationalButtonPanelConstraints = GridBagConstraints().apply {
             gridx = 0
@@ -187,7 +194,6 @@ class ReviewPanel : JPanel() {
         backOfCardPanel.setText(backText)
         showPanel(if (showAnswer) SHOWN_ANSWER else HIDDEN_ANSWER)
         updateSidePanel(frontText, showAnswer)
-
     }
 
     private fun Instant.getDateTimeString(): String {
@@ -241,6 +247,14 @@ class ReviewPanel : JPanel() {
         val durationInHours = card.waitingTimeBeforeRelevantReview(index)
         val dayHourString = toDayHourString(durationInHours)
         append(" ($dayHourString)\n")
+    }
+
+    fun updateShowButton(timeRemaining: Long) {
+        showButton.text = "Show (in ${timeRemaining}s)"
+    }
+
+    fun updateForgottenButton(timeRemaining: Long) {
+        forgottenButton.text = "Forgotten (in ${timeRemaining}s)"
     }
 
     companion object {

@@ -62,6 +62,12 @@ class StudyOptionsWindow : JFrame(), Listener {
 
     private val totalTimerMode: LabelledBoolField
 
+    private val limitReviewTime: LabelledBoolField
+
+    private val frontStudyTimeLimit: TimeInputElement
+
+    private val wholeStudyTimeLimit: TimeInputElement
+
     init {
         val studyOptions = DeckManager.currentDeck().studyOptions
         initialIntervalBox = TimeInputElement(
@@ -90,6 +96,19 @@ class StudyOptionsWindow : JFrame(), Listener {
             "Fully time all rehearsals",
             studyOptions.timerSettings.totalTimingMode
         )
+
+        limitReviewTime = LabelledBoolField(
+            "Limit the time allowed per individual review",
+            studyOptions.timerSettings.limitReviewTime
+        )
+        frontStudyTimeLimit = TimeInputElement(
+            "Maximum time allowed to see the front of the card:", studyOptions.timerSettings.frontStudyTimeLimit
+        )
+
+        wholeStudyTimeLimit = TimeInputElement(
+            "Maximum time allowed to see both front and back:", studyOptions.timerSettings.wholeStudyTimeLimit
+        )
+
         textFields = listOf(sizeOfReview, lengtheningFactor, targetedSuccessPercentage)
     }
 
@@ -100,7 +119,8 @@ class StudyOptionsWindow : JFrame(), Listener {
         val title = "Study Options" +
                 if (guiStudyOptions == deckStudyOptions) " - no unsaved changes"
                 else " - UNSAVED CHANGES"
-
+        frontStudyTimeLimit.isVisible = limitReviewTime.contents()
+        wholeStudyTimeLimit.isVisible = limitReviewTime.contents()
         setTitle(title)
     }
 
@@ -112,6 +132,10 @@ class StudyOptionsWindow : JFrame(), Listener {
         lengtheningFactor.setContents(settings.intervalSettings.lengtheningFactor)
         timeToWaitAfterIncorrectReview.interval = settings.intervalSettings.forgottenInterval
         targetedSuccessPercentage.setContents(settings.otherSettings.idealSuccessPercentage)
+        totalTimerMode.setContents(settings.timerSettings.totalTimingMode)
+        limitReviewTime.setContents(settings.timerSettings.limitReviewTime)
+        frontStudyTimeLimit.interval = settings.timerSettings.frontStudyTimeLimit
+        wholeStudyTimeLimit.interval = settings.timerSettings.wholeStudyTimeLimit
         reactivateListeners()
         updateFrame()
     }
@@ -132,7 +156,12 @@ class StudyOptionsWindow : JFrame(), Listener {
             timeToWaitAfterIncorrectReview.interval,
             Utilities.stringToDouble(lengtheningFactor.contents())!!
         ),
-        TimerSettings(totalTimerMode.contents()),
+        TimerSettings(
+            totalTimerMode.contents(),
+            limitReviewTime.contents(),
+            frontStudyTimeLimit.interval,
+            wholeStudyTimeLimit.interval
+        ),
         OtherSettings(
             Utilities.stringToInt(sizeOfReview.contents()),
             Utilities.stringToDouble(targetedSuccessPercentage.contents())!!
@@ -163,7 +192,7 @@ class StudyOptionsWindow : JFrame(), Listener {
         val buttonsPane = initButtonsPane()
         add(buttonsPane, BorderLayout.SOUTH)
 
-        setSize(700, 400)
+        setSize(700, 450)
         defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
         updateFrame()
         isVisible = true
@@ -190,6 +219,9 @@ class StudyOptionsWindow : JFrame(), Listener {
             add(timeToWaitAfterIncorrectReview)
             add(targetedSuccessPercentage)
             add(totalTimerMode)
+            add(limitReviewTime)
+            add(frontStudyTimeLimit)
+            add(wholeStudyTimeLimit)
         }
         settingsPane.add(settingsBox, BorderLayout.NORTH)
         return settingsPane

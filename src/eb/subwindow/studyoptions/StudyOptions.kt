@@ -41,9 +41,6 @@ class StudyOptions(
 
     override fun hashCode() = Objects.hash(intervalSettings, timerSettings, otherSettings)
 
-    fun calculateIntervalDurationFromUserSettings(reviews: List<Review>): Duration =
-        intervalSettings.calculateNextIntervalDuration(reviews)
-
     companion object {
         // The serialization ID. Automatically generated, can be ignored.
         private const val serialVersionUID = -5967297039338080285L

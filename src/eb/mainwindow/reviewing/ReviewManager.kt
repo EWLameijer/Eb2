@@ -12,11 +12,13 @@ import eb.eventhandling.Listener
 import eb.eventhandling.Update
 import eb.eventhandling.UpdateType
 import eb.mainwindow.MainWindowState
+import eb.subwindow.studyoptions.settinggroups.TimerSettings
 import eb.utilities.Hint
 import eb.utilities.EMPTY_STRING
 import eb.utilities.doNothing
 import eb.utilities.log
 import java.time.Instant
+import javax.swing.Timer
 import kotlin.math.min
 
 /**
@@ -35,6 +37,8 @@ object ReviewManager : Listener {
     private var currentDeck: Deck? = null
     private var cardsToBeReviewed = mutableListOf<Card>()
     private var cardsReviewed = mutableSetOf<Card>()
+    private var frontTimer: Timer? = null
+    private var timerSettings: TimerSettings? = null
 
     // counter stores the index of the card in the cardsToBeReviewed list that should be reviewed next.
     private var counter: Int = 0
@@ -161,6 +165,7 @@ object ReviewManager : Listener {
 
     private fun continueReviewSession() {
         val currentDeck = DeckManager.currentDeck()
+        timerSettings = currentDeck.studyOptions.timerSettings
 
         val maxNumReviews = currentDeck.studyOptions.otherSettings?.reviewSessionSize
         val reviewableCards = currentDeck.reviewableCardList()
@@ -190,7 +195,41 @@ object ReviewManager : Listener {
         showAnswer = false
         startTimer.press()
         stopTimer.reset()
+        if (activeCardExists() && timerSettings!!.limitReviewTime) {
+            frontTimer = Timer(100) { evaluateStatus() }
+            frontTimer!!.start()
+        }
         updatePanels()
+    }
+
+    private fun evaluateStatus() {
+        if (!startTimer.isEmpty() && stopTimer.isEmpty()) {
+            updateStatusInFrontCardMode()
+        } else if (!stopTimer.isEmpty() && !startTimer.isEmpty()) {
+            updateStatusInWholeCardMode()
+        }
+    }
+
+    private fun updateStatusInWholeCardMode() {
+        val wholeTimeLimit = timerSettings!!.wholeStudyTimeLimit.asDuration()
+        val backInspectionTimePassed = Duration.between(stopTimer.instant(), Instant.now())
+        if (backInspectionTimePassed > wholeTimeLimit) {
+            wasRemembered(false)
+        } else {
+            val timeRemaining = (wholeTimeLimit - backInspectionTimePassed).seconds
+            reviewPanel!!.updateForgottenButton(timeRemaining)
+        }
+    }
+
+    private fun updateStatusInFrontCardMode() {
+        val frontTimeLimit = timerSettings!!.frontStudyTimeLimit.asDuration()
+        val timePassed = Duration.between(startTimer.instant(), Instant.now())
+        if (timePassed > frontTimeLimit) {
+            showAnswer()
+        } else {
+            val timeRemaining = (frontTimeLimit - timePassed).seconds
+            reviewPanel!!.updateShowButton(timeRemaining)
+        }
     }
 
     private fun activeCardExists() = counter < cardsToBeReviewed.size
