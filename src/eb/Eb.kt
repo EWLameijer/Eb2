@@ -15,6 +15,8 @@ import kotlin.system.exitProcess
 // better sorting of repeated cards [what does that mean?]
 // ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
+
+// 2.4.8: updating the timer function with years, and a bit of quality-of-life-improvement with archiving directory remembering
 // 2.4.7: Adding an indication of total study value
 // 2.4.6: With functioning (though optional) timer settings
 // 2.4.5: Bugfix solving problems loading decks of which cards had not yet been reviewed
@@ -73,7 +75,7 @@ import kotlin.system.exitProcess
 
 object Eb {
 
-    const val VERSION_STRING = "2.4.7"
+    const val VERSION_STRING = "2.4.8"
     const val EB_STATUS_FILE = "eb_status.txt"
     private var ss: ServerSocket? = null
 

@@ -47,6 +47,7 @@ import java.time.Instant
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.system.exitProcess
+import javax.swing.filechooser.FileNameExtensionFilter
 
 
 // The name of the program.
@@ -66,7 +67,6 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
     // Is the alternative to the regular "reviewing" window, which should be active most of the time.
 
 
-
     // the initial state of the main window
     private var state = MainWindowState.INFORMATIONAL
 
@@ -80,7 +80,6 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
 
     // To regularly update how long it is until the next reviewing session
     private var messageUpdater: Timer? = null
-
 
 
     init {
@@ -190,7 +189,8 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         ReviewManager.setPanel(reviewPanel)
         modesContainer.add(SummarizingPanel(), SUMMARIZING_PANEL_ID)
         add(modesContainer)
-        setNameOfLastReviewedDeck()
+        Personalisation.setNameOfLastReviewedDeck()
+        Personalisation.loadLatestArchivingDirectory()
         showCorrectPanel()
 
         // now show the window itself.
@@ -213,7 +213,6 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         updateOnScreenInformation()
         if (!DeckManager.currentDeck().studyOptions.timerSettings.totalTimingMode) showReactivePanel()
     }
-
 
 
     private fun createDeckManagementMenu(): JMenu {
@@ -260,34 +259,21 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
     }
 
     private fun restoreDeck() {
-        val chooser = JFileChooser()
+        val chooser = JFileChooser(DeckManager.nameOfLastArchivingDirectory).apply {
+            fileFilter = FileNameExtensionFilter("Archive files", "json")
+        }
         val result = chooser.showOpenDialog(this)
         if (result == JFileChooser.CANCEL_OPTION) {
             return
         } else {
             val selectedFile = chooser.selectedFile
+            DeckManager.nameOfLastArchivingDirectory = selectedFile.parent
             DeckManager.createDeckFromArchive(selectedFile)
         }
     }
 
     private fun openDeckArchivingWindow() = ArchivingSettingsWindow.display()
 
-    private fun setNameOfLastReviewedDeck() {
-        val statusFilePath = Paths.get(EB_STATUS_FILE)
-        val mostRecentDeckIdentifier = "most_recently_reviewed_deck: "
-        try {
-            val lines = Files.readAllLines(statusFilePath, Charset.forName("UTF-8"))
-            val fileLine = lines.find { it.startsWith(mostRecentDeckIdentifier) }
-            if (fileLine != null) {
-                val deckName = fileLine.substring(mostRecentDeckIdentifier.length)
-                DeckManager.setNameOfLastReviewedDeck(deckName)
-            }
-        } catch (e: IOException) {
-            // If input fails, set name to ""
-            DeckManager.setNameOfLastReviewedDeck("")
-            log("$e")
-        }
-    }
 
     private fun loadDeck() {
         do {
@@ -313,7 +299,8 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         messageUpdater!!.stop()
         deckProducer()
         // reset window
-        state = if (DeckManager.currentDeck().studyOptions.timerSettings.totalTimingMode) MainWindowState.INFORMATIONAL else MainWindowState.REACTIVE
+        state =
+            if (DeckManager.currentDeck().studyOptions.timerSettings.totalTimingMode) MainWindowState.INFORMATIONAL else MainWindowState.REACTIVE
         ReviewManager.resetTimers()
         updateOnScreenInformation()
         messageUpdater!!.start()
@@ -345,7 +332,6 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         }
         return false
     }
-
 
 
     // Saves the current deck and its status, and quits Eb.

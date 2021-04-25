@@ -68,4 +68,8 @@ class IntervalSettings(
         val numberOfLengthenings = streakLength - 1 // 2 reviews = lengthen 1x.
         return Utilities.multiplyDurationBy(waitTime, lengtheningFactor.pow(numberOfLengthenings.toDouble()))
     }
+
+    companion object {
+        private const val serialVersionUID = -1
+    }
 }

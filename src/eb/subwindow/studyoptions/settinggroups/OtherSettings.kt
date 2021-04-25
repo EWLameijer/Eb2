@@ -35,4 +35,8 @@ class OtherSettings(
             reviewSessionSize,
             idealSuccessPercentage
         )
+
+    companion object {
+        private const val serialVersionUID = -1
+    }
 }

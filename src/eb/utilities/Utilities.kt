@@ -20,6 +20,8 @@ import javax.swing.JComponent
 
 import javax.swing.KeyStroke
 import kotlin.math.abs
+import kotlin.math.floor
+import kotlin.math.roundToInt
 
 /**
  * Contains some tools/generic methods that are not application-domain specific
@@ -231,9 +233,12 @@ object Utilities {
             if (durationAsHours > 0) {
                 val hours = durationAsHours % 24
                 insert(0, "$hours hours, ")
-                val days = durationAsHours / 24
-                if (days > 0) {
+                val durationAsDays = durationAsHours / 24
+                if (durationAsDays > 0) {
+                    val years = durationAsDays / 365
+                    val days = durationAsDays % 365
                     insert(0, "$days days, ")
+                    if (years > 0) insert(0, "$years years, ")
                 }
             }
         }

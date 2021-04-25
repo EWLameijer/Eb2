@@ -37,5 +37,9 @@ class TimerSettings(
             frontStudyTimeLimit,
             wholeStudyTimeLimit
         )
+
+    companion object {
+        private const val serialVersionUID = -1
+    }
 }
 

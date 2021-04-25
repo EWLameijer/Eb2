@@ -28,6 +28,7 @@ object DeckManager {
     private var loadTime: Instant = Instant.now()
     fun deckLoadTime() = loadTime
     private var nameOfLastReviewedDeck = ""
+    var nameOfLastArchivingDirectory = ""
 
     // The name of the default deck
     private const val DEFAULT_DECKNAME = "default"
