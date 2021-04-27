@@ -115,6 +115,9 @@ object ReviewManager : Listener {
             reviewPanel = inputReviewPanel
             currentDeck = DeckManager.currentDeck()
         }
+        if (frontTimer != null && !timerSettings!!.limitReviewTime) {
+            frontTimer!!.stop()
+        }
         continueReviewSession()
     }
 

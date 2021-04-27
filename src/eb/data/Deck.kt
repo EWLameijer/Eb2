@@ -35,17 +35,16 @@ class Deck(val name: String) : Serializable {
         require(name.isValidIdentifier) { "LogicalDeck constructor error: deck has a bad name." }
     }
 
+    var ebVersion = Eb.version
     private var totalStudyTime = Duration.ofSeconds(0)
-    fun totalStudyTime() : Duration = totalStudyTime ?: Duration.ofSeconds(0)
+    fun totalStudyTime(): Duration = totalStudyTime ?: Duration.ofSeconds(0)
     fun addStudyTime(duration: Duration, cause: String) {
         val ms = duration.toMillis()
         val seconds = ms / 1000
-        val niceDuration = String.format("%.2f", ms/1000.0)
+        val niceDuration = String.format("%.2f", ms / 1000.0)
         println("$cause: adding $niceDuration s to ${totalStudyTime().seconds}")
         totalStudyTime = totalStudyTime() + duration
     }
-
-
 
     val cardCollection = CardCollection()
 
@@ -141,8 +140,6 @@ class Deck(val name: String) : Serializable {
 
         return waitTime.addTo(startOfCountingTime)
     }
-
-
 
 
     fun getCardTexts(): List<BaseCardData> =

@@ -9,6 +9,7 @@ import eb.utilities.isValidIdentifier
 import eb.utilities.log
 import java.lang.RuntimeException
 import com.google.gson.GsonBuilder
+import eb.Eb
 import eb.Personalisation
 import eb.subwindow.archivingsettings.ArchivingManager
 import java.io.*
@@ -54,10 +55,9 @@ object DeckManager {
     fun loadDeckGroup(name: String) {
         require(canLoadDeck(name)) { "Deck.loadDeck() error: deck cannot be loaded. Was canLoadDeck called?" }
         save()
-        val newMainDeck = loadDeck(name)
-            ?: throw RuntimeException("DeckManager.loadDeck() error: the requested deck cannot be loaded.")
+        val newMainDeck = loadDeck(name) ?: throw RuntimeException("DeckManager.loadDeck() error: the requested deck cannot be loaded.")
         println("Linked decks: ${Personalisation.deckLinks[name]}")
-
+        newMainDeck.ebVersion = Eb.version
         loadTime = Instant.now()
         decks.clear()
         decks += newMainDeck

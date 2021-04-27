@@ -328,11 +328,15 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
                     """An error occurred while loading the deck \"$deckName\". It may be an invalid file;
                             possibly try restore it from an archive file?"""
                 )
+                tryRestore(deckName)
             }
         }
         return false
     }
 
+    fun tryRestore(deckName: String) {
+        println("Trying to restore $deckName")
+    }
 
     // Saves the current deck and its status, and quits Eb.
 // NOTE: CANNOT BE MADE PRIVATE DESPITE COMPILER COMPLAINING DUE TO addWindowListener CALL
