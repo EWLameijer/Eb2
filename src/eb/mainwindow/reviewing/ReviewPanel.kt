@@ -257,6 +257,11 @@ class ReviewPanel : JPanel() {
         forgottenButton.text = "Forgotten (in ${timeRemaining}s)"
     }
 
+    fun resetButtonTexts() {
+        showButton.text = "Show"
+        forgottenButton.text = "Forgotten"
+    }
+
     companion object {
         private const val HIDDEN_ANSWER = "HIDDEN_ANSWER"
         private const val SHOWN_ANSWER = "SHOWN_ANSWER"

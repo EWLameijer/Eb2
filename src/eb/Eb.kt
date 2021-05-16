@@ -10,11 +10,13 @@ import kotlin.system.exitProcess
 
 // FUTURE PLANS:
 // ?Possibly faster adaptation (set lower limit on #rep needed, or intelligent add?)
-// show history of card in side window!!! (want to know tough cases, so can adapt)
 // enable pictures to be shown with cards
 // better sorting of repeated cards [what does that mean?]
 // ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
+// 2.5.3: increased shortcut capacity to 19 decks
+// 2.5.2: now also indicates tomorrow next to today for next review
+// 2.5.1: solve bug that timer also transfers to non-timed deck in some circumstances.
 // 2.5.0: solve bug that also decks after a 'limited time review' deck take over the limited timer.
 // 2.4.8: updating the timer function with years, and a bit of quality-of-life-improvement with archiving directory remembering
 // 2.4.7: Adding an indication of total study value
@@ -73,7 +75,7 @@ import kotlin.system.exitProcess
  */
 
 object Eb {
-    const val version = 250
+    const val version = 253
     val VERSION_STRING = versionToString(version)
 
     private fun versionToString(version: Int): Any {

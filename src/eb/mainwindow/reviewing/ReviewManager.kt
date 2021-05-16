@@ -17,6 +17,8 @@ import eb.utilities.Hint
 import eb.utilities.EMPTY_STRING
 import eb.utilities.doNothing
 import eb.utilities.log
+import java.awt.event.ActionEvent
+import java.awt.event.ActionListener
 import java.time.Instant
 import javax.swing.Timer
 import kotlin.math.min
@@ -38,7 +40,9 @@ object ReviewManager : Listener {
     private var cardsToBeReviewed = mutableListOf<Card>()
     private var cardsReviewed = mutableSetOf<Card>()
     private var frontTimer: Timer? = null
-    private var timerSettings: TimerSettings? = null
+    private fun timerSettings(): TimerSettings = DeckManager.currentDeck().studyOptions.timerSettings
+
+    private val evalStatusListener : ActionListener = ActionListener{ e: ActionEvent -> evaluateStatus()}
 
     // counter stores the index of the card in the cardsToBeReviewed list that should be reviewed next.
     private var counter: Int = 0
@@ -61,12 +65,11 @@ object ReviewManager : Listener {
     fun reportTime() {
         val currentInstant = Instant.now()
         val duration = Duration.between(startTimer.instant(), currentInstant)
-        DeckManager.currentDeck().addStudyTime(duration, "reportTime")
+        DeckManager.currentDeck().addStudyTime(duration)
         resetTimers()
     }
 
     fun resetTimers() {
-        println("Resetting timers")
         startTimer.reset()
         stopTimer.reset()
     }
@@ -115,9 +118,7 @@ object ReviewManager : Listener {
             reviewPanel = inputReviewPanel
             currentDeck = DeckManager.currentDeck()
         }
-        if (frontTimer != null && !timerSettings!!.limitReviewTime) {
-            frontTimer!!.stop()
-        }
+
         continueReviewSession()
     }
 
@@ -133,9 +134,9 @@ object ReviewManager : Listener {
         val duration = Duration.between(startTimer.instant(), stopTimer.instant())
         startTimer.reset()
         currentCard()!!.addReview(Review(duration, wasRemembered))
-        DeckManager.currentDeck().addStudyTime(duration, "front+back time, clicked Show")
+        DeckManager.currentDeck().addStudyTime(duration)
         val answerCheckDuration = Duration.between(stopTimer.instant(), Instant.now())
-        DeckManager.currentDeck().addStudyTime(answerCheckDuration, "answer-check time, clicked F/R")
+        DeckManager.currentDeck().addStudyTime(answerCheckDuration)
         cardsReviewed.add(currentCard()!!)
         moveToNextReviewOrEnd()
     }
@@ -168,8 +169,6 @@ object ReviewManager : Listener {
 
     private fun continueReviewSession() {
         val currentDeck = DeckManager.currentDeck()
-        timerSettings = currentDeck.studyOptions.timerSettings
-
         val maxNumReviews = currentDeck.studyOptions.otherSettings?.reviewSessionSize
         val reviewableCards = currentDeck.reviewableCardList()
         val totalNumberOfReviewableCards = reviewableCards.size
@@ -198,9 +197,13 @@ object ReviewManager : Listener {
         showAnswer = false
         startTimer.press()
         stopTimer.reset()
-        if (activeCardExists() && timerSettings!!.limitReviewTime) {
-            frontTimer = Timer(100) { evaluateStatus() }
+        if (activeCardExists() && timerSettings().limitReviewTime && frontTimer == null) {
+            frontTimer = Timer(100) { evaluateStatus()  }
             frontTimer!!.start()
+        } else if (frontTimer != null && !timerSettings().limitReviewTime) {
+            frontTimer!!.stop()
+            frontTimer = null
+            reviewPanel!!.resetButtonTexts()
         }
         updatePanels()
     }
@@ -214,7 +217,7 @@ object ReviewManager : Listener {
     }
 
     private fun updateStatusInWholeCardMode() {
-        val wholeTimeLimit = timerSettings!!.wholeStudyTimeLimit.asDuration()
+        val wholeTimeLimit = timerSettings()!!.wholeStudyTimeLimit.asDuration()
         val backInspectionTimePassed = Duration.between(stopTimer.instant(), Instant.now())
         if (backInspectionTimePassed > wholeTimeLimit) {
             wasRemembered(false)
@@ -225,7 +228,7 @@ object ReviewManager : Listener {
     }
 
     private fun updateStatusInFrontCardMode() {
-        val frontTimeLimit = timerSettings!!.frontStudyTimeLimit.asDuration()
+        val frontTimeLimit = timerSettings()!!.frontStudyTimeLimit.asDuration()
         val timePassed = Duration.between(startTimer.instant(), Instant.now())
         if (timePassed > frontTimeLimit) {
             showAnswer()

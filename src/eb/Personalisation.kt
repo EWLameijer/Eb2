@@ -6,9 +6,11 @@ import eb.utilities.log
 import java.io.IOException
 import java.nio.charset.Charset
 import java.nio.file.Files
+import java.nio.file.Path
 import java.nio.file.Paths
 
 object Personalisation {
+    val MAX_ALT_SHORTCUTS = 19
     val latestArchivingDirLabel = "most_recently_used_archiving_directory: "
     val mostRecentDeckIdentifier = "most_recently_reviewed_deck: "
 
@@ -20,7 +22,7 @@ object Personalisation {
         val lines = mutableListOf<String>()
         lines.add(mostRecentDeckIdentifier + DeckManager.currentDeck().name)
         lines.add(latestArchivingDirLabel + DeckManager.nameOfLastArchivingDirectory)
-        (1..9).forEach {
+        (1..MAX_ALT_SHORTCUTS).forEach {
             val deckName = deckShortcuts[it]
             if (deckName != null) lines.add("$it: $deckName")
         }
@@ -54,18 +56,32 @@ object Personalisation {
         val statusFilePath = Paths.get(Eb.EB_STATUS_FILE)
         val shortCuts = mutableMapOf<Int, String>()
         try {
-            val lines = Files.readAllLines(statusFilePath, Charset.forName("UTF-8"))
-            lines.filter { it.isNotBlank() && it.trim().length > 2 }.forEach { line ->
-                val startChar = line[0]
-                if (startChar.isDigit() && line[1] == ':') {
-                    val deckName = line.drop(2).trim()
-                    if (deckName.isNotBlank()) shortCuts[startChar - '0'] = deckName
-                }
-            }
+            processShortcutLines(statusFilePath, shortCuts)
         } catch (e: IOException) {
             log("$e")
         }
         return shortCuts
+    }
+
+    private fun processShortcutLines(statusFilePath: Path, shortCuts: MutableMap<Int, String>) {
+        val lines = Files.readAllLines(statusFilePath, Charset.forName("UTF-8"))
+        lines.filter { it.isNotBlank() && it.trim().length > 2 }.forEach { line ->
+            val possibleNumberMatch = getPossibleNumberMatch(line)
+            if (possibleNumberMatch != null) {
+                val (index, filename) = possibleNumberMatch
+                shortCuts[index] = filename
+            }
+        }
+    }
+
+    private fun getPossibleNumberMatch(line: String): Pair<Int, String>? {
+        val lineComponents = line.split(' ')
+        if (lineComponents.size != 2) return null
+        val (possibleNumber, fileName) = lineComponents
+        if (possibleNumber.last() != ':') return null
+        val contents = possibleNumber.dropLast(1)
+        if (contents.any { !it.isDigit() }) return null
+        return contents.toInt() to fileName
     }
 
     private fun loadDeckLinks(): MutableMap<String, Set<String>> {
@@ -77,7 +93,6 @@ object Personalisation {
                 val startChar = line[0]
                 if (startChar == '&') {
                     val deckNames = line.substring(1).split('&')
-                    println("Decknames: $deckNames")
                     deckNames.forEach { currentDeckName ->
                         if (links[currentDeckName] == null) links[currentDeckName] = setOf()
                         deckNames.forEach { otherDeckName ->
@@ -90,13 +105,14 @@ object Personalisation {
         } catch (e: IOException) {
             log("$e")
         }
-        println(links)
         return links
     }
 
-    fun deckShortcuts() = (1..9).joinToString("<br>") {
+    fun deckShortcuts() = (1..MAX_ALT_SHORTCUTS).joinToString("<br>") {
         val deckName = deckShortcuts[it]
-        if (deckName != null) "Ctrl+$it: load deck '$deckName'" else ""
+        val keyName = if (it < 10) "Ctrl" else "Alt"
+        val shortCutDigit = if (it < 10) it else it - 10
+        if (deckName != null) "$keyName+$shortCutDigit: load deck '$deckName'" else ""
     }
 
     fun setNameOfLastReviewedDeck() {
@@ -124,7 +140,6 @@ object Personalisation {
             if (fileLine != null) {
                 val lastArchivingDirName = fileLine.substring(latestArchivingDirLabel.length)
                 DeckManager.nameOfLastArchivingDirectory = lastArchivingDirName
-                println("Loading $lastArchivingDirName")
             }
         } catch (e: IOException) {
             log("$e")

@@ -1,23 +1,15 @@
 package eb.mainwindow
 
 import eb.Eb
-import eb.Eb.EB_STATUS_FILE
 import eb.Personalisation
 import eb.analysis.Analyzer
-import java.awt.BorderLayout
 import java.awt.CardLayout
 import java.awt.event.ActionEvent
 import java.awt.event.WindowListener
 import java.beans.EventHandler
-import java.io.IOException
-import java.nio.charset.Charset
-import java.nio.file.Files
-import java.nio.file.Paths
 
-import javax.swing.JButton
 import javax.swing.JFileChooser
 import javax.swing.JFrame
-import javax.swing.JLabel
 import javax.swing.JMenu
 import javax.swing.JMenuBar
 import javax.swing.JMenuItem
@@ -177,6 +169,11 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         addActionListener { listener() }
     }
 
+    private fun createAltMenuItem(label: String, actionKey: Char, listener: () -> Unit) = JMenuItem(label).apply {
+        accelerator = KeyStroke.getKeyStroke(getExtendedKeyCodeForChar(actionKey.toInt()), ActionEvent.ALT_MASK)
+        addActionListener { listener() }
+    }
+
 
     //Performs the proper buildup of the window (after the construction has initialized all components properly).
     private fun init() {
@@ -236,6 +233,7 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         add(createMenuItem("Load deck", 'l', ::loadDeck))
         add(createMenuItem("Restore from archive", 'h', ::restoreDeck))
         add(createMenuItem("Analyze deck", 'z', ::analyzeDeck))
+        add(createMenuItem("Merge other deck into this one", 'm', ::mergeDeck))
         add(createMenuItem("Quit", 'q', ::saveAndQuit))
     }
 
@@ -246,6 +244,15 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
             val deckName = Personalisation.deckShortcuts[digit]
             fileMenu.add(
                 createMenuItem(
+                    "Load deck '$deckName'",
+                    digit.toLiteralChar()
+                ) { loadDeckIfPossible(deckName!!) })
+        }
+        (10..Personalisation.MAX_ALT_SHORTCUTS).filter { Personalisation.deckShortcuts[it] != null }.forEach { rawIndex ->
+            val deckName = Personalisation.deckShortcuts[rawIndex]
+            val digit = rawIndex - 10 // deck 11 becomes Alt+1 etc.
+            fileMenu.add(
+                createAltMenuItem(
                     "Load deck '$deckName'",
                     digit.toLiteralChar()
                 ) { loadDeckIfPossible(deckName!!) })
@@ -285,6 +292,26 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
                 return
             if (loadDeckIfPossible(deckName)) return
         } while (true)
+    }
+
+    private fun mergeDeck() {
+        do {
+            val deckName = JOptionPane.showInputDialog(
+                null, "Please give name for deck to be merged into this one"
+            )
+                ?: // Cancel button pressed
+                return
+            if (mergeDeckIfPossible(deckName)) return
+        } while (true)
+    }
+
+    private fun mergeDeckIfPossible(deckName: String): Boolean {
+        if (canDeckBeLoaded(deckName)) {
+            DeckManager.mergeWithDeck(deckName)
+            //changeDeck { DeckManager.loadDeckGroup(deckName) }
+            return true
+        }
+        return false
     }
 
     private fun loadDeckIfPossible(deckName: String): Boolean {

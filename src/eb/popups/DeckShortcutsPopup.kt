@@ -1,6 +1,8 @@
 package eb.popups
 
+import eb.Personalisation
 import eb.data.DeckManager
+import eb.popups.PopupUtils.closeOptionPane
 import javax.swing.JButton
 import javax.swing.JOptionPane
 
@@ -52,8 +54,6 @@ class DeckShortcutsPopup(private val shortcuts: MutableMap<Int, String>) {
         }
 
     private fun getFirstFreeIndex(shortcuts: MutableMap<Int, String>) =
-        (1..9).first { shortcuts[it] == null }
-
-    private fun closeOptionPane() = JOptionPane.getRootFrame().dispose()
+        (1..Personalisation.MAX_ALT_SHORTCUTS).first { shortcuts[it] == null }
 }
 

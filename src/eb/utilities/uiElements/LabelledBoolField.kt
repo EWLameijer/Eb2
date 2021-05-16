@@ -22,7 +22,6 @@ class LabelledBoolField(labelText: String, value: Boolean) : JPanel() {
         add(label)
         add(boolField)
         boolField.addActionListener {
-            println("Action performed!")
             BlackBoard.post(Update(UpdateType.INPUTFIELD_CHANGED))
         }
     }

@@ -31,6 +31,9 @@ import kotlin.math.pow
  * @author Eric-Wubbo Lameijer
  */
 class Deck(val name: String) : Serializable {
+
+    private lateinit var recommendationsMap: Map<String, Duration?>
+
     init {
         require(name.isValidIdentifier) { "LogicalDeck constructor error: deck has a bad name." }
     }
@@ -38,11 +41,7 @@ class Deck(val name: String) : Serializable {
     var ebVersion = Eb.version
     private var totalStudyTime = Duration.ofSeconds(0)
     fun totalStudyTime(): Duration = totalStudyTime ?: Duration.ofSeconds(0)
-    fun addStudyTime(duration: Duration, cause: String) {
-        val ms = duration.toMillis()
-        val seconds = ms / 1000
-        val niceDuration = String.format("%.2f", ms / 1000.0)
-        println("$cause: adding $niceDuration s to ${totalStudyTime().seconds}")
+    fun addStudyTime(duration: Duration) {
         totalStudyTime = totalStudyTime() + duration
     }
 
@@ -145,7 +144,7 @@ class Deck(val name: String) : Serializable {
     fun getCardTexts(): List<BaseCardData> =
         cardCollection.getCardTexts().map { (front, back) -> BaseCardData(front, back, name) }
 
-    private lateinit var recommendationsMap: Map<String, Duration?>
+
 
     fun initRecommendedStudyIntervalDurations() {
         recommendationsMap = Analyzer.getRecommendationsMap()

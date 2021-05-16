@@ -41,7 +41,7 @@ class InformationPanel : JPanel() {
     private fun deckSizeMessage() =
         "The current deck contains ${"card".pluralize(DeckManager.currentDeck().cardCollection.getTotal())}."
 
-    private fun totalReviewTimeMessage() : String {
+    private fun totalReviewTimeMessage(): String {
         val currentDeck = DeckManager.currentDeck()
         val totalStudyTime = Utilities.durationToString(currentDeck.totalStudyTime())
         val totalMemoryTime = Utilities.durationToString(currentDeck.totalMemoryTime())
@@ -58,14 +58,24 @@ class InformationPanel : JPanel() {
             val timeUntilNextReviewAsText = Utilities.durationToString(timeUntilNextReviewAsDuration)
             append(timeUntilNextReviewAsText)
             val nextReviewInstant = LocalDateTime.now() + timeUntilNextReviewAsDuration
-            val formatter = DateTimeFormatter.ofPattern(" (yyyy-MM-dd HH:mm:ss)")
-            val formattedNextReviewInstant = nextReviewInstant.format(formatter)
+            val formattedNextReviewInstant = formatReviewDate(nextReviewInstant)
             append(formattedNextReviewInstant)
             append("<br>")
             startReviewingButton.isVisible = timeUntilNextReviewAsDuration.isNegative
         } else {
             startReviewingButton.isVisible = false
         }
+    }
+
+    private fun formatReviewDate(nextReviewInstant: LocalDateTime): String {
+        val nowDayOfYear = LocalDateTime.now().dayOfYear
+        val nextReviewDayOfYear = nextReviewInstant.dayOfYear
+        val isClose = nextReviewDayOfYear <= nowDayOfYear + 1
+        val closeString = if (nextReviewDayOfYear == nowDayOfYear) "today" else "tomorrow"
+        val generalFormatter = DateTimeFormatter.ofPattern(" (yyyy-MM-dd HH:mm)")
+        val todayFormatter = DateTimeFormatter.ofPattern(" HH:mm)")
+        return if (isClose) " ($closeString " + nextReviewInstant.format(todayFormatter)
+        else nextReviewInstant.format(generalFormatter)
     }
 
     // Updates the message label (the information inside the main window, like time to next review)

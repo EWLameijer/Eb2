@@ -12,9 +12,14 @@ import com.google.gson.GsonBuilder
 import eb.Eb
 import eb.Personalisation
 import eb.subwindow.archivingsettings.ArchivingManager
+import eb.subwindow.cardediting.GenericCardEditingWindow
+import eb.utilities.Hint
+import eb.utilities.doNothing
 import java.io.*
 import java.nio.charset.Charset
 import java.time.Instant
+import javax.swing.JButton
+import javax.swing.JOptionPane
 
 
 /**
@@ -53,10 +58,10 @@ object DeckManager {
     private fun nameOfLastDeck() = if (nameOfLastReviewedDeck.isEmpty()) DEFAULT_DECKNAME else nameOfLastReviewedDeck
 
     fun loadDeckGroup(name: String) {
-        require(canLoadDeck(name)) { "Deck.loadDeck() error: deck cannot be loaded. Was canLoadDeck called?" }
+        require(canLoadDeck(name)) { "DeckManager.loadDeck() error: deck cannot be loaded. Was canLoadDeck called?" }
         save()
-        val newMainDeck = loadDeck(name) ?: throw RuntimeException("DeckManager.loadDeck() error: the requested deck cannot be loaded.")
-        println("Linked decks: ${Personalisation.deckLinks[name]}")
+        val newMainDeck = loadDeck(name)
+            ?: throw RuntimeException("DeckManager.loadDeck() error: the requested deck cannot be loaded.")
         newMainDeck.ebVersion = Eb.version
         loadTime = Instant.now()
         decks.clear()
@@ -65,6 +70,69 @@ object DeckManager {
         loadLinkedDecks(Personalisation.deckLinks[name])
         BlackBoard.post(Update(UpdateType.DECK_SWAPPED))
     }
+
+    fun mergeWithDeck(name: String) {
+        if (name == decks[0].name) {
+            JOptionPane.showMessageDialog(
+                null,
+                "You cannot merge a deck with itself",
+                "Can't merge deck with itself", JOptionPane.ERROR_MESSAGE
+            )
+            return
+        }
+        val otherIndex = decks.map { it.name }.indexOf(name)
+        if (otherIndex != -1) {
+            println("Starting merge with linked deck $name")
+            val otherCards : List<Card> = decks[otherIndex].cardCollection.getCards()
+            otherCards.forEach {currentDeck().cardCollection.addCard(it) }
+            return
+        }
+        require(canLoadDeck(name)) { "DeckManager.mergeWithDeck() error: deck cannot be loaded. Was canLoadDeck called?" }
+        println("Now do general merge")
+        val otherDeck = loadDeck(name)
+        val otherCards : List<Card> = otherDeck!!.cardCollection.getCards()
+        otherCards.forEach { cardToAdd ->
+            val baseCardWithThisFront = getBaseCard(cardToAdd.front.contents)
+            if (baseCardWithThisFront == null) {
+                currentDeck().cardCollection.addCard(cardToAdd)
+            } else {
+//TODO: just copy code, deduplicate later where possible
+    // ADVANCED MERGING (to do later)
+              /*  if (baseCardWithThisFront.back == cardToAdd.back) doNothing
+                else if (baseCardWithThisFront.deckName == decks[0].name)
+                    mainDuplicateFrontPopup(baseCardWithThisFront, cardToAdd.back)
+                else
+                    linkedDuplicateFrontPopup()*/
+            }
+
+        }
+    }
+
+    private fun linkedDuplicateFrontPopup() {
+        //TODO
+    }
+
+    /*private fun mainDuplicateFrontPopup(
+        original: Card,
+        backOf: String
+    ) {
+        val mergeButton = JButton("Merge backs of cards").apply {
+            addActionListener { mergeBacks(duplicate, backText, frontText) }
+        }
+        val deleteThisButton = JButton("Delete this card").apply {
+            addActionListener { deleteCurrentCard(callingWindow) }
+        }
+        val deleteOtherButton = JButton("Delete the other card").apply {
+            addActionListener { deleteOtherCard(duplicate, frontText, backText, callingWindow) }
+        }
+        val buttons = arrayOf(reeditButton, mergeButton, deleteThisButton, deleteOtherButton)
+        JOptionPane.showOptionDialog(
+            null,
+            "A card with the front '$frontText' already exists; on the back is the text\n'${duplicate.back}'\nreplace with\n'$backText'?",
+            "A card with this front already exists. What do you want to do?", 0,
+            JOptionPane.QUESTION_MESSAGE, null, buttons, null
+        )
+    }*/
 
     private fun loadLinkedDecks(linkedDecks: Set<String>?) {
         linkedDecks?.forEach { decks += loadDeck(it)!! }
