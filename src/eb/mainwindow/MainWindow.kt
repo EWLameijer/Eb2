@@ -108,8 +108,9 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         val numReviewingPoints = currentDeck.cardCollection.getReviewingPoints()
 
         val numReviewableCards = currentDeck.reviewableCardList().size
+        val shortCutCode = getShortCutCode(currentDeck.name)
         var title =
-            ("Eb${Eb.VERSION_STRING}: ${currentDeck.name} (${"card".pluralize(numReviewableCards)} to be reviewed in total")
+            ("Eb${Eb.VERSION_STRING}: $shortCutCode${currentDeck.name} (${"card".pluralize(numReviewableCards)} to be reviewed in total")
         if (state == MainWindowState.REVIEWING) {
             title += (", ${"card".pluralize(ReviewManager.cardsToGoYet())} yet to be reviewed in the current session")
         }
@@ -117,6 +118,16 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         title += (", ${"card".pluralize(numCards)} in deck, ${"point".pluralize(numReviewingPoints)})")
 
         this.title = title
+    }
+
+    private fun getShortCutCode(soughtDeckName: String): String {
+        val key = Personalisation.deckShortcuts.filter { (_, deckName) -> deckName == soughtDeckName }.toList()
+            .firstOrNull()?.first
+        return when (key) {
+            null -> ""
+            in 1..9 -> "[C$key] "
+            else -> "[A${key-10}] "
+        }
     }
 
     private fun showCorrectPanel() =
@@ -248,15 +259,16 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
                     digit.toLiteralChar()
                 ) { loadDeckIfPossible(deckName!!) })
         }
-        (10..Personalisation.MAX_ALT_SHORTCUTS).filter { Personalisation.deckShortcuts[it] != null }.forEach { rawIndex ->
-            val deckName = Personalisation.deckShortcuts[rawIndex]
-            val digit = rawIndex - 10 // deck 11 becomes Alt+1 etc.
-            fileMenu.add(
-                createAltMenuItem(
-                    "Load deck '$deckName'",
-                    digit.toLiteralChar()
-                ) { loadDeckIfPossible(deckName!!) })
-        }
+        (10..Personalisation.MAX_ALT_SHORTCUTS).filter { Personalisation.deckShortcuts[it] != null }
+            .forEach { rawIndex ->
+                val deckName = Personalisation.deckShortcuts[rawIndex]
+                val digit = rawIndex - 10 // deck 11 becomes Alt+1 etc.
+                fileMenu.add(
+                    createAltMenuItem(
+                        "Load deck '$deckName'",
+                        digit.toLiteralChar()
+                    ) { loadDeckIfPossible(deckName!!) })
+            }
     }
 
     private fun manageDeckShortcuts() = DeckShortcutsPopup(Personalisation.deckShortcuts).updateShortcuts()
