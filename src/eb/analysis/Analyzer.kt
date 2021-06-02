@@ -18,9 +18,22 @@ object Analyzer {
     fun getRecommendationsMap(): Map<String, Duration?> {
         val cards = DeckManager.currentDeck().cardCollection
         val categoryMap = getCategoryMap(cards)
-        return categoryMap.mapValues { getPossibleTimeRecommendation(it.key, it.value) }
+        val streakMap = getStreakMap(cards)
+        return categoryMap.mapValues { (key, value) ->
+            val streakLength = stringToStreakLength(key)
+            getPossibleTimeRecommendation(key, value, streakMap[streakLength])
+        }
     }
 
+    private fun stringToStreakLength(category: String) : Int = when {
+        category.isEmpty() -> 0
+        category.last() == 'T' -> category.takeLastWhile { it == 'T' }.length
+        else -> category.takeLastWhile { it == 'F' }.length
+    }
+
+    // makes a map of which cards fall into a category/pattern (for example, all cards that started with a failed
+    // review, then a successful review. NOTE! Since a card usually has multiple reviews, it will be referenced
+    // by multiple categories, a 'FS' card will also occur in the ''  and 'F' categories.
     private fun getCategoryMap(cards: CardCollection): Map<String, List<Card>> {
         val categoryMap = mutableMapOf<String, List<Card>>()
         cards.getCards().forEach { card ->
@@ -35,7 +48,24 @@ object Analyzer {
         return categoryMap
     }
 
-    fun List<Long>.median(): Long?  {
+    // makes a map of the streak length (2=2 most recent reviews were successes)
+    private fun getStreakMap(cards: CardCollection): Map<Int, List<Card>> {
+        val streakMap = mutableMapOf<Int, List<Card>>()
+        cards.getCards().forEach { card ->
+            val reviews = card.getReviews()
+            val streakLength = getStreakLength(reviews)
+            streakMap[streakLength] = (streakMap[streakLength] ?: listOf()) + card
+        }
+        return streakMap
+    }
+
+    private fun getStreakLength(reviews: List<Review>): Int = when {
+        reviews.isEmpty() -> 0
+        reviews.last().wasSuccess -> reviews.takeLastWhile { it.wasSuccess }.size
+        else -> reviews.takeLastWhile { !it.wasSuccess }.size
+    }
+
+    fun List<Long>.median(): Long? {
         val sortedList = sorted()
         return when {
             isEmpty() -> null
@@ -54,12 +84,14 @@ object Analyzer {
     20210219 (2.2.1) try setting the time to the MEDIAN of the SUCCEEDED reviews - 20% (to take delays in reviewing into
     account
      */
-    private fun getPossibleTimeRecommendation(pattern: String, cards: List<Card>): Duration? {
+    private fun getPossibleTimeRecommendation(pattern: String, cards: List<Card>, streakCards: List<Card>?): Duration? {
         val reliabilityCutoff = 60 // less than 60 cards? Not reliable enough
-        val correctedImprovedTime = getCorrectedImprovedTime(pattern, cards)
+        if (cards.size >= reliabilityCutoff) return Duration.ofMinutes(getCorrectedImprovedTime(pattern, cards).toLong()) else return null
+        /*if (streakCards.size >= reliabilityCutoff) return Duration.ofMinutes()
+        val correctedImprovedTime =
 
         return if (cards.size >= reliabilityCutoff)
-            Duration.ofMinutes(correctedImprovedTime.toLong()) else null
+             else null*/
     }
 
     private fun getCorrectedImprovedTime(pattern: String, cards: List<Card>): Double {

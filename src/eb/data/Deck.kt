@@ -146,7 +146,7 @@ class Deck(val name: String) : Serializable {
 
 
 
-    fun initRecommendedStudyIntervalDurations() {
+    fun updateRecommendedStudyIntervalDurations() {
         recommendationsMap = Analyzer.getRecommendationsMap()
     }
 

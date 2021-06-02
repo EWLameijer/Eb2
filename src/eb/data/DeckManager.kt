@@ -12,13 +12,9 @@ import com.google.gson.GsonBuilder
 import eb.Eb
 import eb.Personalisation
 import eb.subwindow.archivingsettings.ArchivingManager
-import eb.subwindow.cardediting.GenericCardEditingWindow
-import eb.utilities.Hint
-import eb.utilities.doNothing
 import java.io.*
 import java.nio.charset.Charset
 import java.time.Instant
-import javax.swing.JButton
 import javax.swing.JOptionPane
 
 
@@ -66,7 +62,7 @@ object DeckManager {
         loadTime = Instant.now()
         decks.clear()
         decks += newMainDeck
-        decks[0].initRecommendedStudyIntervalDurations()
+        decks[0].updateRecommendedStudyIntervalDurations()
         loadLinkedDecks(Personalisation.deckLinks[name])
         BlackBoard.post(Update(UpdateType.DECK_SWAPPED))
     }
@@ -181,7 +177,7 @@ object DeckManager {
         save()
         decks.clear()
         decks.add(Deck(name))
-        decks[0].initRecommendedStudyIntervalDurations()
+        decks[0].updateRecommendedStudyIntervalDurations()
         loadTime = Instant.now()
         // postconditions: the deck should exist (deck.save handles any errors occurring during saving the deck).
         require(deckHasBeenLoaded()) { "Deck.createDeckWithName() error: problem creating and/or writing the new deck." }

@@ -23,8 +23,10 @@ class SummarizingPanel internal constructor() : JPanel() {
     private var reviewsCompletedPanel = JPanel()
     private var stillReviewsToDoPanel = JPanel()
 
-    private fun backToInformationMode() =
+    private fun backToInformationMode() {
+        DeckManager.currentDeck().updateRecommendedStudyIntervalDurations()
         BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, MainWindowState.INFORMATIONAL.name))
+    }
 
     private fun backToReviewingMode() {
         val newState = if (DeckManager.currentDeck().studyOptions.timerSettings.totalTimingMode) MainWindowState.INFORMATIONAL
