@@ -40,6 +40,8 @@ private fun String.splitAt(position: Int): Pair<String, String> {
     return substring(0, position) to substring(position + 1)
 }
 
+fun String.italicizeIf(condition: Boolean): String = if (condition) "<html><i>$this</i></html>" else this
+
 private fun analyzeParentheses(text: String, startChar: Char, endChar: Char): Pair<String, String> {
     // input: something basically X[closing char]Y
     // output X, Y

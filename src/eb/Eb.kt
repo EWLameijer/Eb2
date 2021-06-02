@@ -14,6 +14,7 @@ import kotlin.system.exitProcess
 // better sorting of repeated cards [what does that mean?]
 // ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
+// 2.5.5: now will also show contents of cards from linked deck.
 // 2.5.4: now should update reviewing times when returning to information screen, instead of only on reloading
 // 2.5.3: increased shortcut capacity to 19 decks
 // 2.5.2: now also indicates tomorrow next to today for next review
@@ -76,7 +77,7 @@ import kotlin.system.exitProcess
  */
 
 object Eb {
-    const val version = 254
+    const val version = 255
     val VERSION_STRING = versionToString(version)
 
     private fun versionToString(version: Int): Any {

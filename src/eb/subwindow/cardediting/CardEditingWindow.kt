@@ -1,13 +1,13 @@
 package eb.subwindow.cardediting
 
-import javax.swing.*
-import javax.swing.event.ListSelectionEvent
-
 import eb.data.DeckManager
 import eb.eventhandling.DelegatingDocumentListener
 import eb.utilities.Hint
 import eb.utilities.Utilities
+import eb.utilities.italicizeIf
 import java.awt.*
+import javax.swing.*
+import javax.swing.event.ListSelectionEvent
 
 
 /**
@@ -34,7 +34,7 @@ class CardEditingWindow(
     }
 
     override fun clear() {
-        efficientCardTextUpdate("", "")
+        efficientCardTextUpdate("", "", false)
     }
 
     private fun updateSideList() {
@@ -47,7 +47,7 @@ class CardEditingWindow(
         val newCardFronts = DefaultListModel<String>()
         allRelevantCardTexts.sortedBy { it.front }.forEach {
             val cardFront = it.front
-            val displayedText = if (it.deckName == mainDeckName) cardFront else "<html><i>$cardFront</i></html>"
+            val displayedText = cardFront.italicizeIf(it.deckName != mainDeckName)
             newCardFronts.addElement(displayedText)
         }
         listBox.model = newCardFronts
@@ -153,18 +153,32 @@ class CardEditingWindow(
         val list = e.source as JList<*>
         val newFrontText = list.selectedValue as String?
         if (newFrontText != null) {
-            copiedCard = DeckManager.currentDeck().cardCollection.getCardWithFront(Hint(newFrontText))!!
-            efficientCardTextUpdate(newFrontText, copiedCard!!.back)
-
+            // Okay. Need to get the basic card contents: front is not needed, but back and deck are.
+            val cleanedFrontText = newFrontText.stripHtmlItalic()
+            val copiedCardBase = DeckManager.getBaseCard(cleanedFrontText)
+            copiedCard = if (copiedCardBase!!.deckName == DeckManager.currentDeck().name)
+                DeckManager.currentDeck().cardCollection.getCardWithFront(Hint(cleanedFrontText))!!
+            else null // should not be able to edit a card from a linked deck
+            efficientCardTextUpdate(
+                cleanedFrontText,
+                copiedCardBase.back,
+                copiedCardBase.deckName != DeckManager.currentDeck().name
+            )
         }
     }
 
-    private fun efficientCardTextUpdate(newFrontText: String, newBackText: String) {
+    private fun efficientCardTextUpdate(newFrontText: String, newBackText: String, italicMode: Boolean) {
         cardFrontPane.document.removeDocumentListener(cardTextListener)
         cardBackPane.document.removeDocumentListener(cardTextListener)
+
+        cardFrontPane.italicizeFontIf(italicMode)
+        cardBackPane.italicizeFontIf(italicMode)
+
         cardFrontPane.text = newFrontText
         cardBackPane.text = newBackText
+
         updateSideList()
+
         cardFrontPane.document.addDocumentListener(cardTextListener)
         cardBackPane.document.addDocumentListener(cardTextListener)
     }
@@ -187,4 +201,11 @@ class CardEditingWindow(
             return newCardWindow
         }
     }
+}
+
+private fun String.stripHtmlItalic(): String = removePrefix("<html><i>").removeSuffix("</i></html>")
+
+private fun JTextPane.italicizeFontIf(italicMode: Boolean) {
+    val targetFont = if (italicMode) Font.ITALIC else Font.PLAIN
+    font = Font(font.name, targetFont, font.size)
 }
