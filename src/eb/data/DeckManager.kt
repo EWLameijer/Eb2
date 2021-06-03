@@ -12,9 +12,12 @@ import com.google.gson.GsonBuilder
 import eb.Eb
 import eb.Personalisation
 import eb.subwindow.archivingsettings.ArchivingManager
+import eb.subwindow.cardediting.GenericCardEditingWindow
+import eb.utilities.Hint
 import java.io.*
 import java.nio.charset.Charset
 import java.time.Instant
+import javax.swing.JButton
 import javax.swing.JOptionPane
 
 
@@ -88,11 +91,26 @@ object DeckManager {
         val otherDeck = loadDeck(name)
         val otherCards : List<Card> = otherDeck!!.cardCollection.getCards()
         otherCards.forEach { cardToAdd ->
-            val baseCardWithThisFront = getBaseCard(cardToAdd.front.contents)
-            if (baseCardWithThisFront == null) {
+            val cardWithDeckName = getCardWithDeckName(cardToAdd.front.contents)
+            if (cardWithDeckName == null) {
                 currentDeck().cardCollection.addCard(cardToAdd)
             } else {
+                val (currentCard, currentCardDeck) = cardWithDeckName
 //TODO: just copy code, deduplicate later where possible
+                // two scenarios
+                // in both scenarios: you have one card (reference) in the current setup;
+                // 1: the base card is in the current deck
+                if (currentCardDeck == currentDeck().name) {
+                    possiblyReplaceOriginal(currentCard, cardToAdd)
+                }
+                // 1a: keep base card, discard other card
+                // 1b: replace base card by other card
+                // 1c: merge cards
+                // 2: the base card is in a linked deck
+                // 2a: keep card in linked deck, discard card from fused deck
+                // 2b: remove card from linked deck, add new card to main deck
+                // 2c: remove card from linked deck, add merged card to main deck
+
     // ADVANCED MERGING (to do later)
               /*  if (baseCardWithThisFront.back == cardToAdd.back) doNothing
                 else if (baseCardWithThisFront.deckName == decks[0].name)
@@ -102,6 +120,30 @@ object DeckManager {
             }
 
         }
+    }
+
+    private fun possiblyReplaceOriginal(
+        currentVersion: Card,
+        versionInDeckMergedIn: Card
+    ) {
+        /*val currentFront = currentVersion.front.contents
+
+        val mergeButton = JButton("Merge backs of cards").apply {
+            addActionListener { mergeBacks(duplicate, backText, frontText) }
+        }
+        val deleteThisButton = JButton("Delete this card").apply {
+            addActionListener { deleteCurrentCard(callingWindow) }
+        }
+        val deleteOtherButton = JButton("Delete the other card").apply {
+            addActionListener { deleteOtherCard(duplicate, frontText, backText, callingWindow) }
+        }
+        val buttons = arrayOf(reeditButton, mergeButton, deleteThisButton, deleteOtherButton)
+        JOptionPane.showOptionDialog(
+            null,
+            "A card with the front '$frontText' already exists; on the back is the text\n'${duplicate.back}'\nreplace with\n'$backText'?",
+            "A card with this front already exists. What do you want to do?", 0,
+            JOptionPane.QUESTION_MESSAGE, null, buttons, null
+        )*/
     }
 
     private fun linkedDuplicateFrontPopup() {
@@ -202,6 +244,7 @@ object DeckManager {
             val objectOutputStream = ObjectOutputStream(FileOutputStream(mainDeck.fileHandle))
             objectOutputStream.writeObject(mainDeck)
             mainDeck.saveDeckToTextFiles()
+            Personalisation.registerTimeOfNextReview()
         } catch (e: Exception) {
             // Something goes wrong with serializing the deck; so you cannot create the file.
             log("$e")
@@ -284,4 +327,12 @@ object DeckManager {
 
     fun getBaseCard(frontText: String): BaseCardData? =
         decks.flatMap { it.getCardTexts() }.find { it.front == frontText }
+
+    fun getCardWithDeckName(frontText: String): Pair<Card, String>? {
+        decks.forEach { deck ->
+            val match = deck.cardCollection.getCardWithFront(frontText)
+            if (match != null) return match to deck.name
+        }
+        return null
+    }
 }

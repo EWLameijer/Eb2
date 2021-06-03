@@ -121,9 +121,7 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
     }
 
     private fun getShortCutCode(soughtDeckName: String): String {
-        val key = Personalisation.deckShortcuts.filter { (_, deckName) -> deckName == soughtDeckName }.toList()
-            .firstOrNull()?.first
-        return when (key) {
+        return when (val key = Personalisation.getShortcutIdOfDeck(soughtDeckName)) {
             null -> ""
             in 1..9 -> "[C$key] "
             else -> "[A${key-10}] "
@@ -251,27 +249,27 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
     private fun addDeckLoadingMenuItems(fileMenu: JMenu) {
         fileMenu.addSeparator()
         fileMenu.add(createMenuItem("Manage deck-shortcuts", '0', ::manageDeckShortcuts))
-        (1..9).filter { Personalisation.deckShortcuts[it] != null }.forEach { digit ->
-            val deckName = Personalisation.deckShortcuts[digit]
+        (1..9).filter { Personalisation.shortcutsWithDeckData[it] != null }.forEach { digit ->
+            val deckName = Personalisation.shortcutsWithDeckData[digit]!!.name
             fileMenu.add(
                 createMenuItem(
                     "Load deck '$deckName'",
                     digit.toLiteralChar()
-                ) { loadDeckIfPossible(deckName!!) })
+                ) { loadDeckIfPossible(deckName) })
         }
-        (10..Personalisation.MAX_ALT_SHORTCUTS).filter { Personalisation.deckShortcuts[it] != null }
+        (10..Personalisation.MAX_ALT_SHORTCUTS).filter { Personalisation.shortcutsWithDeckData[it] != null }
             .forEach { rawIndex ->
-                val deckName = Personalisation.deckShortcuts[rawIndex]
+                val deckName = Personalisation.shortcutsWithDeckData[rawIndex]!!.name
                 val digit = rawIndex - 10 // deck 11 becomes Alt+1 etc.
                 fileMenu.add(
                     createAltMenuItem(
                         "Load deck '$deckName'",
                         digit.toLiteralChar()
-                    ) { loadDeckIfPossible(deckName!!) })
+                    ) { loadDeckIfPossible(deckName) })
             }
     }
 
-    private fun manageDeckShortcuts() = DeckShortcutsPopup(Personalisation.deckShortcuts).updateShortcuts()
+    private fun manageDeckShortcuts() = DeckShortcutsPopup().updateShortcuts()
 
     private fun analyzeDeck() {
         Analyzer.run()

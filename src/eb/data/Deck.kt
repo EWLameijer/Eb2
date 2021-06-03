@@ -21,6 +21,7 @@ import com.google.gson.GsonBuilder
 import eb.analysis.Analyzer
 import eb.subwindow.archivingsettings.ArchivingManager
 import eb.utilities.getDateString
+import java.time.LocalDateTime
 import kotlin.math.pow
 
 
@@ -73,6 +74,10 @@ class Deck(val name: String) : Serializable {
         }
         return cardCollection.getCards().map { getTimeUntilNextReview(it) }.min()!!
     }
+
+    fun timeOfNextReview(): LocalDateTime? =
+        if (cardCollection.getTotal() > 0) LocalDateTime.now() + timeUntilNextReview()
+        else null
 
 
     //Saves the deck to a text file (helpful for recovery), though it deletes all repetition data...
@@ -143,7 +148,6 @@ class Deck(val name: String) : Serializable {
 
     fun getCardTexts(): List<BaseCardData> =
         cardCollection.getCardTexts().map { (front, back) -> BaseCardData(front, back, name) }
-
 
 
     fun updateRecommendedStudyIntervalDurations() {

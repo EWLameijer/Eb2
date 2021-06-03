@@ -1,0 +1,5 @@
+remove duplicates (menu)
+    showDuplicateFrontPopup
+
+merge decks:
+    DeckManager- fun mergeWithDeck(name: String) {

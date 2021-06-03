@@ -1,15 +1,19 @@
 package eb.popups
 
 import eb.Personalisation
+import eb.data.BaseDeckData
+import eb.data.Deck
 import eb.data.DeckManager
 import eb.popups.PopupUtils.closeOptionPane
 import javax.swing.JButton
 import javax.swing.JOptionPane
 
-class DeckShortcutsPopup(private val shortcuts: MutableMap<Int, String>) {
+class DeckShortcutsPopup {
+    private val shortcutsWithDeckData = Personalisation.shortcutsWithDeckData
+
     fun updateShortcuts() {
         val currentDeckName = DeckManager.currentDeck().name
-        val currentDeckIndices = shortcuts.filterValues { it == currentDeckName }.keys
+        val currentDeckIndices = shortcutsWithDeckData.filterValues { it.name == currentDeckName }.keys
         val currentDeckIndex = if (currentDeckIndices.isEmpty()) null else currentDeckIndices.first()
 
         val cancelButton = createCancelButton()
@@ -34,7 +38,7 @@ class DeckShortcutsPopup(private val shortcuts: MutableMap<Int, String>) {
         JButton("Remove shortcut").apply {
             isEnabled = if (currentDeckIndex != null) {
                 addActionListener {
-                    shortcuts.remove(currentDeckIndex)
+                    shortcutsWithDeckData.remove(currentDeckIndex)
                     closeOptionPane()
                 }
                 true
@@ -43,17 +47,18 @@ class DeckShortcutsPopup(private val shortcuts: MutableMap<Int, String>) {
 
     private fun createAddShortcutButton(currentDeckIndex: Int?, currentDeckName: String) =
         JButton("Add shortcut").apply {
+            val currentDeckReviewTime = DeckManager.currentDeck().timeOfNextReview()
             isEnabled = if (currentDeckIndex == null) {
-                val firstFreeIndex = getFirstFreeIndex(shortcuts)
+                val firstFreeIndex = getFirstFreeIndex(shortcutsWithDeckData)
                 addActionListener {
-                    shortcuts[firstFreeIndex] = currentDeckName
+                    shortcutsWithDeckData[firstFreeIndex] = BaseDeckData(currentDeckName,currentDeckReviewTime)
                     closeOptionPane()
                 }
                 true
             } else false
         }
 
-    private fun getFirstFreeIndex(shortcuts: MutableMap<Int, String>) =
+    private fun getFirstFreeIndex(shortcuts: MutableMap<Int, BaseDeckData>) =
         (1..Personalisation.MAX_ALT_SHORTCUTS).first { shortcuts[it] == null }
 }
 

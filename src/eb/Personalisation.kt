@@ -1,5 +1,6 @@
 package eb
 
+import eb.data.BaseDeckData
 import eb.data.DeckManager
 import eb.subwindow.archivingsettings.ArchivingManager
 import eb.utilities.log
@@ -8,23 +9,35 @@ import java.nio.charset.Charset
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.time.LocalDateTime
 
 object Personalisation {
-    val MAX_ALT_SHORTCUTS = 19
-    val latestArchivingDirLabel = "most_recently_used_archiving_directory: "
-    val mostRecentDeckIdentifier = "most_recently_reviewed_deck: "
+    const val MAX_ALT_SHORTCUTS = 19
+    private const val latestArchivingDirLabel = "most_recently_used_archiving_directory: "
+    private const val mostRecentDeckIdentifier = "most_recently_reviewed_deck: "
 
     val deckLinks = loadDeckLinks()
-    val deckShortcuts = loadDeckShortcuts()
-    var deckShortcutKeys = deckShortcuts.keys.sorted()
+    val shortcutsWithDeckData = loadDeckShortcutsAndReviewTimes()
+    var deckShortcutKeys = shortcutsWithDeckData.keys.sorted()
 
     fun saveEbStatus() {
+        println("Saving status")
         val lines = mutableListOf<String>()
         lines.add(mostRecentDeckIdentifier + DeckManager.currentDeck().name)
         lines.add(latestArchivingDirLabel + DeckManager.nameOfLastArchivingDirectory)
+        val currentDeck = DeckManager.currentDeck()
         (1..MAX_ALT_SHORTCUTS).forEach {
-            val deckName = deckShortcuts[it]
-            if (deckName != null) lines.add("$it: $deckName")
+            val deckData = shortcutsWithDeckData[it]
+            val deckName = deckData?.name
+            val nextReviewTime = deckData?.nextReview
+            val nextReviewText = when {
+                deckName == currentDeck.name -> " ${LocalDateTime.now() + currentDeck.timeUntilNextReview()}"
+                nextReviewTime != null -> " $nextReviewTime"
+                else -> ""
+            }
+            if (deckName != null) {
+                lines.add("$it: $deckName$nextReviewText")
+            }
         }
         ArchivingManager.deckDirectories.forEach { (deckName, deckDirectory) ->
             lines.add("@$deckName: $deckDirectory")
@@ -46,15 +59,16 @@ object Personalisation {
         }
     }
 
-    fun shortcutsHaveChanged() = deckShortcutKeys != deckShortcuts.keys.sorted()
+    fun shortcutsHaveChanged() = deckShortcutKeys != shortcutsWithDeckData.keys.sorted()
 
     fun updateShortcuts() {
-        deckShortcutKeys = deckShortcuts.keys.sorted()
+        deckShortcutKeys = shortcutsWithDeckData.keys.sorted()
     }
 
-    private fun loadDeckShortcuts(): MutableMap<Int, String> {
+
+    private fun loadDeckShortcutsAndReviewTimes(): MutableMap<Int, BaseDeckData> {
         val statusFilePath = Paths.get(Eb.EB_STATUS_FILE)
-        val shortCuts = mutableMapOf<Int, String>()
+        val shortCuts = mutableMapOf<Int, BaseDeckData>()
         try {
             processShortcutLines(statusFilePath, shortCuts)
         } catch (e: IOException) {
@@ -63,25 +77,27 @@ object Personalisation {
         return shortCuts
     }
 
-    private fun processShortcutLines(statusFilePath: Path, shortCuts: MutableMap<Int, String>) {
+    private fun processShortcutLines(statusFilePath: Path, shortCuts: MutableMap<Int, BaseDeckData>) {
         val lines = Files.readAllLines(statusFilePath, Charset.forName("UTF-8"))
         lines.filter { it.isNotBlank() && it.trim().length > 2 }.forEach { line ->
             val possibleNumberMatch = getPossibleNumberMatch(line)
             if (possibleNumberMatch != null) {
-                val (index, filename) = possibleNumberMatch
-                shortCuts[index] = filename
+                val (index, fileAndPossibleNextReview) = possibleNumberMatch
+                shortCuts[index] = fileAndPossibleNextReview
             }
         }
     }
 
-    private fun getPossibleNumberMatch(line: String): Pair<Int, String>? {
+    private fun getPossibleNumberMatch(line: String): Pair<Int, BaseDeckData>? {
         val lineComponents = line.split(' ')
-        if (lineComponents.size != 2) return null
+        if (lineComponents.size !in 2..3) return null
+        println(lineComponents)
         val (possibleNumber, fileName) = lineComponents
         if (possibleNumber.last() != ':') return null
         val contents = possibleNumber.dropLast(1)
         if (contents.any { !it.isDigit() }) return null
-        return contents.toInt() to fileName
+        val nextReview = if (lineComponents.size == 3) LocalDateTime.parse(lineComponents[2]) else null
+        return contents.toInt() to BaseDeckData(fileName, nextReview)
     }
 
     private fun loadDeckLinks(): MutableMap<String, Set<String>> {
@@ -109,10 +125,19 @@ object Personalisation {
     }
 
     fun deckShortcuts() = (1..MAX_ALT_SHORTCUTS).joinToString("<br>") {
-        val deckName = deckShortcuts[it]
-        val keyName = if (it < 10) "Ctrl" else "Alt"
-        val shortCutDigit = if (it < 10) it else it - 10
-        if (deckName != null) "$keyName+$shortCutDigit: load deck '$deckName'" else ""
+        val deckData = shortcutsWithDeckData[it]
+        val deckName = deckData?.name
+        var result = ""
+        if (deckName != null) {
+            val keyName = if (it < 10) "Ctrl" else "Alt"
+            val shortCutDigit = if (it < 10) it else it - 10
+            val nextReview = deckData.nextReview
+            val (pre, post) = if (nextReview != null) {
+                if (nextReview < LocalDateTime.now()) "*" to ""
+                else "" to " $nextReview"
+            } else "" to ""
+            "$pre$keyName+$shortCutDigit: load deck '$deckName'$post"
+        } else ""
     }
 
     fun setNameOfLastReviewedDeck() {
@@ -144,6 +169,15 @@ object Personalisation {
         } catch (e: IOException) {
             log("$e")
         }
+    }
+
+    fun getShortcutIdOfDeck(soughtDeckName: String): Int? =
+        shortcutsWithDeckData.filter { (_, deckData) -> deckData.name == soughtDeckName }.toList().firstOrNull()?.first
+
+    fun registerTimeOfNextReview() {
+        val currentDeck = DeckManager.currentDeck()
+        val key = getShortcutIdOfDeck(currentDeck.name)
+        if (key != null) shortcutsWithDeckData[key]!!.nextReview = currentDeck.timeOfNextReview()
     }
 
 }

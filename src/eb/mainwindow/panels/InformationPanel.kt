@@ -85,7 +85,7 @@ class InformationPanel : JPanel() {
             append(deckSizeMessage() + "<br>")
             append(totalReviewTimeMessage() + "<br>")
             append(timeToNextReviewMessage())
-            append(uiCommands + "<br>")
+            append("$uiCommands<br>")
             append(Personalisation.deckShortcuts())
             append("</html>")
         }
