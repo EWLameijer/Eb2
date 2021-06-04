@@ -11,9 +11,8 @@ import java.lang.RuntimeException
 import com.google.gson.GsonBuilder
 import eb.Eb
 import eb.Personalisation
+import eb.popups.PopupUtils.closeOptionPane
 import eb.subwindow.archivingsettings.ArchivingManager
-import eb.subwindow.cardediting.GenericCardEditingWindow
-import eb.utilities.Hint
 import java.io.*
 import java.nio.charset.Charset
 import java.time.Instant
@@ -82,14 +81,14 @@ object DeckManager {
         val otherIndex = decks.map { it.name }.indexOf(name)
         if (otherIndex != -1) {
             println("Starting merge with linked deck $name")
-            val otherCards : List<Card> = decks[otherIndex].cardCollection.getCards()
-            otherCards.forEach {currentDeck().cardCollection.addCard(it) }
+            val otherCards: List<Card> = decks[otherIndex].cardCollection.getCards()
+            otherCards.forEach { currentDeck().cardCollection.addCard(it) }
             return
         }
         require(canLoadDeck(name)) { "DeckManager.mergeWithDeck() error: deck cannot be loaded. Was canLoadDeck called?" }
         println("Now do general merge")
         val otherDeck = loadDeck(name)
-        val otherCards : List<Card> = otherDeck!!.cardCollection.getCards()
+        val otherCards: List<Card> = otherDeck!!.cardCollection.getCards()
         otherCards.forEach { cardToAdd ->
             val cardWithDeckName = getCardWithDeckName(cardToAdd.front.contents)
             if (cardWithDeckName == null) {
@@ -100,9 +99,9 @@ object DeckManager {
                 // two scenarios
                 // in both scenarios: you have one card (reference) in the current setup;
                 // 1: the base card is in the current deck
-                if (currentCardDeck == currentDeck().name) {
-                    possiblyReplaceOriginal(currentCard, cardToAdd)
-                }
+                if (currentCardDeck == currentDeck().name) possiblyReplaceOriginal(currentCard, cardToAdd)
+                else possiblyReplaceCardInLinkedDeck(currentCard, cardToAdd) // the base card is in a linked deck
+
                 // 1a: keep base card, discard other card
                 // 1b: replace base card by other card
                 // 1c: merge cards
@@ -111,12 +110,12 @@ object DeckManager {
                 // 2b: remove card from linked deck, add new card to main deck
                 // 2c: remove card from linked deck, add merged card to main deck
 
-    // ADVANCED MERGING (to do later)
-              /*  if (baseCardWithThisFront.back == cardToAdd.back) doNothing
-                else if (baseCardWithThisFront.deckName == decks[0].name)
-                    mainDuplicateFrontPopup(baseCardWithThisFront, cardToAdd.back)
-                else
-                    linkedDuplicateFrontPopup()*/
+                // ADVANCED MERGING (to do later)
+                /*  if (baseCardWithThisFront.back == cardToAdd.back) doNothing
+                  else if (baseCardWithThisFront.deckName == decks[0].name)
+                      mainDuplicateFrontPopup(baseCardWithThisFront, cardToAdd.back)
+                  else
+                      linkedDuplicateFrontPopup()*/
             }
 
         }
@@ -126,24 +125,78 @@ object DeckManager {
         currentVersion: Card,
         versionInDeckMergedIn: Card
     ) {
-        /*val currentFront = currentVersion.front.contents
+        val buttons = arrayOf(
+            getMergeButton(currentVersion, versionInDeckMergedIn),
+            getDeleteThisCardButton(currentVersion, versionInDeckMergedIn),
+            getIgnoreNewCardButton()
+        )
 
-        val mergeButton = JButton("Merge backs of cards").apply {
-            addActionListener { mergeBacks(duplicate, backText, frontText) }
-        }
-        val deleteThisButton = JButton("Delete this card").apply {
-            addActionListener { deleteCurrentCard(callingWindow) }
-        }
-        val deleteOtherButton = JButton("Delete the other card").apply {
-            addActionListener { deleteOtherCard(duplicate, frontText, backText, callingWindow) }
-        }
-        val buttons = arrayOf(reeditButton, mergeButton, deleteThisButton, deleteOtherButton)
+        val front = currentVersion.front.contents
+        val currentBack = currentVersion.back
+        val backOfMergeInCandidate = versionInDeckMergedIn.back
         JOptionPane.showOptionDialog(
             null,
-            "A card with the front '$frontText' already exists; on the back is the text\n'${duplicate.back}'\nreplace with\n'$backText'?",
+            "A card with the front '$front' already exists; on the back is the text\n'$currentBack'\nreplace with\n'$backOfMergeInCandidate'?",
             "A card with this front already exists. What do you want to do?", 0,
             JOptionPane.QUESTION_MESSAGE, null, buttons, null
-        )*/
+        )
+    }
+
+    private fun possiblyReplaceCardInLinkedDeck(
+        currentVersion: Card,
+        versionInDeckMergedIn: Card
+    ) {
+        // 2b: remove card from linked deck, add new card to main deck
+        // 2c: remove card from linked deck, add merged card to main deck
+        val buttons = arrayOf(
+            /*getMergeToCurrentDeckButton(currentVersion, versionInDeckMergedIn), // remove card from linked deck, move merged card to current deck
+            getMergeToLinkedDeckButton(currentVersion, versionInDeckMergedIn), // replace card in linked deck by merged card
+            replaceCardAndMoveToCurrentDeckButton(currentVersion, versionInDeckMergedIn),
+            replaceCardInLinkedDeckButton(currentVersion, versionInDeckMergedIn),*/
+            //TODOgetDeleteThisCardButton(currentVersion, versionInDeckMergedIn),
+            getIgnoreNewCardButton() // ignore the new card
+        )
+
+        val front = currentVersion.front.contents
+        val currentBack = currentVersion.back
+        val backOfMergeInCandidate = versionInDeckMergedIn.back
+        JOptionPane.showOptionDialog(
+            null,
+            "A card with the front '$front' already exists; on the back is the text\n'$currentBack'\nreplace with\n'$backOfMergeInCandidate'?",
+            "A card with this front already exists. What do you want to do?", 0,
+            JOptionPane.QUESTION_MESSAGE, null, buttons, null
+        )
+    }
+
+    private fun getIgnoreNewCardButton() {
+        JButton("Ignore the other card").apply {
+            addActionListener { closeOptionPane() }
+        }
+    }
+
+    private fun getDeleteThisCardButton(currentVersion: Card, versionInDeckMergedIn: Card) {
+        JButton("Replace the current card").apply {
+            addActionListener { replaceCurrentCard(currentVersion, versionInDeckMergedIn) }
+        }
+    }
+
+    private fun getMergeButton(currentVersion: Card, versionInDeckMergedIn: Card): JButton =
+        JButton("Merge backs of cards").apply {
+            addActionListener { mergeBacksAndReplaceOriginal(currentVersion, versionInDeckMergedIn) }
+        }
+
+    private fun replaceCurrentCard(currentVersion: Card, versionInDeckMergedIn: Card) {
+        val cardCollection = currentDeck().cardCollection
+        cardCollection.removeCard(currentVersion)
+        cardCollection.addCard(Card(versionInDeckMergedIn.front, versionInDeckMergedIn.back))
+        closeOptionPane()
+    }
+
+    private fun mergeBacksAndReplaceOriginal(originalCard: Card, mergedInCard: Card) {
+        val cardCollection = currentDeck().cardCollection
+        cardCollection.removeCard(originalCard)
+        cardCollection.addCard(Card(originalCard.front, "${originalCard.back}; ${mergedInCard.back}"))
+        closeOptionPane()
     }
 
     private fun linkedDuplicateFrontPopup() {

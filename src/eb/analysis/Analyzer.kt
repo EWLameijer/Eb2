@@ -14,38 +14,72 @@ import kotlin.math.roundToInt
 
 object Analyzer {
 
+    private val fullPatternMap = mutableMapOf<String, PatternStatistics>()
+    private val shortenedPatternMap = mutableMapOf<Int, PatternStatistics>()
 
     fun getRecommendationsMap(): Map<String, Duration?> {
         val cards = DeckManager.currentDeck().cardCollection
         val categoryMap = getCategoryMap(cards)
         val streakMap = getStreakMap(cards)
+        println(fullPatternMap)
+        println(shortenedPatternMap)
         return categoryMap.mapValues { (key, value) ->
             val streakLength = stringToStreakLength(key)
             getPossibleTimeRecommendation(key, value, streakMap[streakLength])
         }
     }
 
-    private fun stringToStreakLength(category: String) : Int = when {
+    private fun stringToStreakLength(category: String): Int = when {
         category.isEmpty() -> 0
         category.last() == 'T' -> category.takeLastWhile { it == 'T' }.length
         else -> category.takeLastWhile { it == 'F' }.length
     }
 
+    class PatternStatistics {
+        val successes = mutableListOf<Double>() // in minutes
+        val failures = mutableListOf<Double>() // in minutes
+
+        override fun toString() = "S$successes , F$failures"
+    }
+
+
+
     // makes a map of which cards fall into a category/pattern (for example, all cards that started with a failed
     // review, then a successful review. NOTE! Since a card usually has multiple reviews, it will be referenced
-    // by multiple categories, a 'FS' card will also occur in the ''  and 'F' categories.
+    // by multiple categories, a 'FS' card will also occur in the ''  and 'F' categories. ALSO: this will select only
+    // cards with at least one more review, so you can determine the success of a pattern by looking at the average
+    // success rate of the patternlength-th review. So success rate of FS will be seen at 2nd review (0th=F, 1th=S)
     private fun getCategoryMap(cards: CardCollection): Map<String, List<Card>> {
         val categoryMap = mutableMapOf<String, List<Card>>()
         cards.getCards().forEach { card ->
             val reviews = card.getReviews()
             var currentPattern = ""
-            while (currentPattern.length < reviews.size) {
+            while (currentPattern.length < reviews.size) { //
                 categoryMap[currentPattern] = (categoryMap[currentPattern] ?: listOf()) + card
                 val indexOfReviewToCheck = currentPattern.length
-                currentPattern += if (reviews[indexOfReviewToCheck].wasSuccess) 'S' else 'F'
+                val review = reviews[indexOfReviewToCheck]
+                val waitingTime = card.waitingTimeBeforeRelevantReview(indexOfReviewToCheck).toMinutes().toDouble()
+
+                if (!fullPatternMap.contains(currentPattern)) fullPatternMap[currentPattern] = PatternStatistics()
+
+                if (review.wasSuccess) fullPatternMap[currentPattern]!!.successes += waitingTime
+                else fullPatternMap[currentPattern]!!.failures += waitingTime
+
+                val streakNumber = getStreakNumber(currentPattern)
+                if (!shortenedPatternMap.contains(streakNumber)) shortenedPatternMap[streakNumber] = PatternStatistics()
+                if (review.wasSuccess) shortenedPatternMap[streakNumber]!!.successes += waitingTime
+                else shortenedPatternMap[streakNumber]!!.failures += waitingTime
+
+                currentPattern += if (review.wasSuccess) 'S' else 'F'
             }
         }
         return categoryMap
+    }
+
+    private fun getStreakNumber(currentPattern: String): Int = when {
+        currentPattern.isEmpty() -> 0
+        currentPattern.endsWith('S') -> currentPattern.takeLastWhile { it == 'S' }.length
+        else -> -currentPattern.takeLastWhile { it == 'F' }.length
     }
 
     // makes a map of the streak length (2=2 most recent reviews were successes)
@@ -86,7 +120,12 @@ object Analyzer {
      */
     private fun getPossibleTimeRecommendation(pattern: String, cards: List<Card>, streakCards: List<Card>?): Duration? {
         val reliabilityCutoff = 60 // less than 60 cards? Not reliable enough
-        if (cards.size >= reliabilityCutoff) return Duration.ofMinutes(getCorrectedImprovedTime(pattern, cards).toLong()) else return null
+        if (cards.size >= reliabilityCutoff) return Duration.ofMinutes(
+            getCorrectedImprovedTime(
+                pattern,
+                cards
+            ).toLong()
+        ) else return null
         /*if (streakCards.size >= reliabilityCutoff) return Duration.ofMinutes()
         val correctedImprovedTime =
 
@@ -100,12 +139,6 @@ object Analyzer {
         val correctingForLaterReviewDiscount = 0.80
         return basicImprovedTime * correctingForLaterReviewDiscount
     }
-
-    private fun Card.waitingTimeBeforeRelevantReview(reviewIndex: Int) =
-        Duration.between(reviewInstant(reviewIndex - 1), reviewInstant(reviewIndex)).toMinutes()
-
-    private fun Card.reviewInstant(reviewIndex: Int): Instant =
-        if (reviewIndex >= 0) getReviews()[reviewIndex].instant else creationInstant
 
     fun run() {
         val deckName = DeckManager.currentDeck().name
@@ -153,18 +186,18 @@ object Analyzer {
         private val totalCards = cards.size
         private val succeededCards = cards.filter { it.getReviews()[patternLength].wasSuccess }
         private val failedCards = cards.filter { !it.getReviews()[patternLength].wasSuccess }
-        private val reviewingTimesInMin = cards.map { it.waitingTimeBeforeRelevantReview(patternLength) }
+        private val reviewingTimesInMin = cards.map { it.waitingTimeBeforeRelevantReview(patternLength).toMinutes() }
         private val avgReviewingTimeInMin = reviewingTimesInMin.average()
         private val numSuccesses = succeededCards.size
 
         // NOTE: prefer the median of the successful reviews; fall back to median of all reviews if there are no
         // successes.
         private val succeededMedianReviewTime =
-            succeededCards.map { it.waitingTimeBeforeRelevantReview(patternLength) }.median()
+            succeededCards.map { it.waitingTimeBeforeRelevantReview(patternLength).toMinutes() }.median()
         private val medianSuccessReviewTimeStr = succeededMedianReviewTime.toHourText()
         private val numFailures = failedCards.size
         private val medianFailureReviewTimeStr =
-            failedCards.map { it.waitingTimeBeforeRelevantReview(patternLength) }.median().toHourText()
+            failedCards.map { it.waitingTimeBeforeRelevantReview(patternLength).toMinutes() }.median().toHourText()
         private val successPercentage = succeededCards.size * 100.0 / totalCards
         private val betterIntervalDurationInMin =
             getCorrectedImprovedTime(pattern, cards)
@@ -192,8 +225,8 @@ object Analyzer {
         val patternLength = pattern.length
         val succeededCards = cards.filter { it.getReviews()[patternLength].wasSuccess }
         return if (succeededCards.isNotEmpty())
-            succeededCards.map { it.waitingTimeBeforeRelevantReview(patternLength) }.median()!!
-        else cards.map { it.waitingTimeBeforeRelevantReview(patternLength) }.median()!!
+            succeededCards.map { it.waitingTimeBeforeRelevantReview(patternLength).toMinutes() }.median()!!
+        else cards.map { it.waitingTimeBeforeRelevantReview(patternLength).toMinutes() }.median()!!
     }
 
     private fun improvedTime(pattern: String, cards: List<Card>): Double {

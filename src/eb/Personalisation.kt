@@ -3,6 +3,7 @@ package eb
 import eb.data.BaseDeckData
 import eb.data.DeckManager
 import eb.subwindow.archivingsettings.ArchivingManager
+import eb.utilities.asTwoDigitString
 import eb.utilities.log
 import java.io.IOException
 import java.nio.charset.Charset
@@ -18,27 +19,13 @@ object Personalisation {
 
     val deckLinks = loadDeckLinks()
     val shortcutsWithDeckData = loadDeckShortcutsAndReviewTimes()
-    var deckShortcutKeys = shortcutsWithDeckData.keys.sorted()
+    private var deckShortcutKeys = shortcutsWithDeckData.keys.sorted()
 
     fun saveEbStatus() {
-        println("Saving status")
         val lines = mutableListOf<String>()
         lines.add(mostRecentDeckIdentifier + DeckManager.currentDeck().name)
         lines.add(latestArchivingDirLabel + DeckManager.nameOfLastArchivingDirectory)
-        val currentDeck = DeckManager.currentDeck()
-        (1..MAX_ALT_SHORTCUTS).forEach {
-            val deckData = shortcutsWithDeckData[it]
-            val deckName = deckData?.name
-            val nextReviewTime = deckData?.nextReview
-            val nextReviewText = when {
-                deckName == currentDeck.name -> " ${LocalDateTime.now() + currentDeck.timeUntilNextReview()}"
-                nextReviewTime != null -> " $nextReviewTime"
-                else -> ""
-            }
-            if (deckName != null) {
-                lines.add("$it: $deckName$nextReviewText")
-            }
-        }
+        lines += getShortcutLines()
         ArchivingManager.deckDirectories.forEach { (deckName, deckDirectory) ->
             lines.add("@$deckName: $deckDirectory")
         }
@@ -56,6 +43,23 @@ object Personalisation {
             Files.write(statusFilePath, lines, Charset.forName("UTF-8"))
         } catch (e: IOException) {
             log("$e")
+        }
+    }
+
+    private fun getShortcutLines(): List<String> {
+        val currentDeck = DeckManager.currentDeck()
+        return (1..MAX_ALT_SHORTCUTS).filter {
+            shortcutsWithDeckData[it] != null
+        }.map {
+            val deckData = shortcutsWithDeckData[it]
+            val deckName = deckData?.name
+            val nextReviewTime = deckData?.nextReview
+            val nextReviewText = when {
+                deckName == currentDeck.name -> " ${LocalDateTime.now() + currentDeck.timeUntilNextReview()}"
+                nextReviewTime != null -> " $nextReviewTime"
+                else -> ""
+            }
+            "$it: $deckName$nextReviewText"
         }
     }
 
@@ -91,7 +95,6 @@ object Personalisation {
     private fun getPossibleNumberMatch(line: String): Pair<Int, BaseDeckData>? {
         val lineComponents = line.split(' ')
         if (lineComponents.size !in 2..3) return null
-        println(lineComponents)
         val (possibleNumber, fileName) = lineComponents
         if (possibleNumber.last() != ':') return null
         val contents = possibleNumber.dropLast(1)
@@ -127,18 +130,41 @@ object Personalisation {
     fun deckShortcuts() = (1..MAX_ALT_SHORTCUTS).joinToString("<br>") {
         val deckData = shortcutsWithDeckData[it]
         val deckName = deckData?.name
-        var result = ""
         if (deckName != null) {
             val keyName = if (it < 10) "Ctrl" else "Alt"
             val shortCutDigit = if (it < 10) it else it - 10
             val nextReview = deckData.nextReview
             val (pre, post) = if (nextReview != null) {
                 if (nextReview < LocalDateTime.now()) "*" to ""
-                else "" to " $nextReview"
+                else "" to nicelyFormatFutureDate(nextReview)
             } else "" to ""
             "$pre$keyName+$shortCutDigit: load deck '$deckName'$post"
         } else ""
     }
+
+    private fun nicelyFormatFutureDate(nextReview: LocalDateTime): String {
+        val today = LocalDateTime.now()
+        val daysDifference = getDayDifference(today, nextReview)
+        val hour = nextReview.hour.asTwoDigitString()
+        val minute = nextReview.minute.asTwoDigitString()
+        val hourMinute = "$hour:$minute"
+        return " " + when {
+            daysDifference == 0 -> "TODAY $hourMinute"
+            daysDifference == 1 -> "TOMORROW $hourMinute"
+            daysDifference < 366 -> "in $daysDifference days"
+            else -> "in more than a year"
+        }
+    }
+
+    private fun getDayDifference(earlierDate: LocalDateTime, laterDate: LocalDateTime): Int = when {
+        earlierDate.year == laterDate.year -> laterDate.dayOfYear - earlierDate.dayOfYear
+        laterDate.year == earlierDate.year + 1 -> laterDate.dayOfYear + lengthOfYear(earlierDate.year) - earlierDate.dayOfYear
+        else -> 367
+    }
+
+    private fun lengthOfYear(year: Int): Int =
+        if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) 366
+        else 365
 
     fun setNameOfLastReviewedDeck() {
         val statusFilePath = Paths.get(Eb.EB_STATUS_FILE)

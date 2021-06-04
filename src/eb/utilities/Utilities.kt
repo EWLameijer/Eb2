@@ -10,7 +10,9 @@ import java.text.DecimalFormat
 import java.text.NumberFormat
 import java.text.ParsePosition
 import java.time.Duration
+import java.time.Instant
 import java.time.LocalDateTime
+import java.time.ZoneOffset
 import java.time.temporal.ChronoField
 import java.util.HashSet
 import java.util.logging.Logger
@@ -77,6 +79,22 @@ fun Int.toLiteralChar(): Char = (this + '0'.toInt()).toChar()
 fun Int.asTwoDigitString(): String {
     val twoDigitFormat = "%02d"
     return twoDigitFormat.format(this)
+}
+
+fun Instant.getDateTimeString(): String {
+    val zonedDateTime = atZone(ZoneOffset.UTC)
+    val year = zonedDateTime.year
+    val month = zonedDateTime.monthValue.asTwoDigitString()
+    val day = zonedDateTime.dayOfMonth.asTwoDigitString()
+    val hour = zonedDateTime.hour.asTwoDigitString()
+    val minute = zonedDateTime.minute.asTwoDigitString()
+    return "$year-$month-$day $hour:$minute"
+}
+
+fun toDayHourString(durationInHours: Long): String {
+    val durationDays = durationInHours / 24
+    val durationHours = durationInHours % 24
+    return "$durationDays d, $durationHours h"
 }
 
 fun getDateString(): String {

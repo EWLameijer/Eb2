@@ -196,57 +196,13 @@ class ReviewPanel : JPanel() {
         updateSidePanel(frontText, showAnswer)
     }
 
-    private fun Instant.getDateTimeString(): String {
-        val zonedDateTime = this.atZone(ZoneOffset.UTC)
-        val year = zonedDateTime.year
-        val month = zonedDateTime.monthValue.asTwoDigitString()
-        val day = zonedDateTime.dayOfMonth.asTwoDigitString()
-        val hour = zonedDateTime.hour.asTwoDigitString()
-        val minute = zonedDateTime.minute.asTwoDigitString()
-        return "$year-$month-$day $hour:$minute"
-    }
-
-    private fun Card.waitingTimeBeforeRelevantReview(reviewIndex: Int) =
-        Duration.between(reviewInstant(reviewIndex - 1), reviewInstant(reviewIndex)).toHours()
-
     private fun Card.reviewInstant(reviewIndex: Int): Instant =
         if (reviewIndex >= 0) getReviews()[reviewIndex].instant else creationInstant
 
     private fun updateSidePanel(frontText: String, showAnswer: Boolean) {
         reviewHistoryArea.isVisible = showAnswer
         val card = DeckManager.currentDeck().cardCollection.getCardWithFront(Hint(frontText))!!
-        reviewHistoryArea.text = buildString {
-            val createdDateTime = card.creationInstant.getDateTimeString()
-            append("Card created: $createdDateTime\n")
-            for (index in card.getReviews().indices)
-                append(getReviewDataAsString(index, card))
-            val hoursSinceLastView = getHoursSinceLastView(card)
-            val hoursAndDays = toDayHourString(hoursSinceLastView)
-            append("$hoursAndDays since last view")
-        }
-    }
-
-    private fun getHoursSinceLastView(card: Card): Long {
-        val indexOfLastView = card.getReviews().size - 1 // -1 if no reviews have taken place
-        val lastViewInstant = card.reviewInstant(indexOfLastView)
-        return Duration.between(lastViewInstant, Instant.now()).toHours()
-    }
-
-    private fun toDayHourString(durationInHours: Long): String {
-        val durationDays = durationInHours / 24
-        val durationHours = durationInHours % 24
-        return "$durationDays d, $durationHours h"
-    }
-
-    private fun getReviewDataAsString(index: Int, card: Card) = buildString {
-        val review = card.getReviews()[index]
-        append("${index + 1}: ")
-        val reviewDateTime = review.instant.getDateTimeString()
-        append("$reviewDateTime ")
-        append(if (review.wasSuccess) "S" else "F")
-        val durationInHours = card.waitingTimeBeforeRelevantReview(index)
-        val dayHourString = toDayHourString(durationInHours)
-        append(" ($dayHourString)\n")
+        reviewHistoryArea.text = card.reviewHistoryText()
     }
 
     fun updateShowButton(timeRemaining: Long) {

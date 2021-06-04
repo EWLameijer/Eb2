@@ -1,11 +1,9 @@
 package eb.data
 
-import eb.utilities.Hint
-import eb.utilities.Utilities
+import eb.utilities.*
 import java.io.Serializable
 import java.time.Instant
 
-import eb.utilities.log
 import java.time.Duration
 
 /**
@@ -61,6 +59,40 @@ class Card(var front: Hint, var back: String) : Serializable {
         }
         return totalDuration
     }
+
+    fun reviewHistoryText(): String {
+        val result = StringBuilder()
+        val createdDateTime = creationInstant.getDateTimeString()
+        result.append("Card created: $createdDateTime\n")
+        for (index in getReviews().indices) result.append(getReviewDataAsString(index))
+        val hoursSinceLastView = getHoursSinceLastView()
+        val hoursAndDays = toDayHourString(hoursSinceLastView)
+        result.append("$hoursAndDays since last view")
+        return result.toString()
+    }
+
+    private fun getHoursSinceLastView(): Long {
+        val indexOfLastView = getReviews().size - 1 // -1 if no reviews have taken place
+        val lastViewInstant = reviewInstant(indexOfLastView)
+        return Duration.between(lastViewInstant, Instant.now()).toHours()
+    }
+
+    private fun getReviewDataAsString(index: Int) = buildString {
+        val review = getReviews()[index]
+        append("${index + 1}: ")
+        val reviewDateTime = review.instant.getDateTimeString()
+        append("$reviewDateTime ")
+        append(if (review.wasSuccess) "S" else "F")
+        val durationInHours = waitingTimeBeforeRelevantReview(index).toHours()
+        val dayHourString = toDayHourString(durationInHours)
+        append(" ($dayHourString)\n")
+    }
+
+    fun waitingTimeBeforeRelevantReview(reviewIndex: Int) : Duration =
+        Duration.between(reviewInstant(reviewIndex - 1), reviewInstant(reviewIndex))
+
+    private fun reviewInstant(reviewIndex: Int): Instant =
+        if (reviewIndex >= 0) getReviews()[reviewIndex].instant else creationInstant
 
     companion object {
         // the proper auto-generated serialVersionUID as cards should be serializable.
