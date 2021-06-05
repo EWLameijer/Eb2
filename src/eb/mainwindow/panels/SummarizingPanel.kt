@@ -1,5 +1,6 @@
 package eb.mainwindow.panels
 
+import eb.Personalisation
 import eb.mainwindow.MainWindowState
 
 
@@ -24,8 +25,13 @@ class SummarizingPanel internal constructor() : JPanel() {
     private var stillReviewsToDoPanel = JPanel()
 
     private fun backToInformationMode() {
-        DeckManager.currentDeck().updateRecommendedStudyIntervalDurations()
+        updateStudyIntervals()
         BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, MainWindowState.INFORMATIONAL.name))
+    }
+
+    private fun updateStudyIntervals() {
+        DeckManager.currentDeck().updateRecommendedStudyIntervalDurations()
+        Personalisation.updateTimeOfCurrentDeckReview()
     }
 
     private fun backToReviewingMode() {
@@ -80,16 +86,10 @@ class SummarizingPanel internal constructor() : JPanel() {
         add(buttonPanel)
     }
 
-    private fun toReactiveMode() =
+    private fun toReactiveMode() {
+        updateStudyIntervals()
         BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, MainWindowState.REACTIVE.name))
-
-    private fun optionalDoubleToString(d: Double?) =
-        if (d is Double) String.format("%.2f", d)
-        else "not applicable"
-
-    private fun List<Double>.averageOrNull() =
-        if (this.isEmpty()) null
-        else this.average()
+    }
 
     private fun successStatistics(reviews: List<Review>, text: String) = buildString {
         append("$text<br>")

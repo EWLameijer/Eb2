@@ -138,7 +138,7 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
 
     private fun mustReviewNow() =
         if (DeckManager.currentDeck().cardCollection.getTotal() == 0) false
-        else DeckManager.currentDeck().timeUntilNextReview().isNegative
+        else DeckManager.currentDeck().timeUntilNextReview()!!.isNegative
 
     // Opens the study options window, in which one can set the study options for
     // a deck (after which interval the first card should be studied, etc.)
@@ -214,6 +214,7 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         )
         isVisible = true
         BlackBoard.register(this, UpdateType.PROGRAMSTATE_CHANGED)
+        BlackBoard.register(this, UpdateType.DECK_CHANGED)
         messageUpdater = Timer(100) { showCorrectPanel() }
         messageUpdater!!.start()
         updateOnScreenInformation()
@@ -417,7 +418,10 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
     }
 
     override fun respondToUpdate(update: Update) = when (update.type) {
-        UpdateType.DECK_CHANGED -> showCorrectPanel()
+        UpdateType.DECK_CHANGED -> {
+            Personalisation.updateTimeOfCurrentDeckReview()
+            showCorrectPanel()
+        }
         UpdateType.PROGRAMSTATE_CHANGED -> {
             state = MainWindowState.valueOf(update.contents)
             reviewPanel.refresh() // there may be new cards to refresh

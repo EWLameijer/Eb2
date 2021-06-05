@@ -1,6 +1,7 @@
 package eb
 
 import eb.data.BaseDeckData
+import eb.data.Deck
 import eb.data.DeckManager
 import eb.subwindow.archivingsettings.ArchivingManager
 import eb.utilities.asTwoDigitString
@@ -25,7 +26,7 @@ object Personalisation {
         val lines = mutableListOf<String>()
         lines.add(mostRecentDeckIdentifier + DeckManager.currentDeck().name)
         lines.add(latestArchivingDirLabel + DeckManager.nameOfLastArchivingDirectory)
-        lines += getShortcutLines()
+        lines += getShortcutLinesForFile()
         ArchivingManager.deckDirectories.forEach { (deckName, deckDirectory) ->
             lines.add("@$deckName: $deckDirectory")
         }
@@ -46,7 +47,7 @@ object Personalisation {
         }
     }
 
-    private fun getShortcutLines(): List<String> {
+    private fun getShortcutLinesForFile(): List<String> {
         val currentDeck = DeckManager.currentDeck()
         return (1..MAX_ALT_SHORTCUTS).filter {
             shortcutsWithDeckData[it] != null
@@ -55,7 +56,6 @@ object Personalisation {
             val deckName = deckData?.name
             val nextReviewTime = deckData?.nextReview
             val nextReviewText = when {
-                deckName == currentDeck.name -> " ${LocalDateTime.now() + currentDeck.timeUntilNextReview()}"
                 nextReviewTime != null -> " $nextReviewTime"
                 else -> ""
             }
@@ -206,4 +206,10 @@ object Personalisation {
         if (key != null) shortcutsWithDeckData[key]!!.nextReview = currentDeck.timeOfNextReview()
     }
 
+    fun updateTimeOfCurrentDeckReview() {
+        val currentDeck = DeckManager.currentDeck()
+        val currentDeckId = getShortcutIdOfDeck(currentDeck.name)
+        if (currentDeckId != null )
+            shortcutsWithDeckData[currentDeckId]!!.nextReview = LocalDateTime.now() + currentDeck.timeUntilNextReview()
+    }
 }

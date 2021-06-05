@@ -14,6 +14,7 @@ import kotlin.system.exitProcess
 // better sorting of repeated cards [what does that mean?]
 // ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
+// 2.5.9: Now updates next review time in information screen after a review session
 // 2.5.8: Nicer format for reviewing times in information window
 // 2.5.7: Indicates which decks need to be reviewed now
 // 2.5.6: Will now also show shortcut name in title (handy for my notes)
@@ -80,7 +81,7 @@ import kotlin.system.exitProcess
  */
 
 object Eb {
-    const val version = 258
+    const val version = 259
     val VERSION_STRING = versionToString()
 
     private fun versionToString(): Any {

@@ -54,7 +54,7 @@ class InformationPanel : JPanel() {
         val numCards = currentDeck.cardCollection.getTotal()
         if (numCards > 0) {
             append("Time till next review: ")
-            val timeUntilNextReviewAsDuration = currentDeck.timeUntilNextReview()
+            val timeUntilNextReviewAsDuration = currentDeck.timeUntilNextReview()!!
             val timeUntilNextReviewAsText = Utilities.durationToString(timeUntilNextReviewAsDuration)
             append(timeUntilNextReviewAsText)
             val nextReviewInstant = LocalDateTime.now() + timeUntilNextReviewAsDuration
@@ -80,6 +80,7 @@ class InformationPanel : JPanel() {
 
     // Updates the message label (the information inside the main window, like time to next review)
     fun updateMessageLabel() {
+        //println("UpdatingMessageLabel")
         messageLabel.text = buildString {
             append("<html>")
             append(deckSizeMessage() + "<br>")

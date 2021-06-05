@@ -21,8 +21,8 @@ object Analyzer {
         val cards = DeckManager.currentDeck().cardCollection
         val categoryMap = getCategoryMap(cards)
         val streakMap = getStreakMap(cards)
-        println(fullPatternMap)
-        println(shortenedPatternMap)
+        //println(fullPatternMap)
+        //println(shortenedPatternMap)
         return categoryMap.mapValues { (key, value) ->
             val streakLength = stringToStreakLength(key)
             getPossibleTimeRecommendation(key, value, streakMap[streakLength])
