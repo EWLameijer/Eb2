@@ -5,10 +5,13 @@ import java.lang.IllegalArgumentException
 fun String.cleanLayout() =
     standardizeSeparator(' ', " ")
         .standardizeSeparator(',', ", ")
+        .replaceWeirdQuotes()
         .cleanDoubleQuotes()
         .cleanParentheses()
         .cleanSquareBrackets()
         .cleanAccolades()
+
+private fun String.replaceWeirdQuotes(): String = map { if (it.toInt() in 8220..8221) '"' else it }.joinToString("")
 
 private fun String.cleanParentheses() = cleanTextEnclosings('(', ')')
 private fun String.cleanSquareBrackets() = cleanTextEnclosings('[', ']')
