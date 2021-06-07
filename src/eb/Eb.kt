@@ -14,6 +14,8 @@ import kotlin.system.exitProcess
 // better sorting of repeated cards [what does that mean?]
 // ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
+
+// 2.6.1: Now shows history info when a card is selected
 // 2.6.0: Now changes weird format '"' (like from Excel) into normal double quotes
 // 2.5.9: Now updates next review time in information screen after a review session
 // 2.5.8: Nicer format for reviewing times in information window
@@ -82,7 +84,7 @@ import kotlin.system.exitProcess
  */
 
 object Eb {
-    const val version = 260
+    const val version = 261
     val VERSION_STRING = versionToString()
 
     private fun versionToString(): Any {

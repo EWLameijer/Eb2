@@ -26,6 +26,15 @@ class CardEditingWindow(
     private val autokill: Boolean
 ) : GenericCardEditingWindow(manager) {
 
+    private val noCardSelectedPanelId = "No card selected"
+    private val cardSelectedPanelId = "Card selected"
+    private val reviewDataArea = JTextArea("undefined")
+    private val listPanel = JPanel().apply {
+        layout = CardLayout()
+        add(listBox, noCardSelectedPanelId)
+        add(reviewDataArea, cardSelectedPanelId)
+    }
+
     private val cardTextListener = DelegatingDocumentListener {
         val sideListUpdate = Runnable {
             updateSideList()
@@ -35,10 +44,15 @@ class CardEditingWindow(
 
     override fun clear() {
         efficientCardTextUpdate("", "", false)
+        showSideList(noCardSelectedPanelId)
+    }
+
+    private fun showSideList(sidePanelId: String) {
+        val cardLayout = listPanel.layout as CardLayout
+        cardLayout.show(listPanel, sidePanelId)
     }
 
     private fun updateSideList() {
-        // TODO:
         val allCardTexts = DeckManager.getAllCardTexts()
         val mainDeckName = DeckManager.currentDeck().name
         val allRelevantCardTexts =
@@ -110,7 +124,7 @@ class CardEditingWindow(
         addButtonPanel()
 
         // And finally set the general settings of the 'new card'-window.
-        setSize(600, 400)
+        setSize(650, 400)
         defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
         isVisible = true
     }
@@ -133,7 +147,7 @@ class CardEditingWindow(
     private val listPanelConstraints = GridBagConstraints().apply {
         gridx = 1
         gridy = 0
-        weightx = 0.5
+        weightx = 0.4
         weighty = 1.0
         insets = Insets(0, 0, 5, 0)
         fill = GridBagConstraints.BOTH
@@ -142,11 +156,10 @@ class CardEditingWindow(
     private fun addListPanel() {
         listBox.addListSelectionListener(::copyCardFromList)
         updateSideList()
-        val listPanel = JPanel().apply {
-            add(listBox)
-            minimumSize = Dimension(150, 200)
+        val scrollPane = JScrollPane(listPanel).apply {
+            minimumSize = Dimension(175, 200)
         }
-        add(JScrollPane(listPanel), listPanelConstraints)
+        add(scrollPane, listPanelConstraints)
     }
 
     private fun copyCardFromList(e: ListSelectionEvent) {
@@ -164,6 +177,10 @@ class CardEditingWindow(
                 copiedCardBase.back,
                 copiedCardBase.deckName != DeckManager.currentDeck().name
             )
+            val (originalCard, deckName) = DeckManager.getCardWithDeckName(cleanedFrontText)!!
+            val deckInfo = if (deckName != DeckManager.currentDeck().name) "Deck: $deckName\n" else ""
+            reviewDataArea.text = deckInfo + originalCard.reviewHistoryText()
+            showSideList(cardSelectedPanelId)
         }
     }
 
