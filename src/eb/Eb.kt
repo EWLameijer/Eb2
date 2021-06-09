@@ -14,7 +14,7 @@ import kotlin.system.exitProcess
 // better sorting of repeated cards [what does that mean?]
 // ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
-
+// 2.6.2: Small correction to make card-front-side list appear when OK button is pressed, and generalize reviewing times also if the last streak length has over cutoff events.
 // 2.6.1: Now shows history info when a card is selected
 // 2.6.0: Now changes weird format '"' (like from Excel) into normal double quotes
 // 2.5.9: Now updates next review time in information screen after a review session
@@ -84,7 +84,7 @@ import kotlin.system.exitProcess
  */
 
 object Eb {
-    const val version = 261
+    const val version = 262
     val VERSION_STRING = versionToString()
 
     private fun versionToString(): Any {

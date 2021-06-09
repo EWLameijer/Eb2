@@ -113,6 +113,7 @@ class CardEditingWindow(
         val backText = cardBackPane.text
 
         manager.processProposedContents(frontText, backText, true, this)
+        showSideList(noCardSelectedPanelId)
         if (autokill) this.dispose()
     }
 
