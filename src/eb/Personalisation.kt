@@ -12,6 +12,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.LocalDateTime
+import kotlin.concurrent.fixedRateTimer
 
 object Personalisation {
     const val MAX_ALT_SHORTCUTS = 19
@@ -32,7 +33,7 @@ object Personalisation {
         }
         val usedDecks = mutableSetOf<String>()
         deckLinks.forEach { (deck, linkedDecks) ->
-            if (deck !in usedDecks) {
+            if (deck !in usedDecks && linkedDecks.isNotEmpty()) {
                 usedDecks += deck
                 linkedDecks.forEach { usedDecks += it }
                 val linkedDecksStr = linkedDecks.joinToString("&")
@@ -48,7 +49,6 @@ object Personalisation {
     }
 
     private fun getShortcutLinesForFile(): List<String> {
-        val currentDeck = DeckManager.currentDeck()
         return (1..MAX_ALT_SHORTCUTS).filter {
             shortcutsWithDeckData[it] != null
         }.map {
@@ -68,7 +68,6 @@ object Personalisation {
     fun updateShortcuts() {
         deckShortcutKeys = shortcutsWithDeckData.keys.sorted()
     }
-
 
     private fun loadDeckShortcutsAndReviewTimes(): MutableMap<Int, BaseDeckData> {
         val statusFilePath = Paths.get(Eb.EB_STATUS_FILE)
@@ -211,5 +210,16 @@ object Personalisation {
         val currentDeckId = getShortcutIdOfDeck(currentDeck.name)
         if (currentDeckId != null )
             shortcutsWithDeckData[currentDeckId]!!.nextReview = LocalDateTime.now() + currentDeck.timeUntilNextReview()
+    }
+
+    fun unlink(firstDeck: String, secondDeck: String) {
+        unlinkSecondFromFirst(firstDeck, secondDeck)
+        unlinkSecondFromFirst(secondDeck, firstDeck)
+    }
+
+    private fun unlinkSecondFromFirst(firstDeck: String, secondDeck: String) {
+        val currentlyLinkedDecks : Set<String> = deckLinks[firstDeck]!!
+        val withSecondDeckRemoved = currentlyLinkedDecks - secondDeck
+        deckLinks[firstDeck] = withSecondDeckRemoved
     }
 }

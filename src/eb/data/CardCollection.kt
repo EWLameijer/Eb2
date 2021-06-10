@@ -26,6 +26,7 @@ import java.lang.RuntimeException
 class CardCollection : Serializable {
 
     private var cards = arrayListOf<Card>()
+    @Transient var modifiedSinceLoad : Boolean = false
 
     fun getCards() = cards.toList()
 
@@ -64,6 +65,7 @@ method has to be invoked first to check the possibility of the current method.""
         }
 
         cards.add(card)
+        modifiedSinceLoad = true
         BlackBoard.post(Update(UpdateType.DECK_CHANGED))
     }
 
@@ -75,6 +77,7 @@ method has to be invoked first to check the possibility of the current method.""
 
     fun removeCard(card: Card) {
         val collectionContainedCard = cards.remove(card)
+        modifiedSinceLoad = true
         if (collectionContainedCard)
             BlackBoard.post(Update(UpdateType.DECK_CHANGED))
         else

@@ -61,7 +61,7 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
             } else {
                 // Case 3 of 3: there is a current (but different) card with the same front. Resolve this conflict.
                 handleCardBeingDuplicate(frontHint, backText, baseCardWithThisFront, callingWindow)
-                if (shouldClearCardWindow) callingWindow.clearContents()
+                if (shouldClearCardWindow) callingWindow.clear()
             }
         }
     }
@@ -148,7 +148,7 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
     private fun deleteCurrentCard(callingWindow: GenericCardEditingWindow) {
         closeOptionPane()
         if (inCardCreatingMode()) {
-            if (callingWindow !is ThreeSidedCardWindow) cardEditingWindow!!.clearContents()
+            if (callingWindow !is ThreeSidedCardWindow) cardEditingWindow!!.clear()
         } else {
             DeckManager.currentDeck().cardCollection.removeCard(card!!)
             endEditing(callingWindow)
@@ -177,7 +177,7 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
         if (inCardCreatingMode()) {
             val candidateCard = Card(frontText, backText)
             DeckManager.currentDeck().cardCollection.addCard(candidateCard)
-            if (shouldClearCardWindow) callingWindow.clearContents()
+            if (shouldClearCardWindow) callingWindow.clear()
             callingWindow.focusFront()
         } else {
             // in editing mode

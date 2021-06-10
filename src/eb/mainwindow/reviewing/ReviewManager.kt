@@ -133,6 +133,7 @@ object ReviewManager : Listener {
         ensureReviewSessionIsValid()
         val duration = Duration.between(startTimer.instant(), stopTimer.instant())
         startTimer.reset()
+        DeckManager.currentDeck().cardCollection.modifiedSinceLoad = true
         currentCard()!!.addReview(Review(duration, wasRemembered))
         DeckManager.currentDeck().addStudyTime(duration)
         val answerCheckDuration = Duration.between(stopTimer.instant(), Instant.now())

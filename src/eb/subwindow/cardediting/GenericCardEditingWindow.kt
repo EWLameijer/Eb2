@@ -16,7 +16,7 @@ import javax.swing.DefaultListModel
 
 abstract class GenericCardEditingWindow(protected val manager: CardEditingManager) : JFrame() {
 
-    protected abstract fun clear()
+    abstract fun clear()
     var copiedCard: Card? = null
 
     protected val listBox = JList(DefaultListModel<String>()).apply {
@@ -92,8 +92,6 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
     fun updateContents(vararg cardTexts: String) =
         cardTexts.forEachIndexed { index, contents -> cardPanes[index].text = contents }
 
-    fun clearContents() = cardPanes.forEach { it.text = "" }
-
     protected fun addButtonPanel() {
         val buttonPane = JPanel().apply {
             add(cancelButton)
@@ -115,7 +113,7 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
     }
 
     private fun cleanOrExit() {
-        if (cardPanes.any { it.text.isNotBlank() }) clearContents() else closeWindow()
+        if (cardPanes.any { it.text.isNotBlank() }) clear() else closeWindow()
     }
 }
 
