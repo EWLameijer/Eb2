@@ -14,6 +14,7 @@ import kotlin.system.exitProcess
 // better sorting of repeated cards [what does that mean?]
 // ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
+// 2.6.4: Now also saves deck if only the studyoptions have been changed.
 // 2.6.3: Can now merge decks; also, escape now properly returns the edit window sidebar to front list mode
 // 2.6.2: Small correction to make card-front-side list appear when OK button is pressed, and generalize reviewing times also if the last streak length has over cutoff events.
 // 2.6.1: Now shows history info when a card is selected
@@ -85,7 +86,7 @@ import kotlin.system.exitProcess
  */
 
 object Eb {
-    const val version = 263
+    const val version = 264
     val VERSION_STRING = versionToString()
 
     private fun versionToString(): Any {

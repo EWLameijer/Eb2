@@ -1,17 +1,11 @@
 package eb.subwindow.studyoptions
 
-import eb.data.Review
 import eb.subwindow.studyoptions.settinggroups.IntervalSettings
 import eb.subwindow.studyoptions.settinggroups.TimerSettings
 import eb.subwindow.studyoptions.settinggroups.OtherSettings
 
 import java.io.Serializable
 import java.util.Objects
-
-import eb.utilities.TimeInterval
-import eb.utilities.TimeUnit
-import eb.utilities.Utilities
-import java.time.Duration
 
 /**
  * The StudyOptions class can store the learning settings that we want to use
@@ -25,6 +19,8 @@ class StudyOptions(
     var timerSettings: TimerSettings = TimerSettings(),
     var otherSettings: OtherSettings = OtherSettings()
 ) : Serializable {
+
+    @Transient var modifiedSinceLoad : Boolean = false
 
     override fun equals(other: Any?) = when {
         this === other -> true

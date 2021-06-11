@@ -340,7 +340,7 @@ object DeckManager {
         ensureDeckExists()
         try {
             for (deck in decks) {
-                if (deck.cardCollection.modifiedSinceLoad) {
+                if (deck.hasBeenModifiedSinceLoad()) {
                     val objectOutputStream = ObjectOutputStream(FileOutputStream(deck.fileHandle))
                     objectOutputStream.writeObject(deck)
                     deck.saveDeckToTextFiles()
@@ -352,13 +352,12 @@ object DeckManager {
             log("$e")
             throw RuntimeException("Deck.save() error: cannot write the new deck to disk.")
         }
-        // postconditions: the save has to be a success! Which it is if no
-        // exception occurred - in other words, if you get here.
     }
 
     fun setStudyOptions(studyOptions: StudyOptions) {
         ensureDeckExists()
         decks[0].studyOptions = studyOptions
+        decks[0].studyOptions.modifiedSinceLoad = true
     }
 
     fun setNameOfLastReviewedDeck(nameOfLastReviewedDeck: String) {

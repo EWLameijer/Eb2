@@ -12,7 +12,6 @@ import eb.Eb
 import eb.writer.CardConverter
 import eb.subwindow.studyoptions.StudyOptions
 import eb.utilities.EMPTY_STRING
-import eb.utilities.Utilities
 import eb.utilities.Utilities.EOL
 import eb.utilities.isValidIdentifier
 import java.time.temporal.Temporal
@@ -22,7 +21,6 @@ import eb.analysis.Analyzer
 import eb.subwindow.archivingsettings.ArchivingManager
 import eb.utilities.getDateString
 import java.time.LocalDateTime
-import kotlin.math.pow
 
 
 /**
@@ -149,6 +147,10 @@ class Deck(val name: String) : Serializable {
 
     fun updateRecommendedStudyIntervalDurations() {
         recommendationsMap = Analyzer.getRecommendationsMap()
+    }
+
+    fun hasBeenModifiedSinceLoad(): Boolean {
+        return cardCollection.modifiedSinceLoad || studyOptions.modifiedSinceLoad
     }
 
     companion object {
