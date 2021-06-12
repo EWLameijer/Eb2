@@ -338,13 +338,13 @@ object DeckManager {
             return
         }
         ensureDeckExists()
+        Personalisation.registerTimeOfNextReview()
         try {
             for (deck in decks) {
                 if (deck.hasBeenModifiedSinceLoad()) {
                     val objectOutputStream = ObjectOutputStream(FileOutputStream(deck.fileHandle))
                     objectOutputStream.writeObject(deck)
                     deck.saveDeckToTextFiles()
-                    Personalisation.registerTimeOfNextReview()
                 }
             }
         } catch (e: Exception) {
