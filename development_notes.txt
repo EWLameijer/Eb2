@@ -1,0 +1,126 @@
+What do I want?
+
+1) Clean up the text files - organize those a bit
+    NOW: Cleaning Documentation.txt
+2) Prepare for next experiment:
+    >100 dagen: OR simply read without lookup (if reading speed the same) OR -chewing gum
+    -show pictures in field?
+    -learn in context (sentences)
+
+
+
+
+
+
+DONE:
+- have second layer of predicting times on streak length, if a pattern itself is not prevalent enough yet.
+- when after review back to information screen, update stats.
+- make linked-cards visible (be it not modifiable)
+- make the current deck clear (in the title: CX/AX)
+- make clear in the list when the next review will be
+- make when the next review more beautiful: TODAY/TOMORROW/in X days (and then hh:mm instead of the whole shebang)
+- Show card history if card chosen
+
+
+
+- allow if under cutoff to base on average for all right-streaks
+
+
+Fusion of non-linked decks
+    fun mergeWithDeck(name: String)
+    *still need to check if deck is modified
+    NOW
+    1) whenever a card is added or deleted, modify main deck
+    2) whenever a card is reviewed, modify main deck
+    3) on special merges, modify linked deck.
+
+*M3:4 Show card history if card chosen?
+
+? forbid modifying linked cards?
+    copyCardFromList
+
+
+DONE
+- make the current deck clear (in the title: CX/AX)
+-NEXT> make clear in the list when the next review will be
+    currentDeck.timeUntilNextReview() = Duration. But need
+    LocalDateTime.now() + timeUntilNextReviewAsDuration
+
+
+
+Ugh... need to modify a map.
+Normally, if using val, then original map will point to memory location
+
+
+Deleting... status of button should be updated
+
+!Noodgeval: studyOptions Loadsettings werkt niet!
+Utilities.stringToDouble(lengtheningFactor.contents())!! gives exception
+SO  lengtheningFactor.contents() ==
+
+Of label 'number of cards per reviewing session' setting contents to '20'
+Of label 'after each successful review, increase review time by a factor' setting contents to '5.0'
+Of label 'Strive for this percentage successful reviews (between 80% and 90% likely best)' setting contents to '85.0'
+stringToDouble: '14'
+stringToDouble: '3'
+stringToDouble: '14'
+stringToDouble: ''
+
+
+
+
+// en evenveel minuten: auto-test Swing UI?
+Tijd nodig?
+
+1: Voeg 'timed rehearsal' toe aan studyoptions-window
+2: voeg card-front-maxtime toe
+3: voeg card-back-maxtime toe
+
+
+
+OK
+
+
+
+OK. Nu met timer.
+Wat is het idee? Wel, dat na een bepaalde tijd (zeg 10s) automatisch show wordt ingedrukt
+Dan begint een tweede timer te lopen (zeg 10s) Als na 10s nog niks ingedrukt, zet op 'fail'en toont volgende
+Tweede fase: dat je na indrukken 'failure' niet gelijk doorgaat maar nog
+
+Eerste deel:
+-maak hardcoded in code: max 10s voor kaart, dan switch/'show'
+DAN:
+maak ch
+
+
+
+
+
+
+
+
+
+
+
+
+
+OK. Goal: if you load a card by clicking and then modify it (same front, different back), treat it not as a new card,
+but as a card being edited.
+
+ if (frontText == currentFront() // you are editing a card, so in edit mode
+
+
+  || currentCardWithThisFront == null) {
+
+frontText == currentFront() -> currentFront()
+
+private fun currentFront() =
+            if (card == null) EMPTY_STRING
+            else card!!.front.contents
+
+Als ik praat:
+Scenario:
+Ik doe Ctrl-N voor een nieuwe kaart.
+Ik klik een kaart aan in de lijst.
+Ik wijzig de achterzijde
+

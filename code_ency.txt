@@ -2,4 +2,7 @@ remove duplicates (menu)
     showDuplicateFrontPopup
 
 merge decks:
-    DeckManager- fun mergeWithDeck(name: String) {
+    DeckManager- fun mergeWithDeck(name: String)
+
+
+switching panel: just a JPanel with a CardLayout (situationalButtonPanel.layout = CardLayout())
