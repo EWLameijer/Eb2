@@ -1,0 +1,11 @@
+user_manual: how to use Eb, description of features and such
+TODO: current plans, priorities for Eb, including bugs. Includes change history
+code_ency: notes on where to find functionality
+documentation_overview: this document
+
+// to remove/process:
+development_notes
+Documentation
+eb_overview
+manual
+

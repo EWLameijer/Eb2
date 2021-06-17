@@ -11,7 +11,13 @@ fun String.cleanLayout() =
         .cleanSquareBrackets()
         .cleanAccolades()
 
-private fun String.replaceWeirdQuotes(): String = map { if (it.toInt() in 8220..8221) '"' else it }.joinToString("")
+private fun String.replaceWeirdQuotes(): String = map {
+    when (it.toInt()) {
+        in 8220..8221 -> '"'
+        8217 -> '\''
+        else -> it
+    }
+}.joinToString("")
 
 private fun String.cleanParentheses() = cleanTextEnclosings('(', ')')
 private fun String.cleanSquareBrackets() = cleanTextEnclosings('[', ']')

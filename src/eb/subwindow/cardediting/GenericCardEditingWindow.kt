@@ -17,7 +17,6 @@ import javax.swing.DefaultListModel
 abstract class GenericCardEditingWindow(protected val manager: CardEditingManager) : JFrame() {
 
     abstract fun clear()
-    var copiedCard: Card? = null
 
     protected val listBox = JList(DefaultListModel<String>()).apply {
         selectionMode = ListSelectionModel.SINGLE_SELECTION
@@ -114,6 +113,10 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
 
     private fun cleanOrExit() {
         if (cardPanes.any { it.text.isNotBlank() }) clear() else closeWindow()
+    }
+
+    fun updateTitle()  {
+        title = "${DeckManager.currentDeck().name}: ${manager.getVerb()} card"
     }
 }
 

@@ -1,8 +1,20 @@
-remove duplicates (menu)
-    showDuplicateFrontPopup
+
+edit window
+    OK-button -> submitCandidateCardToDeck
 
 merge decks:
     DeckManager- fun mergeWithDeck(name: String)
 
+remove duplicates (menu)
+    showDuplicateFrontPopup
+
+selecting a card (from the side list)
+    copyCardFromList
 
 switching panel: just a JPanel with a CardLayout (situationalButtonPanel.layout = CardLayout())
+
+time of next review
+    For deck in list on information screen: registerTimeOfNextReview
+
+
+

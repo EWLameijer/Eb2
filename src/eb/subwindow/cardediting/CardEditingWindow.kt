@@ -44,6 +44,8 @@ class CardEditingWindow(
 
     override fun clear() {
         efficientCardTextUpdate("", "", false)
+        manager.setEditedCard(null)
+
         showSideList(noCardSelectedPanelId)
     }
 
@@ -170,9 +172,10 @@ class CardEditingWindow(
             // Okay. Need to get the basic card contents: front is not needed, but back and deck are.
             val cleanedFrontText = newFrontText.stripHtmlItalic()
             val copiedCardBase = DeckManager.getBaseCard(cleanedFrontText)
-            copiedCard = if (copiedCardBase!!.deckName == DeckManager.currentDeck().name)
-                DeckManager.currentDeck().cardCollection.getCardWithFront(Hint(cleanedFrontText))!!
-            else null // should not be able to edit a card from a linked deck
+            if (copiedCardBase!!.deckName == DeckManager.currentDeck().name) {
+                val copiedCard = DeckManager.currentDeck().cardCollection.getCardWithFront(Hint(cleanedFrontText))!!
+                manager.setEditedCard(copiedCard)
+            }
             efficientCardTextUpdate(
                 cleanedFrontText,
                 copiedCardBase.back,

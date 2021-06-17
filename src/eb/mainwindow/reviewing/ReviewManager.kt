@@ -31,7 +31,6 @@ import kotlin.math.min
 object ReviewManager : Listener {
     init {
         BlackBoard.register(this, UpdateType.DECK_SWAPPED)
-        BlackBoard.register(this, UpdateType.CARD_CHANGED)
         BlackBoard.register(this, UpdateType.DECK_CHANGED)
     }
 
@@ -143,7 +142,6 @@ object ReviewManager : Listener {
     }
 
     override fun respondToUpdate(update: Update) = when (update.type) {
-        UpdateType.CARD_CHANGED -> updatePanels()
         UpdateType.DECK_CHANGED -> updateCollection() // It can be that the current card (or another) has been deleted
         UpdateType.DECK_SWAPPED -> initializeReviewSession()
         else -> doNothing
@@ -266,14 +264,17 @@ object ReviewManager : Listener {
             updatePanels()
             return
         }
-        val deletingCurrentCard = !deckContainsCardWithThisFront(cardsToBeReviewed[counter].front)
+        val currentDeck = DeckManager.currentDeck()
+        val currentFront = cardsToBeReviewed[counter].front
+        val cardFromDeck : Card? = currentDeck.cardCollection.getCardWithFront(currentFront)
+        val deletingOrReplacingCurrentCard = cardFromDeck == null || !currentDeck.getTimeUntilNextReview(cardFromDeck).isNegative
         val deletedIndices =
             cardsToBeReviewed.withIndex().filter { !deckContainsCardWithThisFront(cardsToBeReviewed[it.index].front) }
                 .map { it.index }
         cardsToBeReviewed = cardsToBeReviewed.filter { deckContainsCardWithThisFront(it.front) }.toMutableList()
         deletedIndices.forEach { if (it <= counter) counter-- }
 
-        if (deletingCurrentCard) {
+        if (deletingOrReplacingCurrentCard) {
             moveToNextReviewOrEnd()
         } else {
             updatePanels()

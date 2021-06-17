@@ -40,8 +40,7 @@ class ThreeSidedCardWindow(manager: CardEditingManager) : GenericCardEditingWind
     init {
         // preconditions: none (we can assume the user clicked the appropriate
         // button, and even otherwise there is not a big problem)
-        val operation = if (manager.inCardCreatingMode()) "add" else "edit"
-        this.title = "${DeckManager.currentDeck().name}: $operation card"
+        updateTitle()
 
         // Create the panel to edit the front of the card, and make enter
         // and tab transfer focus to the panel for editing the back of the card.

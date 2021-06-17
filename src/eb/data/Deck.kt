@@ -119,7 +119,7 @@ class Deck(val name: String) : Serializable {
 
     // Returns the time till the next review of the given card. The time can be negative, as that information can help
     // deprioritize 'over-ripe' cards which likely have to be learned anew anyway.
-    private fun getTimeUntilNextReview(card: Card): Duration =
+    fun getTimeUntilNextReview(card: Card): Duration =
         Duration.between(Instant.now(), getNextReviewInstant(card))
 
     private fun calculateIntervalDurationFromUserSettings(card: Card): Duration =

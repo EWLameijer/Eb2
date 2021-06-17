@@ -33,6 +33,10 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
         if (card == null) EMPTY_STRING
         else card!!.front.contents
 
+    private fun currentBack() =
+        if (card == null) EMPTY_STRING
+        else card!!.back
+
     init {
         BlackBoard.register(this, UpdateType.DECK_SWAPPED)
     }
@@ -56,7 +60,9 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
             //  Add the card and be done with it (well, when adding cards one should not close the new card window).
             val frontHint = Hint(frontText)
             val baseCardWithThisFront = DeckManager.getBaseCard(frontText)
-            if (frontText == currentFront() || baseCardWithThisFront == null) {
+            if (frontText == currentFront() && backText == currentBack()) {
+                if (shouldClearCardWindow) callingWindow.clear()
+            } else if (frontText != currentFront() || baseCardWithThisFront == null) {
                 submitCardContents(frontHint, backText, shouldClearCardWindow, callingWindow)
             } else {
                 // Case 3 of 3: there is a current (but different) card with the same front. Resolve this conflict.
@@ -72,7 +78,7 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
             endEditing(callingWindow)
         } else {
             // back is filled: so there is an error
-            val verb = if (inCardCreatingMode()) "add" else "modify"
+            val verb = getVerb()
             JOptionPane.showMessageDialog(
                 null,
                 "Cannot $verb card: the front of a card cannot be blank.",
@@ -81,6 +87,8 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
         }
     }
 
+    fun getVerb() = if (inCardCreatingMode()) "add" else "edit"
+
     private fun handleCardBeingDuplicate(
         frontText: Hint,
         backText: String,
@@ -88,19 +96,19 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
         callingWindow: GenericCardEditingWindow
     ) {
         if (duplicateBaseCard.deckName != DeckManager.currentDeck().name) {
-            val verb = if (inCardCreatingMode()) "add" else "modify"
+            val verb = getVerb()
             JOptionPane.showMessageDialog(
                 null,
                 "Cannot $verb card: the card is already present in a linked deck.",
                 "Cannot $verb card", JOptionPane.ERROR_MESSAGE
             )
         } else {
-            val cardCopiedFromSideList = callingWindow.copiedCard
             val duplicate = DeckManager.currentDeck().cardCollection.getCardWithFront(frontText)!!
-            if (cardCopiedFromSideList != null && cardCopiedFromSideList.front == frontText) {
+            if (card != null && card!!.front == frontText) {
                 // while I first made a menu here, it is more convenient to assume, like with normal editing,
                 // that the user simply wants to change the back of the card.
-                deleteOtherCard(duplicate, frontText, backText, callingWindow)
+                DeckManager.currentDeck().cardCollection.removeCard(duplicate)
+                submitCardContents(frontText, backText, true, callingWindow)
             } else {
                 showDuplicateFrontPopup(duplicate, backText, frontText, callingWindow)
             }
@@ -174,18 +182,11 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
         shouldClearCardWindow: Boolean,
         callingWindow: GenericCardEditingWindow
     ) {
-        if (inCardCreatingMode()) {
-            val candidateCard = Card(frontText, backText)
-            DeckManager.currentDeck().cardCollection.addCard(candidateCard)
-            if (shouldClearCardWindow) callingWindow.clear()
-            callingWindow.focusFront()
-        } else {
-            // in editing mode
-            card!!.front = frontText
-            card!!.back = backText
-            endEditing(callingWindow)
-        }
-        BlackBoard.post(Update(UpdateType.CARD_CHANGED))
+        val candidateCard = Card(frontText, backText)
+        DeckManager.currentDeck().cardCollection.addCard(candidateCard)
+        if (shouldClearCardWindow) callingWindow.clear()
+        callingWindow.focusFront()
+        BlackBoard.post(Update(UpdateType.DECK_CHANGED))
     }
 
     fun endEditing(window: GenericCardEditingWindow) {
@@ -204,5 +205,11 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
         if (update.type == UpdateType.DECK_SWAPPED && cardEditingWindow != null) {
             endEditing(cardEditingWindow)
         }
+    }
+
+    // so side list selection can update the card to be edited
+    fun setEditedCard(selectedCard: Card?) {
+        card = selectedCard
+        cardEditingWindow?.updateTitle()
     }
 }

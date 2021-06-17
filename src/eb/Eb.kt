@@ -14,6 +14,7 @@ import kotlin.system.exitProcess
 // better sorting of repeated cards [what does that mean?]
 // ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
+// 2.6.6: now automatically corrects weird "'" characters, also now properly edits cards, not deleting them when you want to edit them!
 // 2.6.5: Solved small bug in which not modifying a deck also did not register a next review time in the shortcut list
 // 2.6.4: Now also saves deck if only the studyoptions have been changed.
 // 2.6.3: Can now merge decks; also, escape now properly returns the edit window sidebar to front list mode
@@ -87,7 +88,7 @@ import kotlin.system.exitProcess
  */
 
 object Eb {
-    const val version = 265
+    const val version = 266
     val VERSION_STRING = versionToString()
 
     private fun versionToString(): Any {
