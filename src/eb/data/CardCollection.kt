@@ -8,6 +8,7 @@ import eb.eventhandling.BlackBoard
 import eb.eventhandling.Update
 import eb.eventhandling.UpdateType
 import eb.utilities.Hint
+import eb.utilities.cleanLayout
 import java.lang.RuntimeException
 
 /**
@@ -26,7 +27,9 @@ import java.lang.RuntimeException
 class CardCollection : Serializable {
 
     private var cards = arrayListOf<Card>()
-    @Transient var modifiedSinceLoad : Boolean = false
+
+    @Transient
+    var modifiedSinceLoad: Boolean = false
 
     fun getCards() = cards.toList()
 
@@ -82,6 +85,28 @@ method has to be invoked first to check the possibility of the current method.""
             BlackBoard.post(Update(UpdateType.DECK_CHANGED))
         else
             throw RuntimeException("CardCollection.removeCard() error: the card cannot be removed, as it is not in the deck!")
+    }
+
+    fun standardizeTexts() = cards.forEach {
+        val originalFrontText = it.front.contents
+        val originalBackText = it.back
+        val cleanedFrontText = originalFrontText.cleanLayout()
+        val cleanedBackText = originalBackText.cleanLayout()
+        updateWithNotify(originalFrontText, cleanedFrontText, it) { card, str -> card.front = Hint(str) }
+        updateWithNotify(originalBackText, cleanedBackText, it) { card, str -> card.back = str }
+    }
+
+
+    private fun updateWithNotify(oldText: String, newText: String, card: Card, update: (Card, String) -> Unit) {
+        if (newText != oldText) {
+            val showNewText =
+                newText.mapIndexed { index, ch -> if (index < oldText.length && oldText[index] != ch) "*$ch" else "$ch" }
+                    .joinToString("")
+            println("Changing '$oldText' to '$newText' (differences: '$showNewText').")
+
+            update(card, newText)
+            modifiedSinceLoad = true
+        }
     }
 
     companion object {

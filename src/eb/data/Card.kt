@@ -42,18 +42,13 @@ class Card(var front: Hint, var back: String) : Serializable {
 
     fun getReviewsAfter(instant: Instant) = reviews.filter { it.instant > instant }
 
-    fun getMemoryTime() : Duration {
+    fun getMemoryTime(): Duration {
         var index = reviews.lastIndex
         var totalDuration = Duration.ofSeconds(0)
         while (index >= 0) {
             if (reviews[index].wasSuccess) {
-                if (index > 0) { // there has been a previous review
-                    val elapsedTime = Duration.between(reviews[index-1].instant, reviews[index].instant)
-                    totalDuration += elapsedTime
-                } else {
-                    val elapsedTime = Duration.between(creationInstant, reviews[index].instant)
-                    totalDuration += elapsedTime
-                }
+                totalDuration += if (index > 0) Duration.between(reviews[index - 1].instant, reviews[index].instant)
+                else Duration.between(creationInstant, reviews[index].instant)
             } else break
             index--
         }
@@ -88,7 +83,7 @@ class Card(var front: Hint, var back: String) : Serializable {
         append(" ($dayHourString)\n")
     }
 
-    fun waitingTimeBeforeRelevantReview(reviewIndex: Int) : Duration =
+    fun waitingTimeBeforeRelevantReview(reviewIndex: Int): Duration =
         Duration.between(reviewInstant(reviewIndex - 1), reviewInstant(reviewIndex))
 
     private fun reviewInstant(reviewIndex: Int): Instant =

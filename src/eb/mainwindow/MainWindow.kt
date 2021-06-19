@@ -124,7 +124,7 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         return when (val key = Personalisation.getShortcutIdOfDeck(soughtDeckName)) {
             null -> ""
             in 1..9 -> "[C$key] "
-            else -> "[A${key-10}] "
+            else -> "[A${key - 10}] "
         }
     }
 
@@ -222,14 +222,19 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
     }
 
 
-    private fun createDeckManagementMenu(): JMenu {
-        val deckManagementMenu = JMenu("Manage Deck")
-        deckManagementMenu.add(createMenuItem("Add Card", 'n') { CardEditingManager(false) })
-        deckManagementMenu.add(createMenuItem("Add Card (triple mode)", 'o') { CardEditingManager(true) })
-        deckManagementMenu.add(createMenuItem("Study Options", 't', ::openStudyOptionsWindow))
-        deckManagementMenu.add(createMenuItem("Deck Archiving Options", 'r', ::openDeckArchivingWindow))
-        return deckManagementMenu
+    private fun createDeckManagementMenu() = JMenu("Manage Deck").apply {
+        add(createMenuItem("Add Card", 'n') { CardEditingManager(false) })
+        add(createMenuItem("Add Card (triple mode)", 'o') { CardEditingManager(true) })
+        add(createMenuItem("Study Options", 't', ::openStudyOptionsWindow))
+        add(createMenuItem("Deck Archiving Options", 'r', ::openDeckArchivingWindow))
+        add(createMenuItem("Analyze deck", 'z', ::analyzeDeck))
+        add(createMenuItem("Standardize card texts", 's', ::standardizeCardTexts))
     }
+
+    private fun standardizeCardTexts() {
+        DeckManager.currentDeck().cardCollection.standardizeTexts()
+    }
+
 
     private fun createFileManagementMenu(): JMenu {
         val fileMenu = JMenu("File")
@@ -242,7 +247,6 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         add(createMenuItem("Create deck", 'k', ::createDeck))
         add(createMenuItem("Load deck", 'l', ::loadDeck))
         add(createMenuItem("Restore from archive", 'h', ::restoreDeck))
-        add(createMenuItem("Analyze deck", 'z', ::analyzeDeck))
         add(createMenuItem("Merge other deck into this one", 'm', ::mergeDeck))
         add(createMenuItem("Quit", 'q', ::saveAndQuit))
     }
