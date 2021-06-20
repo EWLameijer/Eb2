@@ -41,8 +41,6 @@ object ReviewManager : Listener {
     private var frontTimer: Timer? = null
     private fun timerSettings(): TimerSettings = DeckManager.currentDeck().studyOptions.timerSettings
 
-    private val evalStatusListener : ActionListener = ActionListener{ e: ActionEvent -> evaluateStatus()}
-
     // counter stores the index of the card in the cardsToBeReviewed list that should be reviewed next.
     private var counter: Int = 0
 
@@ -168,7 +166,7 @@ object ReviewManager : Listener {
 
     private fun continueReviewSession() {
         val currentDeck = DeckManager.currentDeck()
-        val maxNumReviews = currentDeck.studyOptions.otherSettings?.reviewSessionSize
+        val maxNumReviews = currentDeck.studyOptions.otherSettings.reviewSessionSize
         val reviewableCards = currentDeck.reviewableCardList()
         val totalNumberOfReviewableCards = reviewableCards.size
         log("Number of reviewable cards is $totalNumberOfReviewableCards")
@@ -197,7 +195,7 @@ object ReviewManager : Listener {
         startTimer.press()
         stopTimer.reset()
         if (activeCardExists() && timerSettings().limitReviewTime && frontTimer == null) {
-            frontTimer = Timer(100) { evaluateStatus()  }
+            frontTimer = Timer(100) { evaluateStatus() }
             frontTimer!!.start()
         } else if (frontTimer != null && !timerSettings().limitReviewTime) {
             frontTimer!!.stop()
@@ -216,7 +214,7 @@ object ReviewManager : Listener {
     }
 
     private fun updateStatusInWholeCardMode() {
-        val wholeTimeLimit = timerSettings()!!.wholeStudyTimeLimit.asDuration()
+        val wholeTimeLimit = timerSettings().wholeStudyTimeLimit.asDuration()
         val backInspectionTimePassed = Duration.between(stopTimer.instant(), Instant.now())
         if (backInspectionTimePassed > wholeTimeLimit) {
             wasRemembered(false)
@@ -227,7 +225,7 @@ object ReviewManager : Listener {
     }
 
     private fun updateStatusInFrontCardMode() {
-        val frontTimeLimit = timerSettings()!!.frontStudyTimeLimit.asDuration()
+        val frontTimeLimit = timerSettings().frontStudyTimeLimit.asDuration()
         val timePassed = Duration.between(startTimer.instant(), Instant.now())
         if (timePassed > frontTimeLimit) {
             showAnswer()
@@ -266,8 +264,9 @@ object ReviewManager : Listener {
         }
         val currentDeck = DeckManager.currentDeck()
         val currentFront = cardsToBeReviewed[counter].front
-        val cardFromDeck : Card? = currentDeck.cardCollection.getCardWithFront(currentFront)
-        val deletingOrReplacingCurrentCard = cardFromDeck == null || !currentDeck.getTimeUntilNextReview(cardFromDeck).isNegative
+        val cardFromDeck: Card? = currentDeck.cardCollection.getCardWithFront(currentFront)
+        val deletingOrReplacingCurrentCard =
+            cardFromDeck == null || !currentDeck.getTimeUntilNextReview(cardFromDeck).isNegative
         val deletedIndices =
             cardsToBeReviewed.withIndex().filter { !deckContainsCardWithThisFront(cardsToBeReviewed[it.index].front) }
                 .map { it.index }

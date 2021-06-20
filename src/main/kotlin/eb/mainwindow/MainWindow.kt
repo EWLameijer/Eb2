@@ -2,20 +2,13 @@ package eb.mainwindow
 
 import eb.Eb
 import eb.Personalisation
-import eb.analysis.Analyzer
 import java.awt.CardLayout
-import java.awt.event.ActionEvent
 import java.awt.event.WindowListener
 import java.beans.EventHandler
 
-import javax.swing.JFileChooser
 import javax.swing.JFrame
-import javax.swing.JMenu
-import javax.swing.JMenuBar
-import javax.swing.JMenuItem
 import javax.swing.JOptionPane
 import javax.swing.JPanel
-import javax.swing.KeyStroke
 import javax.swing.Timer
 
 import eb.data.Deck
@@ -28,18 +21,10 @@ import eb.mainwindow.panels.InformationPanel
 import eb.mainwindow.panels.SummarizingPanel
 import eb.mainwindow.reviewing.ReviewManager
 import eb.mainwindow.reviewing.ReviewPanel
-import eb.subwindow.cardediting.CardEditingManager
 
 import eb.popups.DeckShortcutsPopup
-import eb.subwindow.archivingsettings.ArchivingSettingsWindow
-import eb.subwindow.studyoptions.StudyOptionsWindow
 import eb.utilities.*
-import java.awt.event.KeyEvent.getExtendedKeyCodeForChar
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
 import kotlin.system.exitProcess
-import javax.swing.filechooser.FileNameExtensionFilter
 
 
 // The name of the program.
@@ -87,12 +72,7 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
     }
 
     private fun createMenu() {
-        val mainMenuBar = JMenuBar()
-        val fileMenu = createFileManagementMenu()
-        mainMenuBar.add(fileMenu)
-        val deckManagementMenu = createDeckManagementMenu()
-        mainMenuBar.add(deckManagementMenu)
-        jMenuBar = mainMenuBar
+        jMenuBar = MainWindowMenu(this)
     }
 
     private fun updateMenuIfNeeded() {
@@ -140,66 +120,29 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         if (DeckManager.currentDeck().cardCollection.getTotal() == 0) false
         else DeckManager.currentDeck().timeUntilNextReview()!!.isNegative
 
-    // Opens the study options window, in which one can set the study options for
-    // a deck (after which interval the first card should be studied, etc.)
-    private fun openStudyOptionsWindow() = StudyOptionsWindow.display()
 
-    private fun createDeck() {
-        do {
-            val deckName = JOptionPane.showInputDialog(
-                null,
-                "Please give name for deck to be created"
-            )
-            if (deckName == null) {
-                // cancel button has been pressed
-                return
-            } else {
-                if (!deckName.isValidIdentifier) {
-                    JOptionPane.showMessageDialog(
-                        null,
-                        "Sorry, \"$deckName\" is not a valid name for a deck. Please choose another name."
-                    )
-                } else if (Deck.getDeckFileHandle(deckName).exists()) {
-                    JOptionPane.showMessageDialog(
-                        null,
-                        "Sorry, the deck \"$deckName\" already exists. Please choose another name."
-                    )
-                } else {
-                    // The deckname is valid!
-                    changeDeck { DeckManager.createDeckWithName(deckName) }
-                    return
-                }
-            }
-        } while (true) // user is allowed to try create decks until he/she succeeds or gives up
-    }
 
-    private fun createMenuItem(label: String, actionKey: Char, listener: () -> Unit) = JMenuItem(label).apply {
-        accelerator = KeyStroke.getKeyStroke(getExtendedKeyCodeForChar(actionKey.toInt()), ActionEvent.CTRL_MASK)
-        addActionListener { listener() }
-    }
 
-    private fun createAltMenuItem(label: String, actionKey: Char, listener: () -> Unit) = JMenuItem(label).apply {
-        accelerator = KeyStroke.getKeyStroke(getExtendedKeyCodeForChar(actionKey.toInt()), ActionEvent.ALT_MASK)
-        addActionListener { listener() }
-    }
+
+
 
 
     //Performs the proper buildup of the window (after the construction has initialized all components properly).
     private fun init() {
-        // add menu
         createMenu()
-
-        // add message label (or show cards-to-be-reviewed)
-        modesContainer.add(informationPanel, INFORMATION_PANEL_ID)
-        modesContainer.add(reviewPanel, REVIEW_PANEL_ID)
+        initPanels()
         ReviewManager.setPanel(reviewPanel)
-        modesContainer.add(SummarizingPanel(), SUMMARIZING_PANEL_ID)
-        add(modesContainer)
-        Personalisation.setNameOfLastReviewedDeck()
-        Personalisation.loadLatestArchivingDirectory()
-        showCorrectPanel()
 
-        // now show the window itself.
+        initGeneralWindow()
+        BlackBoard.register(this, UpdateType.PROGRAMSTATE_CHANGED)
+        BlackBoard.register(this, UpdateType.DECK_CHANGED)
+        messageUpdater = Timer(100) { showCorrectPanel() }
+        messageUpdater!!.start()
+        updateOnScreenInformation()
+        if (!DeckManager.currentDeck().studyOptions.timerSettings.totalTimingMode) showReactivePanel()
+    }
+
+    private fun initGeneralWindow() {
         setSize(1000, 700)
         defaultCloseOperation = EXIT_ON_CLOSE
 
@@ -213,114 +156,20 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
             )
         )
         isVisible = true
-        BlackBoard.register(this, UpdateType.PROGRAMSTATE_CHANGED)
-        BlackBoard.register(this, UpdateType.DECK_CHANGED)
-        messageUpdater = Timer(100) { showCorrectPanel() }
-        messageUpdater!!.start()
-        updateOnScreenInformation()
-        if (!DeckManager.currentDeck().studyOptions.timerSettings.totalTimingMode) showReactivePanel()
+    }
+
+    private fun initPanels() {
+        modesContainer.add(informationPanel, INFORMATION_PANEL_ID)
+        modesContainer.add(reviewPanel, REVIEW_PANEL_ID)
+        modesContainer.add(SummarizingPanel(), SUMMARIZING_PANEL_ID)
+        add(modesContainer)
+        showCorrectPanel()
     }
 
 
-    private fun createDeckManagementMenu() = JMenu("Manage Deck").apply {
-        add(createMenuItem("Add Card", 'n') { CardEditingManager(false) })
-        add(createMenuItem("Add Card (triple mode)", 'o') { CardEditingManager(true) })
-        add(createMenuItem("Study Options", 't', ::openStudyOptionsWindow))
-        add(createMenuItem("Deck Archiving Options", 'r', ::openDeckArchivingWindow))
-        add(createMenuItem("Analyze deck", 'z', ::analyzeDeck))
-        add(createMenuItem("Standardize card texts", 's', ::standardizeCardTexts))
-    }
+    fun manageDeckShortcuts() = DeckShortcutsPopup().updateShortcuts()
 
-    private fun standardizeCardTexts() {
-        DeckManager.currentDeck().cardCollection.standardizeTexts()
-    }
-
-
-    private fun createFileManagementMenu(): JMenu {
-        val fileMenu = JMenu("File")
-        addBasicFileManagementItems(fileMenu)
-        addDeckLoadingMenuItems(fileMenu)
-        return fileMenu
-    }
-
-    private fun addBasicFileManagementItems(fileMenu: JMenu) = fileMenu.apply {
-        add(createMenuItem("Create deck", 'k', ::createDeck))
-        add(createMenuItem("Load deck", 'l', ::loadDeck))
-        add(createMenuItem("Restore from archive", 'h', ::restoreDeck))
-        add(createMenuItem("Merge other deck into this one", 'm', ::mergeDeck))
-        add(createMenuItem("Quit", 'q', ::saveAndQuit))
-    }
-
-    private fun addDeckLoadingMenuItems(fileMenu: JMenu) {
-        fileMenu.addSeparator()
-        fileMenu.add(createMenuItem("Manage deck-shortcuts", '0', ::manageDeckShortcuts))
-        (1..9).filter { Personalisation.shortcutsWithDeckData[it] != null }.forEach { digit ->
-            val deckName = Personalisation.shortcutsWithDeckData[digit]!!.name
-            fileMenu.add(
-                createMenuItem(
-                    "Load deck '$deckName'",
-                    digit.toLiteralChar()
-                ) { loadDeckIfPossible(deckName) })
-        }
-        (10..Personalisation.MAX_ALT_SHORTCUTS).filter { Personalisation.shortcutsWithDeckData[it] != null }
-            .forEach { rawIndex ->
-                val deckName = Personalisation.shortcutsWithDeckData[rawIndex]!!.name
-                val digit = rawIndex - 10 // deck 11 becomes Alt+1 etc.
-                fileMenu.add(
-                    createAltMenuItem(
-                        "Load deck '$deckName'",
-                        digit.toLiteralChar()
-                    ) { loadDeckIfPossible(deckName) })
-            }
-    }
-
-    private fun manageDeckShortcuts() = DeckShortcutsPopup().updateShortcuts()
-
-    private fun analyzeDeck() {
-        Analyzer.run()
-    }
-
-    private fun restoreDeck() {
-        val chooser = JFileChooser(DeckManager.nameOfLastArchivingDirectory).apply {
-            fileFilter = FileNameExtensionFilter("Archive files", "json")
-        }
-        val result = chooser.showOpenDialog(this)
-        if (result == JFileChooser.CANCEL_OPTION) {
-            return
-        } else {
-            val selectedFile = chooser.selectedFile
-            DeckManager.nameOfLastArchivingDirectory = selectedFile.parent
-            DeckManager.createDeckFromArchive(selectedFile)
-        }
-    }
-
-    private fun openDeckArchivingWindow() = ArchivingSettingsWindow.display()
-
-
-    private fun loadDeck() {
-        do {
-            val deckName = JOptionPane.showInputDialog(
-                null,
-                "Please give name for deck to be loaded"
-            )
-                ?: // Cancel button pressed
-                return
-            if (loadDeckIfPossible(deckName)) return
-        } while (true)
-    }
-
-    private fun mergeDeck() {
-        do {
-            val deckName = JOptionPane.showInputDialog(
-                null, "Please give name for deck to be merged into this one"
-            )
-                ?: // Cancel button pressed
-                return
-            if (mergeDeckIfPossible(deckName)) return
-        } while (true)
-    }
-
-    private fun mergeDeckIfPossible(deckName: String): Boolean {
+    fun mergeDeckIfPossible(deckName: String): Boolean {
         if (canDeckBeLoaded(deckName)) {
             DeckManager.mergeWithDeck(deckName)
             //changeDeck { DeckManager.loadDeckGroup(deckName) }
@@ -329,7 +178,16 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         return false
     }
 
-    private fun loadDeckIfPossible(deckName: String): Boolean {
+    // Saves the current deck and its status, and quits Eb.
+// NOTE: CANNOT BE MADE PRIVATE DESPITE COMPILER COMPLAINING DUE TO addWindowListener CALL
+    fun saveAndQuit() {
+        Personalisation.saveEbStatus()
+        DeckManager.save()
+        dispose()
+        exitProcess(0)
+    }
+
+    fun loadDeckIfPossible(deckName: String): Boolean {
         if (canDeckBeLoaded(deckName)) {
             changeDeck { DeckManager.loadDeckGroup(deckName) }
             return true
@@ -337,7 +195,7 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         return false
     }
 
-    private fun changeDeck(deckProducer: () -> Unit) {
+    fun changeDeck(deckProducer: () -> Unit) {
         messageUpdater!!.stop()
         deckProducer()
         // reset window
@@ -347,6 +205,8 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         updateOnScreenInformation()
         messageUpdater!!.start()
     }
+
+
 
     private fun canDeckBeLoaded(deckName: String): Boolean {
         if (!deckName.isValidIdentifier) {
@@ -376,19 +236,9 @@ class MainWindow : JFrame(PROGRAM_NAME), Listener {
         return false
     }
 
-    fun tryRestore(deckName: String) {
+    private fun tryRestore(deckName: String) {
         println("Trying to restore $deckName")
     }
-
-    // Saves the current deck and its status, and quits Eb.
-// NOTE: CANNOT BE MADE PRIVATE DESPITE COMPILER COMPLAINING DUE TO addWindowListener CALL
-    fun saveAndQuit() {
-        Personalisation.saveEbStatus()
-        DeckManager.save()
-        dispose()
-        exitProcess(0)
-    }
-
 
     private fun switchToPanel(panelId: String) {
         val cardLayout = modesContainer.layout as CardLayout

@@ -1,7 +1,6 @@
 package eb
 
 import eb.data.BaseDeckData
-import eb.data.Deck
 import eb.data.DeckManager
 import eb.subwindow.archivingsettings.ArchivingManager
 import eb.utilities.asTwoDigitString
@@ -12,12 +11,30 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.LocalDateTime
-import kotlin.concurrent.fixedRateTimer
 
 object Personalisation {
     const val MAX_ALT_SHORTCUTS = 19
+
     private const val latestArchivingDirLabel = "most_recently_used_archiving_directory: "
     private const val mostRecentDeckIdentifier = "most_recently_reviewed_deck: "
+    val nameOfLastDeck = getNameOfLastReviewedDeck()
+    var nameOfLastArchivingDirectory = loadLatestArchivingDirectory()
+
+    private fun getNameOfLastReviewedDeck(): String? {
+        val statusFilePath = Paths.get(Eb.EB_STATUS_FILE)
+
+        try {
+            val lines = Files.readAllLines(statusFilePath, Charset.forName("UTF-8"))
+            val fileLine = lines.find { it.startsWith(mostRecentDeckIdentifier) }
+            if (fileLine != null) {
+                return fileLine.substring(mostRecentDeckIdentifier.length)
+            }
+        } catch (e: IOException) {
+            log("$e")
+        }
+
+        return null
+    }
 
     val deckLinks = loadDeckLinks()
     val shortcutsWithDeckData = loadDeckShortcutsAndReviewTimes()
@@ -26,7 +43,7 @@ object Personalisation {
     fun saveEbStatus() {
         val lines = mutableListOf<String>()
         lines.add(mostRecentDeckIdentifier + DeckManager.currentDeck().name)
-        lines.add(latestArchivingDirLabel + DeckManager.nameOfLastArchivingDirectory)
+        lines.add(latestArchivingDirLabel + nameOfLastArchivingDirectory)
         lines += getShortcutLinesForFile()
         ArchivingManager.deckDirectories.forEach { (deckName, deckDirectory) ->
             lines.add("@$deckName: $deckDirectory")
@@ -126,19 +143,27 @@ object Personalisation {
         return links
     }
 
-    fun deckShortcuts() = (1..MAX_ALT_SHORTCUTS).joinToString("<br>") {
-        val deckData = shortcutsWithDeckData[it]
-        val deckName = deckData?.name
-        if (deckName != null) {
-            val keyName = if (it < 10) "Ctrl" else "Alt"
-            val shortCutDigit = if (it < 10) it else it - 10
-            val nextReview = deckData.nextReview
-            val (pre, post) = if (nextReview != null) {
-                if (nextReview < LocalDateTime.now()) "*" to ""
-                else "" to nicelyFormatFutureDate(nextReview)
-            } else "" to ""
-            "$pre$keyName+$shortCutDigit: load deck '$deckName'$post"
-        } else ""
+    fun deckShortcuts() =
+        (1..MAX_ALT_SHORTCUTS).map { it to shortcutsWithDeckData[it] }.filter { it.second?.name != null }
+            .joinToString("<br>") { (index, deckData) ->
+                val deckName = deckData!!.name
+                val keyName = if (index < 10) "Ctrl" else "Alt"
+                val shortCutDigit = if (index < 10) index else index - 10
+                val nextReview = deckData.nextReview
+                val (pre, post) = if (nextReview != null) {
+                    if (nextReview < LocalDateTime.now()) "*" to ""
+                    else "" to nicelyFormatFutureDate(nextReview)
+                } else "" to ""
+                "$pre$keyName+$shortCutDigit: load deck '$deckName'$post"
+            }
+
+
+    fun toStudy(): String {
+        val decksToBeReviewed = (1..MAX_ALT_SHORTCUTS).map { shortcutsWithDeckData[it] }.filter {
+            it?.name != null && it.nextReview != null && it.nextReview!! < LocalDateTime.now()
+        }.joinToString { it!!.name }
+        return if (decksToBeReviewed == "") "Reviewing of favorite decks finished for now!"
+        else "Yet to review: [$decksToBeReviewed]"
     }
 
     private fun nicelyFormatFutureDate(nextReview: LocalDateTime): String {
@@ -165,35 +190,19 @@ object Personalisation {
         if (year % 4 == 0 && (year % 100 != 0 || year % 400 == 0)) 366
         else 365
 
-    fun setNameOfLastReviewedDeck() {
-        val statusFilePath = Paths.get(Eb.EB_STATUS_FILE)
 
-        try {
-            val lines = Files.readAllLines(statusFilePath, Charset.forName("UTF-8"))
-            val fileLine = lines.find { it.startsWith(mostRecentDeckIdentifier) }
-            if (fileLine != null) {
-                val deckName = fileLine.substring(mostRecentDeckIdentifier.length)
-                DeckManager.setNameOfLastReviewedDeck(deckName)
-            }
-        } catch (e: IOException) {
-            // If input fails, set name to ""
-            DeckManager.setNameOfLastReviewedDeck("")
-            log("$e")
-        }
-    }
-
-    fun loadLatestArchivingDirectory() {
+    private fun loadLatestArchivingDirectory() : String? {
         val statusFilePath = Paths.get(Eb.EB_STATUS_FILE)
         try {
             val lines = Files.readAllLines(statusFilePath, Charset.forName("UTF-8"))
             val fileLine = lines.find { it.startsWith(latestArchivingDirLabel) }
             if (fileLine != null) {
-                val lastArchivingDirName = fileLine.substring(latestArchivingDirLabel.length)
-                DeckManager.nameOfLastArchivingDirectory = lastArchivingDirName
+                return fileLine.substring(latestArchivingDirLabel.length)
             }
         } catch (e: IOException) {
             log("$e")
         }
+        return null
     }
 
     fun getShortcutIdOfDeck(soughtDeckName: String): Int? =
@@ -208,7 +217,7 @@ object Personalisation {
     fun updateTimeOfCurrentDeckReview() {
         val currentDeck = DeckManager.currentDeck()
         val currentDeckId = getShortcutIdOfDeck(currentDeck.name)
-        if (currentDeckId != null )
+        if (currentDeckId != null)
             shortcutsWithDeckData[currentDeckId]!!.nextReview = LocalDateTime.now() + currentDeck.timeUntilNextReview()
     }
 
@@ -218,7 +227,7 @@ object Personalisation {
     }
 
     private fun unlinkSecondFromFirst(firstDeck: String, secondDeck: String) {
-        val currentlyLinkedDecks : Set<String> = deckLinks[firstDeck]!!
+        val currentlyLinkedDecks: Set<String> = deckLinks[firstDeck]!!
         val withSecondDeckRemoved = currentlyLinkedDecks - secondDeck
         deckLinks[firstDeck] = withSecondDeckRemoved
     }

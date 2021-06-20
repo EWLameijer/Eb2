@@ -66,9 +66,7 @@ class Deck(val name: String) : Serializable {
     fun reviewableCardList(): List<Card> =
         cardCollection.getCards().filter { getTimeUntilNextReview(it).isNegative }
 
-    fun timeUntilNextReview(): Duration? =
-        if (cardCollection.getTotal() > 0) cardCollection.getCards().map { getTimeUntilNextReview(it) }
-            .min()!! else null
+    fun timeUntilNextReview(): Duration? = cardCollection.getCards().map { getTimeUntilNextReview(it) }.minOrNull()
 
     fun timeOfNextReview(): LocalDateTime? =
         if (cardCollection.getTotal() > 0) LocalDateTime.now() + timeUntilNextReview()

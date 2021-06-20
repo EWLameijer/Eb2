@@ -31,11 +31,9 @@ object DeckManager {
     private val decks: MutableList<Deck> = mutableListOf()
     private var loadTime: Instant = Instant.now()
     fun deckLoadTime() = loadTime
-    private var nameOfLastReviewedDeck = ""
-    var nameOfLastArchivingDirectory = ""
 
     // The name of the default deck
-    private const val DEFAULT_DECKNAME = "default"
+    private const val defaultDeckName = "default"
 
     private fun deckHasBeenLoaded() = decks.isNotEmpty()
 
@@ -44,16 +42,17 @@ object DeckManager {
         if (!deckHasBeenLoaded()) {
             // No deck has been loaded yet - try to load the default deck,
             // or else create it.
-            if (canLoadDeck(nameOfLastDeck())) loadDeckGroup(nameOfLastDeck())
-            else createDeckWithName(DEFAULT_DECKNAME)
+            val nameOfLastReviewedDeck = Personalisation.nameOfLastDeck
+            if (nameOfLastReviewedDeck != null && canLoadDeck(nameOfLastReviewedDeck))
+                loadDeckGroup(nameOfLastReviewedDeck)
+            else if (canLoadDeck(defaultDeckName)) loadDeckGroup(defaultDeckName)
+            else createDeckWithName(defaultDeckName)
         }
         // postconditions: m_currentDeck cannot be null, but that is ensured by the Deck.createDeckWithName call,
         // which exits with an error if a deck cannot be created.
         require(deckHasBeenLoaded()) { "Deck.ensureDeckExists() error: there is no valid deck." }
     }
 
-    // Returns the name of the deck studied previously (ideal when starting a new session of Eb).
-    private fun nameOfLastDeck() = nameOfLastReviewedDeck.ifEmpty { DEFAULT_DECKNAME }
 
     fun loadDeckGroup(name: String) {
         require(canLoadDeck(name)) { "DeckManager.loadDeck() error: deck cannot be loaded. Was canLoadDeck called?" }
@@ -70,22 +69,15 @@ object DeckManager {
     }
 
     fun mergeWithDeck(name: String) {
-        if (name == decks[0].name) {
-            JOptionPane.showMessageDialog(
-                null,
-                "You cannot merge a deck with itself",
-                "Can't merge deck with itself", JOptionPane.ERROR_MESSAGE
-            )
-            return
+        if (name == decks[0].name) showAttemptToMergeWithItselfMessage() // attempt to merge deck with itself
+        else {
+            val otherIndex = decks.map { it.name }.indexOf(name)
+            if (otherIndex != -1) mergeWithLinkedDeck(otherIndex) // the other deck is already linked to this one.
+            else mergeWithNonLinkedDeck(name)
         }
-        val otherIndex = decks.map { it.name }.indexOf(name)
-        if (otherIndex != -1) {
-            val otherCards: List<Card> = decks[otherIndex].cardCollection.getCards()
-            otherCards.forEach { currentDeck().cardCollection.addCard(it) }
-            Personalisation.unlink(decks[0].name, decks[otherIndex].name)
-            decks.removeAt(otherIndex)
-            return
-        }
+    }
+
+    private fun mergeWithNonLinkedDeck(name: String) {
         require(canLoadDeck(name)) { "DeckManager.mergeWithDeck() error: deck cannot be loaded. Was canLoadDeck called?" }
         val otherDeck = loadDeck(name)
         val otherCards: List<Card> = otherDeck!!.cardCollection.getCards()
@@ -106,6 +98,21 @@ object DeckManager {
                 ) // the base card is in a linked deck
             }
         }
+    }
+
+    private fun mergeWithLinkedDeck(otherIndex: Int) {
+        val otherCards: List<Card> = decks[otherIndex].cardCollection.getCards()
+        otherCards.forEach { currentDeck().cardCollection.addCard(it) }
+        Personalisation.unlink(decks[0].name, decks[otherIndex].name)
+        decks.removeAt(otherIndex)
+    }
+
+    private fun showAttemptToMergeWithItselfMessage() {
+        JOptionPane.showMessageDialog(
+            null,
+            "You cannot merge a deck with itself",
+            "Can't merge deck with itself", JOptionPane.ERROR_MESSAGE
+        )
     }
 
     private fun possiblyReplaceOriginal(
@@ -134,24 +141,7 @@ object DeckManager {
         currentDeck: String,
         versionInDeckMergedIn: Card
     ) {
-        // 2b: remove card from linked deck, add new card to main deck
-        // 2c: remove card from linked deck, add merged card to main deck
-        val buttons = arrayOf(
-            getMergeToCurrentDeckButton(
-                currentVersion,
-                currentDeck,
-                versionInDeckMergedIn
-            ), // remove card from linked deck, move merged card to current deck
-            getMergeToLinkedDeckButton(
-                currentVersion,
-                currentDeck,
-                versionInDeckMergedIn
-            ), // replace card in linked deck by merged card
-            replaceCardAndMoveToCurrentDeckButton(currentVersion, currentDeck, versionInDeckMergedIn),
-            replaceCardInLinkedDeckButton(currentVersion, currentDeck, versionInDeckMergedIn),
-            getIgnoreNewCardButton() // ignore the new card
-        )
-
+        val buttons = getHandleMergeDuplicateInLinkedDeckButtons(currentVersion, currentDeck, versionInDeckMergedIn)
         val front = currentVersion.front.contents
         val currentBack = currentVersion.back
         val backOfMergeInCandidate = versionInDeckMergedIn.back
@@ -162,6 +152,26 @@ object DeckManager {
             JOptionPane.QUESTION_MESSAGE, null, buttons, null
         )
     }
+
+    private fun getHandleMergeDuplicateInLinkedDeckButtons(
+        currentVersion: Card,
+        currentDeck: String,
+        versionInDeckMergedIn: Card
+    ) = arrayOf(
+        getMergeToCurrentDeckButton(
+            currentVersion,
+            currentDeck,
+            versionInDeckMergedIn
+        ), // remove card from linked deck, move merged card to current deck
+        getMergeToLinkedDeckButton(
+            currentVersion,
+            currentDeck,
+            versionInDeckMergedIn
+        ), // replace card in linked deck by merged card
+        replaceCardAndMoveToCurrentDeckButton(currentVersion, currentDeck, versionInDeckMergedIn),
+        replaceCardInLinkedDeckButton(currentVersion, currentDeck, versionInDeckMergedIn),
+        getIgnoreNewCardButton() // ignore the new card
+    )
 
     private fun replaceCardInLinkedDeckButton(
         currentVersion: Card,
@@ -185,7 +195,13 @@ object DeckManager {
         versionInDeckMergedIn: Card
     ) =
         JButton("Move new card to current deck, delete card from linked deck").apply {
-            addActionListener { replaceAndMoveToCurrentDeck(currentVersion, currentDeckName, versionInDeckMergedIn) }
+            addActionListener {
+                replaceAndMoveToCurrentDeck(
+                    currentVersion,
+                    currentDeckName,
+                    versionInDeckMergedIn
+                )
+            }
         }
 
     private fun replaceAndMoveToCurrentDeck(
@@ -199,7 +215,11 @@ object DeckManager {
         closeOptionPane()
     }
 
-    private fun getMergeToLinkedDeckButton(currentVersion: Card, currentDeckName: String, versionInDeckMergedIn: Card) =
+    private fun getMergeToLinkedDeckButton(
+        currentVersion: Card,
+        currentDeckName: String,
+        versionInDeckMergedIn: Card
+    ) =
         JButton("Merge backs of cards to linked deck").apply {
             addActionListener { mergeToLinkedDeck(currentVersion, currentDeckName, versionInDeckMergedIn) }
         }
@@ -358,10 +378,6 @@ object DeckManager {
         ensureDeckExists()
         decks[0].studyOptions = studyOptions
         decks[0].studyOptions.modifiedSinceLoad = true
-    }
-
-    fun setNameOfLastReviewedDeck(nameOfLastReviewedDeck: String) {
-        this.nameOfLastReviewedDeck = nameOfLastReviewedDeck
     }
 
     fun setArchivingDirectory(directory: File) {

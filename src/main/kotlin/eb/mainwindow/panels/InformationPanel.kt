@@ -80,26 +80,26 @@ class InformationPanel : JPanel() {
 
     // Updates the message label (the information inside the main window, like time to next review)
     fun updateMessageLabel() {
-        //println("UpdatingMessageLabel")
         messageLabel.text = buildString {
             append("<html>")
             append(deckSizeMessage() + "<br>")
             append(totalReviewTimeMessage() + "<br>")
             append(timeToNextReviewMessage())
             append("$uiCommands<br>")
-            append(Personalisation.deckShortcuts())
+            append(Personalisation.deckShortcuts() + "<br><br>")
+            append(Personalisation.toStudy())
             append("</html>")
         }
     }
 
     //Returns the commands of the user interface as a string, which can be used to instruct the user on Eb's use.
-    private val uiCommands = ("""<br>
+    private val uiCommands = """<br>
             Ctrl+N to add a card.<br>
             Ctrl+Q to quit.<br>
             Ctrl+K to create a deck.<br>
             Ctrl+L to load a deck.<br>
             Ctrl+T to view/edit the study options.<br>
-            Ctrl+R to view/edit the deck archiving options.<br>""".trimIndent())
+            Ctrl+R to view/edit the deck archiving options.<br>""".trimIndent()
 
 
 }

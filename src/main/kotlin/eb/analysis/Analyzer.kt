@@ -144,8 +144,8 @@ object Analyzer {
     }
 
     private fun BufferedWriter.writeHeader(cards: CardCollection) {
-        val numReviews = cards.getCards().sumBy { it.getReviews().size }
-        val numCorrect = cards.getCards().sumBy { it.getReviews().count { review -> review.wasSuccess } }
+        val numReviews = cards.getCards().sumOf { it.getReviews().size }
+        val numCorrect = cards.getCards().sumOf { it.getReviews().count { review -> review.wasSuccess } }
         val numIncorrect = numReviews - numCorrect
         val successPercentage = 100.0 * numCorrect / numReviews
         write("Eb version ${Eb.VERSION_STRING}${Utilities.EOL}")

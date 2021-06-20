@@ -12,7 +12,7 @@ fun String.cleanLayout() =
         .cleanAccolades()
 
 private fun String.replaceWeirdQuotes(): String = map {
-    when (it.toInt()) {
+    when (it.code) {
         in 8220..8221 -> '"'
         8217 -> '\''
         else -> it

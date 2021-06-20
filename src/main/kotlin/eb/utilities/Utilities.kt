@@ -22,8 +22,6 @@ import javax.swing.JComponent
 
 import javax.swing.KeyStroke
 import kotlin.math.abs
-import kotlin.math.floor
-import kotlin.math.roundToInt
 
 /**
  * Contains some tools/generic methods that are not application-domain specific
@@ -73,7 +71,7 @@ val String.isValidIdentifier
 
 fun log(text: String) = Logger.getGlobal().info(text)
 
-fun Int.toLiteralChar(): Char = (this + '0'.toInt()).toChar()
+fun Int.toLiteralChar(): Char = (this + '0'.code).toChar()
 
 // ensures 1, 2, 3 are printed as "01", "02" and "03" etc.
 fun Int.asTwoDigitString(): String {
@@ -241,26 +239,27 @@ object Utilities {
             finalPrefix = "minus "
         }
         val seconds = durationAsSeconds % 60
-        append(" seconds")
-        insert(0, seconds)
+        append("$seconds seconds")
         val durationAsMinutes = durationAsSeconds / 60
-        if (durationAsMinutes > 0) {
-            val minutes = durationAsMinutes % 60
-            insert(0, "$minutes minutes and ")
-            val durationAsHours = durationAsMinutes / 60
-            if (durationAsHours > 0) {
-                val hours = durationAsHours % 24
-                insert(0, "$hours hours, ")
-                val durationAsDays = durationAsHours / 24
-                if (durationAsDays > 0) {
-                    val years = durationAsDays / 365
-                    val days = durationAsDays % 365
-                    insert(0, "$days days, ")
-                    if (years > 0) insert(0, "$years years, ")
-                }
+        if (durationAsMinutes > 0) insert(0, getMinutesAndMore(durationAsMinutes))
+        insert(0, finalPrefix)
+    }
+
+    private fun getMinutesAndMore(durationAsMinutes: Long) = buildString {
+        val minutes = durationAsMinutes % 60
+        append("$minutes minutes and ")
+        val durationAsHours = durationAsMinutes / 60
+        if (durationAsHours > 0) {
+            val hours = durationAsHours % 24
+            insert(0, "$hours hours, ")
+            val durationAsDays = durationAsHours / 24
+            if (durationAsDays > 0) {
+                val years = durationAsDays / 365
+                val days = durationAsDays % 365
+                insert(0, "$days days, ")
+                if (years > 0) insert(0, "$years years, ")
             }
         }
-        insert(0, finalPrefix)
     }
 
 
@@ -324,7 +323,7 @@ object Utilities {
     private fun createKeyPressSensitiveButton(text: String, actionKey: KeyStroke, action: () -> Unit): JButton =
         JButton(text).apply {
             val actionOnKeyPressId = "actionOnKeyPress"
-            mnemonic = KeyEvent.getExtendedKeyCodeForChar(actionKey.keyChar.toInt())
+            mnemonic = KeyEvent.getExtendedKeyCodeForChar(actionKey.keyChar.code)
             getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(actionKey, actionOnKeyPressId)
             actionMap.put(actionOnKeyPressId, ProgrammableAction { action() })
             addActionListener { action() }
