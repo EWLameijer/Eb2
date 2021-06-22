@@ -1,6 +1,5 @@
 package eb.mainwindow.panels
 
-import eb.Eb
 import eb.Personalisation
 import eb.data.DeckManager
 import eb.eventhandling.BlackBoard
@@ -15,7 +14,6 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import javax.swing.JButton
 import javax.swing.JLabel
-import javax.swing.JMenuBar
 import javax.swing.JPanel
 
 class InformationPanel : JPanel() {

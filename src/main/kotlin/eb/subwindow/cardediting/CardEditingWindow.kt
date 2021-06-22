@@ -1,10 +1,12 @@
 package eb.subwindow.cardediting
 
+import eb.data.Card
 import eb.data.DeckManager
 import eb.eventhandling.DelegatingDocumentListener
 import eb.utilities.Hint
 import eb.utilities.Utilities
 import eb.utilities.italicizeIf
+import eb.utilities.uiElements.UnfocusableButton
 import java.awt.*
 import javax.swing.*
 import javax.swing.event.ListSelectionEvent
@@ -20,10 +22,10 @@ import javax.swing.event.ListSelectionEvent
  * @author Eric-Wubbo Lameijer
  */
 class CardEditingWindow(
-    frontText: String,
-    backText: String,
+    private val frontText: String,
+    private val backText: String,
     manager: CardEditingManager,
-    private val autokill: Boolean
+    private val closeOnOK: Boolean
 ) : GenericCardEditingWindow(manager) {
 
     private val noCardSelectedPanelId = "No card selected"
@@ -35,9 +37,26 @@ class CardEditingWindow(
         add(reviewDataArea, cardSelectedPanelId)
     }
 
+    private val copyButton = UnfocusableButton("Copy") { copyCard() }
+
+    override fun addCopyButtonIfNeeded(panel: JPanel) {
+        panel.add(copyButton)
+        toggleCopyButton()
+    }
+
+    private fun copyCard() {
+        setLocationRelativeTo(null)
+        CardEditingManager(false, Card(Hint(frontText), backText))
+    }
+
+    private fun toggleCopyButton() {
+        copyButton.isEnabled = cardFrontPane.text.isNotBlank()
+    }
+
     private val cardTextListener = DelegatingDocumentListener {
         val sideListUpdate = Runnable {
             updateSideList()
+            toggleCopyButton()
         }
         SwingUtilities.invokeLater(sideListUpdate)
     }
@@ -45,6 +64,7 @@ class CardEditingWindow(
     override fun clear() {
         efficientCardTextUpdate("", "", false)
         manager.setEditedCard(null)
+
 
         showSideList(noCardSelectedPanelId)
     }
@@ -116,7 +136,7 @@ class CardEditingWindow(
 
         manager.processProposedContents(frontText, backText, true, this)
         showSideList(noCardSelectedPanelId)
-        if (autokill) this.dispose()
+        if (closeOnOK) this.dispose()
     }
 
     internal fun init() {
@@ -199,6 +219,7 @@ class CardEditingWindow(
         cardBackPane.text = newBackText
 
         updateSideList()
+        toggleCopyButton()
 
         cardFrontPane.document.addDocumentListener(cardTextListener)
         cardBackPane.document.addDocumentListener(cardTextListener)
@@ -215,9 +236,9 @@ class CardEditingWindow(
             frontText: String,
             backText: String,
             manager: CardEditingManager,
-            autokill: Boolean
+            closeOnOK: Boolean
         ): CardEditingWindow {
-            val newCardWindow = CardEditingWindow(frontText, backText, manager, autokill)
+            val newCardWindow = CardEditingWindow(frontText, backText, manager, closeOnOK)
             newCardWindow.init()
             return newCardWindow
         }

@@ -1,10 +1,9 @@
 package eb.subwindow.cardediting
 
-import eb.data.Card
 import eb.data.DeckManager
 import eb.popups.deleteCard
-import eb.subwindow.cardediting.CardEditingManager
 import eb.utilities.*
+import eb.utilities.uiElements.UnfocusableButton
 import java.awt.GridBagConstraints
 import java.awt.Insets
 import java.awt.event.FocusEvent
@@ -26,24 +25,17 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
     }
 
     // The button to cancel creating this card, and return to the calling window.
-    private val cancelButton = JButton("Cancel").apply {
-        addActionListener { closeWindow() }
-        isFocusable = false
-    }
+    private val cancelButton = UnfocusableButton("Cancel") { closeWindow() }
 
     private fun closeWindow() {
         manager.endEditing(this@GenericCardEditingWindow)
     }
 
-    private val clearButton = JButton("Clear").apply {
-        addActionListener { clear() }
-        isFocusable = false
-    }
+    private val clearButton = UnfocusableButton("Clear") { clear() }
 
-    protected val deleteButton = JButton("Delete").apply {
-        addActionListener { deleteCardWithCurrentFront() }
-        isFocusable = false
-    }
+    protected val deleteButton = UnfocusableButton("Delete") { deleteCardWithCurrentFront() }
+
+
 
     private fun deleteCardWithCurrentFront() {
         val existingCardWithThisFront = DeckManager.currentDeck().cardCollection.getCardWithFront(cardPanes[0].text)
@@ -55,10 +47,7 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
     // The button to press that requests the current deck to check whether this
     // card is a valid/usable card (so no duplicate of an existing card, for
     // example) and if so, to add it.
-    private val okButton = JButton("Ok").apply {
-        addActionListener { submitCandidateCardToDeck() }
-        isFocusable = false
-    }
+    private val okButton = UnfocusableButton("Ok") { submitCandidateCardToDeck() }
 
     protected abstract fun submitCandidateCardToDeck()
 
@@ -91,10 +80,13 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
     fun updateContents(vararg cardTexts: String) =
         cardTexts.forEachIndexed { index, contents -> cardPanes[index].text = contents }
 
+    protected open fun addCopyButtonIfNeeded(panel: JPanel) {}
+
     protected fun addButtonPanel() {
         val buttonPane = JPanel().apply {
             add(cancelButton)
             add(deleteButton)
+            addCopyButtonIfNeeded(this)
             add(clearButton)
             add(okButton)
         }
@@ -115,7 +107,7 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
         if (cardPanes.any { it.text.isNotBlank() }) clear() else closeWindow()
     }
 
-    fun updateTitle()  {
+    fun updateTitle() {
         title = "${DeckManager.currentDeck().name}: ${manager.getVerb()} card"
     }
 }

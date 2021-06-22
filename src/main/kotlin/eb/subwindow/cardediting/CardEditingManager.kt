@@ -25,7 +25,7 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
 
     private val cardEditingWindow: GenericCardEditingWindow? = when (card) {
         null -> if (tripleModus) ThreeSidedCardWindow.display(this) else CardEditingWindow.display("", "", this, false)
-        !in c_cardsBeingEdited -> CardEditingWindow.display(card!!.front.contents, card!!.back, this, false)
+        !in c_cardsBeingEdited -> CardEditingWindow.display(card!!.front.contents, card!!.back, this, true)
         else -> null
     }
 
