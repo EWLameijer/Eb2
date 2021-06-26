@@ -31,7 +31,7 @@ import java.time.LocalDateTime
  */
 class Deck(val name: String) : Serializable {
 
-    private lateinit var recommendationsMap: Map<String, Duration?>
+    @Transient private lateinit var recommendationsMap: Map<String, Duration?>
 
     init {
         require(name.isValidIdentifier) { "LogicalDeck constructor error: deck has a bad name." }
@@ -116,7 +116,7 @@ class Deck(val name: String) : Serializable {
     fun getRipenessFactor(card: Card) = getTimeUntilNextReview(card).seconds.toDouble()
 
     // Returns the time till the next review of the given card. The time can be negative, as that information can help
-    // deprioritize 'over-ripe' cards which likely have to be learned anew anyway.
+    // de-prioritize 'over-ripe' cards which likely have to be learned anew anyway.
     fun getTimeUntilNextReview(card: Card): Duration =
         Duration.between(Instant.now(), getNextReviewInstant(card))
 
@@ -156,7 +156,7 @@ class Deck(val name: String) : Serializable {
         private const val serialVersionUID = 8271837223354295531L
 
         // The file extension of a deck.
-        private const val DECKFILE_EXTENSION = ".deck"
+        private const val deckFileExtension = ".deck"
 
         // when writing the deck to a text file.
         private const val HEADER_BODY_SEPARATOR = "\t\t"
@@ -164,7 +164,7 @@ class Deck(val name: String) : Serializable {
         // Returns the File object representing a deck with name "deckName".
         fun getDeckFileHandle(deckName: String): File {
             require(deckName.isValidIdentifier) { "LogicalDeck.getDeckFileHandle() error: deck name is invalid." }
-            val deckFileName = deckName + DECKFILE_EXTENSION
+            val deckFileName = deckName + deckFileExtension
             return File(deckFileName)
         }
     }

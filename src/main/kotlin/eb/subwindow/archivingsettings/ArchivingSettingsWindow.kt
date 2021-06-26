@@ -3,7 +3,7 @@ package eb.subwindow.archivingsettings
 import java.awt.event.KeyEvent
 
 import eb.data.DeckManager
-import eb.utilities.ProgrammableAction
+import eb.eventhandling.createKeyListener
 import javax.swing.*
 
 object ArchivingSettingsWindow : JFrame("Deck archiving settings") {
@@ -21,15 +21,13 @@ object ArchivingSettingsWindow : JFrame("Deck archiving settings") {
             add(changeLocationButton)
         }
         add(box)
-        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-                .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "Cancel") //$NON-NLS-1$
-        getRootPane().actionMap.put("Cancel", ProgrammableAction { this.dispose() })
+        createKeyListener(KeyEvent.VK_ESCAPE) { this.dispose() }
         setSize(700, 400)
         defaultCloseOperation = WindowConstants.DISPOSE_ON_CLOSE
         isVisible = true
     }
 
-    private fun getLabelText() : String = START_OF_LABEL + (DeckManager.archivingDirectoryName() ?: "[default]")
+    private fun getLabelText(): String = START_OF_LABEL + (DeckManager.archivingDirectoryName() ?: "[default]")
 
     private fun changeArchivingLocation() {
         val chooser = JFileChooser()

@@ -1,5 +1,6 @@
 package eb.utilities
 
+import eb.eventhandling.createKeyListener
 import java.awt.Component
 import java.awt.KeyboardFocusManager
 import java.awt.event.KeyEvent
@@ -322,10 +323,8 @@ object Utilities {
 
     private fun createKeyPressSensitiveButton(text: String, actionKey: KeyStroke, action: () -> Unit): JButton =
         JButton(text).apply {
-            val actionOnKeyPressId = "actionOnKeyPress"
             mnemonic = KeyEvent.getExtendedKeyCodeForChar(actionKey.keyChar.code)
-            getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW).put(actionKey, actionOnKeyPressId)
-            actionMap.put(actionOnKeyPressId, ProgrammableAction { action() })
+            createKeyListener(actionKey, action)
             addActionListener { action() }
         }
 

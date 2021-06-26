@@ -1,6 +1,7 @@
 package eb.subwindow.cardediting
 
 import eb.data.DeckManager
+import eb.eventhandling.createKeyListener
 import eb.popups.deleteCard
 import eb.utilities.*
 import eb.utilities.uiElements.UnfocusableButton
@@ -34,7 +35,6 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
     private val clearButton = UnfocusableButton("Clear") { clear() }
 
     protected val deleteButton = UnfocusableButton("Delete") { deleteCardWithCurrentFront() }
-
 
 
     private fun deleteCardWithCurrentFront() {
@@ -97,9 +97,7 @@ abstract class GenericCardEditingWindow(protected val manager: CardEditingManage
             weighty = 0.0
             insets = Insets(10, 10, 10, 10)
         }
-        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-            .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "Cancel") //$NON-NLS-1$
-        getRootPane().actionMap.put("Cancel", ProgrammableAction { cleanOrExit() })
+        createKeyListener(KeyEvent.VK_ESCAPE) { cleanOrExit() }
         add(buttonPane, buttonPaneConstraints)
     }
 

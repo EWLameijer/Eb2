@@ -5,10 +5,7 @@ import java.awt.GridLayout
 import java.awt.event.KeyEvent
 
 import eb.data.DeckManager
-import eb.eventhandling.BlackBoard
-import eb.eventhandling.Listener
-import eb.eventhandling.Update
-import eb.eventhandling.UpdateType
+import eb.eventhandling.*
 import eb.mainwindow.MainWindowState
 import eb.subwindow.studyoptions.settinggroups.IntervalSettings
 import eb.subwindow.studyoptions.settinggroups.OtherSettings
@@ -178,10 +175,7 @@ class StudyOptionsWindow : JFrame(), Listener {
     // nullness checker) after the window has been created.
     internal fun init() {
         layout = BorderLayout()
-
-        getRootPane().getInputMap(JComponent.WHEN_IN_FOCUSED_WINDOW)
-            .put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "Cancel") //$NON-NLS-1$
-        getRootPane().actionMap.put("Cancel", ProgrammableAction { dispose() })
+        createKeyListener(KeyEvent.VK_ESCAPE) { dispose() }
         bindActionsToButtons()
         BlackBoard.register(this, UpdateType.INPUTFIELD_CHANGED)
 

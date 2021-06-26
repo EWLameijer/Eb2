@@ -8,11 +8,11 @@ import eb.eventhandling.UpdateType
 import eb.mainwindow.MainWindowState
 import eb.mainwindow.reviewing.ReviewManager
 import eb.utilities.Utilities
+import eb.utilities.Utilities.createKeyPressSensitiveButton
 import eb.utilities.pluralize
 import java.awt.BorderLayout
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
-import javax.swing.JButton
 import javax.swing.JLabel
 import javax.swing.JPanel
 
@@ -21,13 +21,14 @@ class InformationPanel : JPanel() {
 
     // button the user can press to start reviewing. Only visible if the user for some reason decides to not review
     // cards yet (usually by having one rounds of review, and then stopping the reviewing)
-    private val startReviewingButton = JButton().apply {
-        isVisible = false
-        text = "Review now"
-        addActionListener {
-            ReviewManager.resetTimers()
-            BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, MainWindowState.REACTIVE.name))
+    private val startReviewingButton =
+        createKeyPressSensitiveButton("Review now", 'r', ::startReviewing).apply {
+            isVisible = false
         }
+
+    private fun startReviewing() {
+        ReviewManager.resetTimers()
+        BlackBoard.post(Update(UpdateType.PROGRAMSTATE_CHANGED, MainWindowState.REACTIVE.name))
     }
 
     init {
