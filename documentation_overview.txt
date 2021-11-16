@@ -3,9 +3,10 @@ TODO: current plans, priorities for Eb, including bugs. Includes change history
 code_ency: notes on where to find functionality
 documentation_overview: this document
 
+> code_ency, TODO, user_manual
+
 // to remove/process:
-development_notes
 Documentation
+eb_book
 eb_overview
-manual
 

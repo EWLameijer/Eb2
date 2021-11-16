@@ -10,7 +10,6 @@ import eb.eventhandling.BlackBoard
 import eb.eventhandling.DelegatingDocumentListener
 import eb.eventhandling.Update
 import eb.eventhandling.UpdateType
-import eb.utilities.FixedSizeNumberDocument
 
 class LabelledTextField(labelText: String, textFieldContents: String, size: Int, precision: Int) : JPanel() {
     private val documentListener = DelegatingDocumentListener {

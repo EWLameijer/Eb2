@@ -31,7 +31,19 @@ import java.time.LocalDateTime
  */
 class Deck(val name: String) : Serializable {
 
-    @Transient private lateinit var recommendationsMap: Map<String, Duration?>
+    @Transient
+    private var backingRecommendationsMap: Map<String, Duration?>? = null
+
+    private var recommendationsMap: Map<String, Duration?>
+        get() {
+            return if (backingRecommendationsMap != null) backingRecommendationsMap!! else {
+                backingRecommendationsMap = Analyzer.getRecommendationsMap()
+                backingRecommendationsMap!!
+            }
+        }
+        set(value) {
+            backingRecommendationsMap = value
+        }
 
     init {
         require(name.isValidIdentifier) { "LogicalDeck constructor error: deck has a bad name." }

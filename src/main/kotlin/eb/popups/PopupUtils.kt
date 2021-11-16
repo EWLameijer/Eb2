@@ -1,5 +1,6 @@
 package eb.popups
 
+import javax.swing.JButton
 import javax.swing.JOptionPane
 
 object PopupUtils {

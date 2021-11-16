@@ -1,5 +1,7 @@
 package eb.utilities.uiElements
 
+import eb.data.TimeInterval
+import eb.data.TimeUnit
 import java.awt.Dimension
 
 import javax.swing.DefaultComboBoxModel

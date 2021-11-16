@@ -1,4 +1,4 @@
-package eb.utilities
+package eb.data
 
 import java.time.Duration
 import java.util.Vector
@@ -13,12 +13,12 @@ import java.util.Vector
  *
  * @author Eric-Wubbo Lameijer
  */
-enum class TimeUnit ( val userInterfaceName: String, val duration: Duration)
-{
+enum class TimeUnit(val userInterfaceName: String, val duration: Duration) {
     SECOND("second(s)", Duration.ofSeconds(1)),
     MINUTE("minute(s)", Duration.ofMinutes(1)),
     HOUR("hour(s)", Duration.ofHours(1)),
     DAY("day(s)", Duration.ofDays(1)),
+
     // NOTE: BELOW UNITS ARE NOT USED BY THE DEFAULT SETTINGS (SO A COMPILER WARNING), BUT THE USER CAN USE THEM
     WEEK("week(s)", Duration.ofDays(7)),
     MONTH("month(s)", Duration.ofMinutes(43830)), // 365.25 days a year, divided by 12 months
@@ -39,6 +39,6 @@ enum class TimeUnit ( val userInterfaceName: String, val duration: Duration)
         //
         // @param unitAsString : the unit as a string (like "second(s)") that needs to be converted
         // to the proper unit, SECOND
-        fun parseUnit(unitAsString: String) = values().find{ it.userInterfaceName == unitAsString }
+        fun parseUnit(unitAsString: String) = values().find { it.userInterfaceName == unitAsString }
     }
 }

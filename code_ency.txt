@@ -1,9 +1,54 @@
+Deck: eb.data.Deck
+    contains three main categories of information:
+        the card collection (which is of course the definition of a physical deck of cards)
+        the study settings (how soon cards should be reviewed; this can differ per deck)
+        file/archiving settings (where to save the backup files).
+    For the rest, it contains a bit of other useful data
+        -total time spent studying (which cannot be derived from the cards, as cards can be deleted or edited)
+        -the version of Eb the deck was last written by (for compatibility)
 
 edit window
+    Basically, if you want to edit (or create) a card you create a CardEditingManager object, which contains the data
+    of the card to be created or edited (of course, if the card is to be created, it works with a default empty card for
+    now). Basically, the CardEditingManager is the model; most of the view is in the CardEditingWindow that is created
+    by it.
     OK-button -> submitCandidateCardToDeck
+    eb.subwindow.cardediting.CardEditingWindow; eb.subwindow.cardediting.CardEditingManager
+
+
+enter: (responding to)
+    Utilities.makeTabAndEnterTransferFocus
+
+escape: [listening for]
+    eb.eventhandling.KeystrokeListeners; for JFrame need rootPane.createKeyListener
+
+error messages:
+Exception in thread "main" java.lang.NullPointerException
+        at eb.data.Deck.calculateIntervalDurationFromUserSettings(Deck.kt:124) => basically, loading a (default) deck
+        that is not up-to-date with current deck formats.
+
+
+INFO: java.lang.ClassNotFoundException: eb.utilities.TimeInterval Deck.canLoadDeck() error: could not load deck from file =>
+20211105 The serialization format has changed for some reason. Why?
+
+
+extension (of deck-file)
+    Deck.deckFileExtension (=".deck")
+
+line break (system-specific)
+    -Utilities.EOL
+
+Main Window: the main window of the application; has four modes:
+	-REACTIVE: shows number of cards in deck + time till next review + shortcut keys. Time to next review is positive
+	-INFORMATIONAL: same as informational window, but time till next review is negative. Possesses button to start review.
+	-REVIEWING: shows card that is to be reviewed
+	-SUMMARIZING: shows statistics of last round of reviews.
 
 merge decks:
     DeckManager- fun mergeWithDeck(name: String)
+
+new card window:
+    see edit window
 
 remove duplicates (menu)
     showDuplicateFrontPopup
@@ -11,10 +56,52 @@ remove duplicates (menu)
 selecting a card (from the side list)
     copyCardFromList
 
+shortcuts (for button)
+    => Utilities.createKeyPressSensitiveButton(text: String, actionKey: KeyStroke, action: () -> Unit): JButton
+
+start of program: eb.Eb.main()
+
+study options:
+    offers options for setting the duration of the initial learning interval, the lengthening of time after a
+    successful review, and whether the review is timed or not.
+    => eb.subwindow.studyoptions.StudyOptionsWindow (window/view) eb.subwindow.studyoptions.StudyOptions (model)
+
 switching panel: just a JPanel with a CardLayout (situationalButtonPanel.layout = CardLayout())
+
+tabs: Change a component (especially a text-containing component) so that tab
+    and possibly enter won't influence the text, but will cause the focus to shift: Utilities.makeTabTransferFocus
 
 time of next review
     For deck in list on information screen: registerTimeOfNextReview
+
+TimeInputElement:
+    A UI-element that allows users to see (or set) a time, like "0.1 seconds" or "3 day(s)"
+    eb.utilities.uiElements.TimeInputElement
+
+TimeInterval:
+    Stores a time interval, like 3 hours (the 3 can be a double) Contains a scalar (the 3.5 from 3.5 hours) and a unit
+    (the hour from 3.5 hours), which are set by the constructor (which also requires time intervals to have length > 0)
+    eb.data.TimeInterval
+
+TimeUnit:
+    Enum of times, of SECOND, MINUTE. Stores both string names ("second(s)") [userInterfaceName] and time value
+    (Durations) [duration]
+    eb.data.TimeUnit
+
+
+utilities:
+    the eb.utilities package contains all kinds of things that are not card-deck-specific, and occasionally not
+    package-specific. Note that it is also a 'refuge' for code that does not deal directly with the UI but is long and
+    complicated enough that it is better to split them out from the regular 'controller' code, which should deal more
+    with 'what' than with 'how'. Finally, also notice that Utilities is a bit of a 'garbage dump', it can likely profit
+    from a cleanup.
+
+
+
+
+
+Editing a card (or creating a card)
+
 
 
 

@@ -1,10 +1,9 @@
 package eb.subwindow.studyoptions.settinggroups
 
-import eb.data.Card
 import eb.data.Review
 import eb.data.streakSize
-import eb.utilities.TimeInterval
-import eb.utilities.TimeUnit
+import eb.data.TimeInterval
+import eb.data.TimeUnit
 import eb.utilities.Utilities
 import java.io.Serializable
 import java.time.Duration

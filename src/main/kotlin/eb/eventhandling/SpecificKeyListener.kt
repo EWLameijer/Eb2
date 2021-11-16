@@ -1,5 +1,6 @@
-package eb.utilities
+package eb.eventhandling
 
+import eb.utilities.doNothing
 import java.awt.event.KeyEvent
 import java.awt.event.KeyListener
 

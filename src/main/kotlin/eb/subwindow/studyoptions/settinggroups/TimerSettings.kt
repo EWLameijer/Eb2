@@ -1,8 +1,7 @@
 package eb.subwindow.studyoptions.settinggroups
 
-import eb.utilities.TimeInterval
-import eb.utilities.TimeUnit
-import eb.utilities.Utilities
+import eb.data.TimeInterval
+import eb.data.TimeUnit
 import java.io.Serializable
 import java.util.*
 

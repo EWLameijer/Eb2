@@ -44,6 +44,7 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
     private fun closeOptionPane() = JOptionPane.getRootFrame().dispose()
 
     fun inCardCreatingMode() = card == null
+    private fun inCardEditingMode() = !inCardCreatingMode()
 
     fun processProposedContents(
         frontText: String,
@@ -51,19 +52,16 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
         shouldClearCardWindow: Boolean,
         callingWindow: GenericCardEditingWindow
     ) {
-        // Case 1 of 3: there are empty fields. Or at least: the front is empty.
+        // Case 1 of 3: the front is empty; this won't be a valid card.
         if (!Hint.isValid(frontText)) {
             handleEmptyFront(backText, callingWindow)
+        } else if (isIdenticalToCurrentCard(frontText, backText)) { // unchanged card
+            if (shouldClearCardWindow) callingWindow.clear()
         } else {
-            // front text is not empty. Now, this can either be problematic or not.
-            // Case 2 of 3: the front of the card is new or the front is the same as the old front (when editing).
-            //  Add the card and be done with it (well, when adding cards one should not close the new card window).
             val frontHint = Hint(frontText)
             val baseCardWithThisFront = DeckManager.getBaseCard(frontText)
-            if (frontText == currentFront() && backText == currentBack()) {
-                if (shouldClearCardWindow) callingWindow.clear()
-            } else if (frontText != currentFront() || baseCardWithThisFront == null) {
-                submitCardContents(frontHint, backText, shouldClearCardWindow, callingWindow)
+            if (baseCardWithThisFront == null) {
+                handlePossibleFrontReplacement(frontHint, backText, shouldClearCardWindow, callingWindow)
             } else {
                 // Case 3 of 3: there is a current (but different) card with the same front. Resolve this conflict.
                 handleCardBeingDuplicate(frontHint, backText, baseCardWithThisFront, callingWindow)
@@ -71,6 +69,60 @@ class CardEditingManager(private val tripleModus: Boolean = false, private var c
             }
         }
     }
+
+    private fun handlePossibleFrontReplacement(
+        frontHint: Hint,
+        backText: String,
+        shouldClearCardWindow: Boolean,
+        callingWindow: GenericCardEditingWindow
+    ) {
+        if (inCardEditingMode()) { // are you trying to replace the card/front?
+            val originalFront = card!!.front.contents
+            val originalBack = card!!.back
+            val newFront = frontHint.contents
+            val buttons = getFrontChangeButtons(frontHint, backText, shouldClearCardWindow, callingWindow)
+            JOptionPane.showOptionDialog(
+                null,
+                """Replace the card
+                           '$originalFront' / '$originalBack' with
+                           '$newFront' / '$backText'?""",
+                "Are you sure you want to update the current card?", 0,
+                JOptionPane.QUESTION_MESSAGE, null, buttons, null
+            )
+        } else { // in card creation mode
+            submitCardContents(frontHint, backText, shouldClearCardWindow, callingWindow)
+        }
+    }
+
+    private fun getFrontChangeButtons(
+        frontHint: Hint,
+        backText: String,
+        shouldClearCardWindow: Boolean,
+        callingWindow: GenericCardEditingWindow
+    ): Array<JButton> {
+        val replaceButton = JButton("Replace card").apply {
+            addActionListener {
+                DeckManager.currentDeck().cardCollection.removeCard(card!!)
+                submitCardContents(frontHint, backText, shouldClearCardWindow, callingWindow)
+                closeOptionPane()
+            }
+        }
+        val keepBothButton = JButton("Keep both cards").apply {
+            addActionListener {
+                submitCardContents(frontHint, backText, shouldClearCardWindow, callingWindow)
+                closeOptionPane()
+            }
+        }
+        val cancelCardSubmissionButton = JButton("Cancel this submission").apply {
+            addActionListener {
+                closeOptionPane()
+            }
+        }
+        return arrayOf(replaceButton, keepBothButton, cancelCardSubmissionButton)
+    }
+
+    private fun isIdenticalToCurrentCard(frontText: String, backText: String) =
+        frontText == currentFront() && backText == currentBack()
 
     private fun handleEmptyFront(backText: String, callingWindow: GenericCardEditingWindow) {
         // if back is empty, then this is just a hasty return. Is okay.

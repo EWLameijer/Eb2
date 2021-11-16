@@ -1,6 +1,7 @@
 package eb.utilities
 
 import eb.eventhandling.createKeyListener
+import eb.popups.PopupUtils.closeOptionPane
 import java.awt.Component
 import java.awt.KeyboardFocusManager
 import java.awt.event.KeyEvent

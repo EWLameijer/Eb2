@@ -1,5 +1,7 @@
-package eb.utilities
+package eb.utilities.uiElements
 
+import eb.utilities.EMPTY_STRING
+import eb.utilities.Utilities
 import java.util.logging.Logger
 
 import javax.swing.text.AttributeSet

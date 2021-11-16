@@ -14,6 +14,7 @@ import kotlin.system.exitProcess
 // better sorting of repeated cards [what does that mean?]
 // ? Allow Eb to run WITHOUT taking up two taskbar slots?
 
+// 3.2.1: made it easier to replace badly-worded or -spelled text on the front of a card.
 // 3.2.0: added mnemonic/shortcut for start reviewing in information window [also some refactoring]
 // 3.1.0: START OF SEMANTIC VERSIONING! Enables copying cards from the edit window (handy for multiple definitions)
 // 2.6.8: now shows a list of decks to be reviewed below the shortcuts
@@ -92,7 +93,7 @@ import kotlin.system.exitProcess
  */
 
 object Eb {
-    const val version = 320
+    const val version = 321
     val VERSION_STRING = versionToString()
 
     private fun versionToString(): Any {

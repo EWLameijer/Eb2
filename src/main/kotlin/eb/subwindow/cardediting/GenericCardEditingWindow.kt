@@ -1,6 +1,7 @@
 package eb.subwindow.cardediting
 
 import eb.data.DeckManager
+import eb.eventhandling.SpecificKeyListener
 import eb.eventhandling.createKeyListener
 import eb.popups.deleteCard
 import eb.utilities.*

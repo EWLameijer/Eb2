@@ -1,5 +1,6 @@
-package eb.utilities
+package eb.data
 
+import eb.utilities.Utilities
 import java.io.Serializable
 import java.util.Objects
 
